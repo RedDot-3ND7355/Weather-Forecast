@@ -1,0 +1,35 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Vane",
+      "hasCanvas": false,
+      "bodyTextLen": 642,
+      "bodyTextHash": "8b7f5cf8ee39b34a63beea2cdeb1335fc5d5584ceba5015871c4d8a4bd51fb2d",
+      "bodyTextPrefix": "Vane RAIN FOLLOWS THE WIND °C °F Vane Rain follows the wind. Sea",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Vane",
+      "hasCanvas": false,
+      "bodyTextLen": 620,
+      "bodyTextHash": "d95f7dfe242d3a54a352a89b8ed6dee0797c81e613b480312030f938d8fcc59d",
+      "bodyTextPrefix": "Vane °C °F Vane Rain follows the wind. Search a place and the co",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

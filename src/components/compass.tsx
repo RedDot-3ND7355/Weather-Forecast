@@ -1,0 +1,206 @@
+import { compassPoint, windLong } from "@/lib/weather/compass";
+import { cn } from "@/lib/utils";
+
+type CompassProps = {
+  windDir: number;
+  windSpeedLabel: string;
+  chance: number;
+  className?: string;
+};
+
+export function Compass({
+  windDir,
+  windSpeedLabel,
+  chance,
+  className,
+}: CompassProps) {
+  const wet = chance >= 35;
+  const ticks = Array.from({ length: 72 }, (_, i) => i);
+  const rainLines = Array.from({ length: 7 }, (_, i) => i - 3);
+  const from = windLong(windDir);
+  const point = compassPoint(windDir);
+
+  return (
+    <div className={cn("relative mx-auto aspect-square w-full max-w-[20rem]", className)}>
+      <svg
+        viewBox="0 0 240 240"
+        className="size-full"
+        role="img"
+        aria-label={`Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`}
+      >
+        <defs>
+          <radialGradient id="vane-disc" cx="50%" cy="45%" r="55%">
+            <stop offset="0%" stopColor="var(--color-raised)" />
+            <stop offset="100%" stopColor="var(--color-surface)" />
+          </radialGradient>
+          <linearGradient id="vane-needle" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-fg)" />
+            <stop offset="100%" stopColor="var(--color-accent)" />
+          </linearGradient>
+        </defs>
+
+        <circle cx="120" cy="120" r="112" fill="url(#vane-disc)" />
+        <circle
+          cx="120"
+          cy="120"
+          r="108"
+          fill="none"
+          stroke="var(--color-border-strong)"
+          strokeWidth="1.2"
+        />
+        <circle
+          cx="120"
+          cy="120"
+          r="86"
+          fill="none"
+          stroke="var(--color-border)"
+          strokeWidth="1"
+        />
+
+        {wet ? (
+          <path
+            d={sectorPath(120, 120, 104, windDir - 18, windDir + 18)}
+            fill="var(--color-rain)"
+            opacity="0.16"
+          />
+        ) : null}
+
+        {ticks.map((i) => {
+          const deg = i * 5;
+          const major = deg % 30 === 0;
+          const card = deg % 90 === 0;
+          const inner = card ? 78 : major ? 80 : 83;
+          const outer = 104;
+          const a = ((deg - 90) * Math.PI) / 180;
+          const x1 = 120 + inner * Math.cos(a);
+          const y1 = 120 + inner * Math.sin(a);
+          const x2 = 120 + outer * Math.cos(a);
+          const y2 = 120 + outer * Math.sin(a);
+          return (
+            <line
+              key={deg}
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              stroke="var(--color-muted)"
+              strokeWidth={card ? 1.8 : major ? 1.2 : 0.6}
+              opacity={card ? 0.9 : major ? 0.55 : 0.28}
+            />
+          );
+        })}
+
+        {(["N", "E", "S", "W"] as const).map((label, i) => {
+          const deg = i * 90;
+          const a = ((deg - 90) * Math.PI) / 180;
+          const r = 66;
+          return (
+            <text
+              key={label}
+              x={120 + r * Math.cos(a)}
+              y={120 + r * Math.sin(a)}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="var(--color-fg)"
+              fontSize="11"
+              fontWeight="600"
+              letterSpacing="0.08em"
+            >
+              {label}
+            </text>
+          );
+        })}
+
+        {wet
+          ? rainLines.map((offset) => {
+              const deg = windDir + offset * 5.5;
+              const a = ((deg - 90) * Math.PI) / 180;
+              const x1 = 120 + 100 * Math.cos(a);
+              const y1 = 120 + 100 * Math.sin(a);
+              const x2 = 120 + 38 * Math.cos(a);
+              const y2 = 120 + 38 * Math.sin(a);
+              return (
+                <line
+                  key={offset}
+                  x1={x1}
+                  y1={y1}
+                  x2={x2}
+                  y2={y2}
+                  stroke="var(--color-rain)"
+                  strokeWidth={offset === 0 ? 2 : 1.1}
+                  strokeLinecap="round"
+                  opacity={offset === 0 ? 0.85 : 0.4}
+                  strokeDasharray="5 7"
+                  className="origin-center motion-safe:animate-pulse"
+                />
+              );
+            })
+          : null}
+
+        <g
+          style={{
+            transform: `rotate(${windDir}deg)`,
+            transformOrigin: "120px 120px",
+            transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
+          <polygon
+            points="120,28 126,120 120,108 114,120"
+            fill="url(#vane-needle)"
+          />
+          <polygon points="120,198 126.5,120 120,132 113.5,120" fill="var(--color-accent)" />
+          <circle
+            cx="120"
+            cy="120"
+            r="7"
+            fill="var(--color-bg)"
+            stroke="var(--color-accent)"
+            strokeWidth="2"
+          />
+        </g>
+      </svg>
+
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pt-10">
+        <p className="font-display text-4xl font-medium tabular-nums leading-none tracking-tight text-fg">
+          {chance}
+          <span className="text-lg text-muted">%</span>
+        </p>
+        <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
+          rain
+        </p>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-faint">
+            From
+          </p>
+          <p className="font-medium capitalize text-fg">{from}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-faint">
+            {point}
+          </p>
+          <p className="font-medium tabular-nums text-fg">{windSpeedLabel}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function sectorPath(
+  cx: number,
+  cy: number,
+  r: number,
+  startDeg: number,
+  endDeg: number,
+): string {
+  const start = polar(cx, cy, r, startDeg);
+  const end = polar(cx, cy, r, endDeg);
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y} Z`;
+}
+
+function polar(cx: number, cy: number, r: number, deg: number) {
+  const a = ((deg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
