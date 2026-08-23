@@ -12,17 +12,20 @@ export function RainBrief({ forecast }: { forecast: Forecast }) {
     rain.chance >= 60 ? "wet" : rain.chance >= 30 ? "maybe" : "dry";
 
   return (
-    <section className="rounded-2xl bg-surface p-5 shadow-[var(--shadow-border)]">
+    <section className="min-w-0 rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
             Vane estimate
           </p>
-          <h2 className="mt-1 font-display text-2xl font-medium leading-tight text-fg">
+          <h2 className="mt-1 font-display text-xl font-medium leading-tight text-fg sm:text-2xl">
             Rain arriving from the {rain.arrival}
           </h2>
         </div>
-        <Badge variant={tone === "wet" ? "rain" : tone === "maybe" ? "warn" : "default"}>
+        <Badge
+          className="shrink-0"
+          variant={tone === "wet" ? "rain" : tone === "maybe" ? "warn" : "default"}
+        >
           {tone === "wet" ? "Likely" : tone === "maybe" ? "Watch" : "Quiet"}
         </Badge>
       </div>

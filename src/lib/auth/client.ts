@@ -20,6 +20,9 @@ export const authClient = createAuthClient({
       if (token) ctx.headers.set("Authorization", `Bearer ${token}`);
       return ctx;
     },
+    onError(ctx) {
+      if (ctx.response?.status === 401) setBearerToken(null);
+    },
   },
 });
 

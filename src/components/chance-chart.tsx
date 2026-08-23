@@ -18,7 +18,7 @@ export function ChanceChart({ hours }: { hours: HourPoint[] }) {
   }));
 
   return (
-    <section className="rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
+    <section className="min-w-0 overflow-hidden rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
           Rain chance
@@ -32,7 +32,7 @@ export function ChanceChart({ hours }: { hours: HourPoint[] }) {
           </span>
         </p>
       </div>
-      <div className="h-44 w-full sm:h-52">
+      <div className="h-40 w-full min-w-0 sm:h-52">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
             <defs>

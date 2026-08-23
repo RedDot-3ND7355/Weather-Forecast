@@ -11,21 +11,21 @@ export function HourlyStrip({
   units: Units;
 }) {
   return (
-    <section className="rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
-      <div className="mb-3 flex items-baseline justify-between">
+    <section className="min-w-0 overflow-hidden rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
+      <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
           Next 24 hours
         </h2>
-        <p className="text-xs text-muted">Arrow points into the wind</p>
+        <p className="hidden text-xs text-muted sm:block">Arrow points into the wind</p>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2">
         {hours.map((h, i) => {
           const wet = h.rain.chance >= 40;
           return (
             <div
               key={h.time}
               className={cn(
-                "flex w-[4.4rem] shrink-0 flex-col items-center gap-1.5 rounded-xl px-1.5 py-2.5",
+                "flex w-14 shrink-0 flex-col items-center gap-1.5 rounded-xl px-1 py-2 sm:w-[4.4rem] sm:px-1.5 sm:py-2.5",
                 i === 0 ? "bg-raised" : "",
               )}
             >

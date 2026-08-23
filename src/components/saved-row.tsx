@@ -16,11 +16,11 @@ export function SavedRow({
 }) {
   if (places.length === 0 && recent.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {places.map((p) => (
         <span
           key={p.id}
-          className="inline-flex items-center gap-1 rounded-full bg-raised py-1 pr-1 pl-2.5 text-xs text-fg shadow-[var(--shadow-border)]"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-raised py-1 pr-1 pl-2.5 text-xs text-fg shadow-[var(--shadow-border)]"
         >
           <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onPick(p)}>
             <MapPin className="size-3 text-accent" />
@@ -43,7 +43,7 @@ export function SavedRow({
           <button
             key={`${p.name}-${p.latitude}`}
             type="button"
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-surface px-3 text-xs text-muted shadow-[var(--shadow-border)] hover:text-fg"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-surface px-3 text-xs text-muted shadow-[var(--shadow-border)] hover:text-fg"
             onClick={() => onPick(p)}
           >
             {p.name}
@@ -68,7 +68,7 @@ export function SampleCities({ onPick }: { onPick: (place: Place) => void }) {
         <button
           key={p.name}
           type="button"
-          className="h-11 rounded-full bg-raised px-4 text-sm text-fg shadow-[var(--shadow-border)] hover:bg-surface"
+          className="h-11 rounded-full bg-raised px-3.5 text-sm text-fg shadow-[var(--shadow-border)] hover:bg-surface sm:px-4"
           onClick={() => onPick(p)}
         >
           {p.name}

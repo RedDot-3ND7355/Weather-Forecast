@@ -49,7 +49,7 @@ function RootDocument() {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-bg text-fg">
+      <body className="min-h-dvh overflow-x-clip bg-bg text-fg">
         <PreviewHostBridge />
         <AuthProvider>
           <AppProviders>

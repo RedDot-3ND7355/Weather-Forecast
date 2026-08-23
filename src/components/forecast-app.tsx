@@ -97,16 +97,16 @@ export function ForecastApp() {
   const isLoading = Boolean(active) && forecastQuery.isLoading;
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
+    <div className="min-h-dvh overflow-x-clip bg-bg text-fg">
       <AppHeader
         onLocate={locate}
         locating={locating}
         saved={saved}
         onSaved={() => void savedQuery.refetch()}
       />
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto min-w-0 max-w-6xl overflow-x-clip px-3 py-4 sm:px-6 sm:py-8">
         {hydrated && (savedPlaces.length > 0 || recent.length > 0) ? (
-          <div className="mb-6">
+          <div className="mb-4 min-w-0 sm:mb-6">
             <SavedRow
               places={savedPlaces}
               recent={recent}
@@ -130,8 +130,8 @@ export function ForecastApp() {
             }
           />
         ) : forecast ? (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
-            <div className="rounded-2xl bg-surface p-5 shadow-[var(--shadow-border)] lg:p-6">
+          <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
+            <div className="min-w-0 rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5 lg:p-6">
               <Compass
                 windDir={forecast.current.windDir}
                 windSpeedLabel={formatSpeed(forecast.current.windSpeedKmh, units)}
@@ -139,10 +139,10 @@ export function ForecastApp() {
               />
             </div>
             <CurrentPanel forecast={forecast} units={units} />
-            <div className="lg:col-span-2">
+            <div className="min-w-0 lg:col-span-2">
               <RainBrief forecast={forecast} />
             </div>
-            <div className="lg:col-span-2">
+            <div className="min-w-0 lg:col-span-2">
               <HourlyStrip hours={forecast.hourly} units={units} />
             </div>
             <ChanceChart hours={forecast.hourly} />
@@ -165,15 +165,15 @@ function EmptyState({
   locating: boolean;
 }) {
   return (
-    <div className="mx-auto max-w-xl py-6 text-center sm:py-12">
-      <p className="font-display text-5xl font-medium tracking-tight text-fg sm:text-6xl">
+    <div className="mx-auto max-w-xl py-4 text-center sm:py-12">
+      <p className="font-display text-4xl font-medium tracking-tight text-fg sm:text-6xl">
         Vane
       </p>
-      <p className="mt-3 text-base text-muted">
+      <p className="mt-3 text-sm text-muted sm:text-base">
         Rain follows the wind. Search a place and the compass shows the bearing
         moisture is arriving from — then estimates rain from that fetch.
       </p>
-      <div className="mt-6 text-left">
+      <div className="mt-6 hidden text-left sm:block">
         <PlaceSearch onSelect={onPick} autoFocus />
       </div>
       <button
@@ -224,8 +224,8 @@ function HowItWorks({ compact = false }: { compact?: boolean }) {
     <section
       className={
         compact
-          ? "mt-12 text-left text-sm text-muted"
-          : "rounded-2xl bg-surface p-5 text-sm text-muted shadow-[var(--shadow-border)] lg:col-span-2"
+          ? "mt-8 text-left text-sm text-muted sm:mt-12"
+          : "rounded-2xl bg-surface p-4 text-sm text-muted shadow-[var(--shadow-border)] sm:p-5 lg:col-span-2"
       }
     >
       <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">

@@ -26,7 +26,7 @@ function Login() {
   }
 
   return (
-    <main className="relative grid min-h-screen place-items-center overflow-hidden px-6 py-12">
+    <main className="relative grid min-h-dvh place-items-center overflow-hidden px-4 py-10 sm:px-6 sm:py-12">
       <div aria-hidden="true" className="login-glow pointer-events-none absolute inset-0 opacity-40" />
       <div className="relative w-full max-w-sm">
         <Link to="/" className="mb-8 flex flex-col items-center text-center">

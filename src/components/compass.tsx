@@ -21,7 +21,7 @@ export function Compass({
   const point = compassPoint(windDir);
 
   return (
-    <div className={cn("relative mx-auto aspect-square w-full max-w-[20rem]", className)}>
+    <div className={cn("relative mx-auto aspect-square w-full max-w-64 sm:max-w-80", className)}>
       <svg
         viewBox="0 0 240 240"
         className="size-full"
@@ -161,7 +161,7 @@ export function Compass({
       </svg>
 
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pt-10">
-        <p className="font-display text-4xl font-medium tabular-nums leading-none tracking-tight text-fg">
+        <p className="font-display text-3xl font-medium tabular-nums leading-none tracking-tight text-fg sm:text-4xl">
           {chance}
           <span className="text-lg text-muted">%</span>
         </p>
