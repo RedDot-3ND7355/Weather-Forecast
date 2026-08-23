@@ -8,6 +8,7 @@ import { CurrentPanel } from "@/components/current-panel";
 import { DailyList } from "@/components/daily-list";
 import { HourlyStrip } from "@/components/hourly-strip";
 import { PlaceSearch } from "@/components/place-search";
+import { RadarMap } from "@/components/radar-map";
 import { RainBrief } from "@/components/rain-brief";
 import { SampleCities, SavedRow } from "@/components/saved-row";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -142,6 +143,7 @@ export function ForecastApp() {
             <div className="min-w-0 lg:col-span-2">
               <RainBrief forecast={forecast} />
             </div>
+            <RadarMap forecast={forecast} />
             <div className="min-w-0 lg:col-span-2">
               <HourlyStrip hours={forecast.hourly} units={units} />
             </div>
@@ -236,8 +238,10 @@ function HowItWorks({ compact = false }: { compact?: boolean }) {
         Vane blends the forecast model’s precipitation probability with how
         saturated the air is, how much cloud is overhead, and whether the wind
         is a moist equatorward fetch (southerly in the north, northerly in the
-        south). The compass is the rain bearing. The percentage is that blend,
-        not a guarantee.
+        south). Radar shows live precipitation; the fetch line is the bearing
+        rain would be blown in from, and the six-hour strip times those cells
+        against wind speed. The compass is the rain bearing. The percentage is
+        that blend, not a guarantee.
       </p>
     </section>
   );
