@@ -4,7 +4,7 @@ import { r as require_jsx_runtime } from "../_libs/react+tanstack__react-query.m
 import { t as Slot } from "../_libs/radix-ui__react-slot.mjs";
 import { n as clsx, t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { t as twMerge } from "../_libs/tailwind-merge.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/button-CDM_JShd.js
+//#region node_modules/.nitro/vite/services/ssr/assets/input-CkQnuPTQ.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function cn(...inputs) {
@@ -43,5 +43,12 @@ var Button = import_react.forwardRef(({ className, variant, size, asChild = fals
 	});
 });
 Button.displayName = "Button";
+var Input = import_react.forwardRef(({ className, type, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+	type,
+	className: cn("flex h-11 w-full rounded-lg bg-raised px-3 text-sm text-fg shadow-[var(--shadow-border)] placeholder:text-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-50", className),
+	ref,
+	...props
+}));
+Input.displayName = "Input";
 //#endregion
-export { cn as n, Button as t };
+export { Input as n, cn as r, Button as t };

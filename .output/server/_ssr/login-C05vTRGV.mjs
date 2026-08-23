@@ -1,22 +1,55 @@
 import { o as __toESM } from "../_runtime.mjs";
 import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].mjs";
-import { v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
+import { v as Link, y as useNavigate } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime } from "../_libs/react+tanstack__react-query.mjs";
-import { r as signIn } from "./client-CZ8k68j8.mjs";
-import { t as GROK_PROVIDERS } from "./server-Cfz4w_JD.mjs";
-import { t as Button } from "./button-CDM_JShd.mjs";
+import { r as signIn, t as authClient } from "./client-CZ8k68j8.mjs";
+import { t as GROK_PROVIDERS } from "./server-C7Y7B70S.mjs";
+import { n as Input, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/login-DI-Mi_o9.js
+//#region node_modules/.nitro/vite/services/ssr/assets/login-C05vTRGV.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function Login() {
+	const navigate = useNavigate();
 	const [busy, setBusy] = (0, import_react.useState)(null);
 	const [error, setError] = (0, import_react.useState)(null);
-	async function onSignIn(providerId) {
+	const [mode, setMode] = (0, import_react.useState)("signin");
+	const [email, setEmail] = (0, import_react.useState)("");
+	const [password, setPassword] = (0, import_react.useState)("");
+	const [name, setName] = (0, import_react.useState)("");
+	async function onSocial(providerId) {
 		setError(null);
 		setBusy(providerId);
 		try {
 			await signIn(providerId, { callbackURL: "/" });
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Sign-in failed. Try again.";
+			setError(message);
+			toast(message);
+		} finally {
+			setBusy(null);
+		}
+	}
+	async function onEmail(e) {
+		e.preventDefault();
+		setError(null);
+		setBusy("email");
+		try {
+			const result = mode === "signup" ? await authClient.signUp.email({
+				email: email.trim(),
+				password,
+				name: name.trim() || email.trim().split("@")[0] || "Vane"
+			}) : await authClient.signIn.email({
+				email: email.trim(),
+				password
+			});
+			if (result.error) {
+				const message = result.error.message || "Sign-in failed. Try again.";
+				setError(message);
+				toast(message);
+				return;
+			}
+			await navigate({ to: "/" });
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Sign-in failed. Try again.";
 			setError(message);
@@ -51,22 +84,80 @@ function Login() {
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 					className: "rounded-2xl bg-surface p-5 shadow-[var(--shadow-border)]",
 					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-2",
-						children: [GROK_PROVIDERS.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-							type: "button",
-							variant: "secondary",
-							className: "w-full justify-center",
-							disabled: busy !== null,
-							onClick: () => void onSignIn(p.providerId),
-							children: [p.label === "Google" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GoogleMark, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(XMark, {}), busy === p.providerId ? "Opening…" : `Continue with ${p.label}`]
-						}, p.providerId)), error ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "pt-2 text-sm text-danger",
-							role: "alert",
-							children: error
-						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "pt-2 text-xs text-faint",
-							children: "Allow pop-ups for this site. If the demo slept, sign in again — preview sessions reset after a long pause."
-						})]
+						className: "space-y-3",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+								className: "space-y-2",
+								onSubmit: (e) => void onEmail(e),
+								children: [
+									mode === "signup" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+										autoComplete: "name",
+										placeholder: "Name",
+										value: name,
+										onChange: (ev) => setName(ev.target.value)
+									}) : null,
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+										type: "email",
+										autoComplete: "email",
+										required: true,
+										placeholder: "Email",
+										value: email,
+										onChange: (ev) => setEmail(ev.target.value)
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+										type: "password",
+										autoComplete: mode === "signup" ? "new-password" : "current-password",
+										required: true,
+										minLength: 8,
+										placeholder: "Password",
+										value: password,
+										onChange: (ev) => setPassword(ev.target.value)
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+										type: "submit",
+										className: "w-full justify-center",
+										disabled: busy !== null,
+										children: busy === "email" ? "Working…" : mode === "signup" ? "Create account" : "Sign in"
+									})
+								]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								type: "button",
+								className: "w-full text-center text-xs text-muted hover:text-fg",
+								onClick: () => {
+									setError(null);
+									setMode((m) => m === "signin" ? "signup" : "signin");
+								},
+								children: mode === "signup" ? "Already have an account? Sign in" : "Need an account? Create one"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "flex items-center gap-3 pt-1",
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "h-px flex-1 bg-raised" }),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "text-[11px] uppercase tracking-wide text-faint",
+										children: "or"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "h-px flex-1 bg-raised" })
+								]
+							}),
+							GROK_PROVIDERS.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+								type: "button",
+								variant: "secondary",
+								className: "w-full justify-center",
+								disabled: busy !== null,
+								onClick: () => void onSocial(p.providerId),
+								children: [p.label === "Google" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GoogleMark, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(XMark, {}), busy === p.providerId ? "Opening…" : `Continue with ${p.label}`]
+							}, p.providerId)),
+							error ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "pt-1 text-sm text-danger",
+								role: "alert",
+								children: error
+							}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "pt-1 text-xs text-faint",
+								children: "On this host use email — Google/X only work on the Grok demo."
+							})
+						]
 					})
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {

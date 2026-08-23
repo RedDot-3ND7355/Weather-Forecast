@@ -2,8 +2,8 @@ import { r as createServerFn } from "./ssr.mjs";
 import { t as createServerRpc } from "./createServerRpc-CcvdN_gc.mjs";
 import { _n as string, mn as object, pn as number } from "../_libs/@better-auth/core+[...].mjs";
 import { r as getSql } from "./db-6KBaLsha.mjs";
-import { t as authMiddleware } from "./middleware-B0atlX72.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/places-cE3Ed0Xd.js
+import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/places-Bd_MAD8U.js
 var placeInput = object({
 	name: string().trim().min(1).max(120),
 	latitude: number().min(-90).max(90),

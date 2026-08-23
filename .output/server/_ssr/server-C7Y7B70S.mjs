@@ -11,7 +11,7 @@ import { n as createHash, t as createTelemetry } from "../_libs/@better-auth/tel
 import { a as utf8ToBytes, i as managedNonce, n as bytesToHex, r as hexToBytes, t as xchacha20poly1305 } from "../_libs/noble__ciphers.mjs";
 import { t as Pool } from "../_libs/pg.mjs";
 import { randomBytes } from "node:crypto";
-//#region node_modules/.nitro/vite/services/ssr/assets/server-Cfz4w_JD.js
+//#region node_modules/.nitro/vite/services/ssr/assets/server-C7Y7B70S.js
 function tryDecode$1(str) {
 	if (str.indexOf("%") === -1) return str;
 	try {
@@ -8591,6 +8591,7 @@ var auth = betterAuth({
 		enabled: true,
 		maxAge: 300
 	} },
+	emailAndPassword: { enabled: true },
 	advanced: {
 		useSecureCookies: false,
 		defaultCookieAttributes: {

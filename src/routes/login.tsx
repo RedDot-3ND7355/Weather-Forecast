@@ -1,20 +1,64 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { GROK_PROVIDERS, authEnabled, signIn } from "@/lib/auth/client";
+import {
+  GROK_PROVIDERS,
+  authClient,
+  authEnabled,
+  signIn,
+} from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
 function Login() {
+  const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
 
-  async function onSignIn(providerId: string) {
+  async function onSocial(providerId: string) {
     setError(null);
     setBusy(providerId);
     try {
       await signIn(providerId, { callbackURL: "/" });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Sign-in failed. Try again.";
+      setError(message);
+      toast(message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy("email");
+    try {
+      const result =
+        mode === "signup"
+          ? await authClient.signUp.email({
+              email: email.trim(),
+              password,
+              name: name.trim() || email.trim().split("@")[0] || "Vane",
+            })
+          : await authClient.signIn.email({
+              email: email.trim(),
+              password,
+            });
+      if (result.error) {
+        const message = result.error.message || "Sign-in failed. Try again.";
+        setError(message);
+        toast(message);
+        return;
+      }
+      await navigate({ to: "/" });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Sign-in failed. Try again.";
@@ -41,7 +85,62 @@ function Login() {
 
         <div className="rounded-2xl bg-surface p-5 shadow-[var(--shadow-border)]">
           {authEnabled ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <form className="space-y-2" onSubmit={(e) => void onEmail(e)}>
+                {mode === "signup" ? (
+                  <Input
+                    autoComplete="name"
+                    placeholder="Name"
+                    value={name}
+                    onChange={(ev) => setName(ev.target.value)}
+                  />
+                ) : null}
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  required
+                  placeholder="Email"
+                  value={email}
+                  onChange={(ev) => setEmail(ev.target.value)}
+                />
+                <Input
+                  type="password"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  required
+                  minLength={8}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(ev) => setPassword(ev.target.value)}
+                />
+                <Button
+                  type="submit"
+                  className="w-full justify-center"
+                  disabled={busy !== null}
+                >
+                  {busy === "email"
+                    ? "Working…"
+                    : mode === "signup"
+                      ? "Create account"
+                      : "Sign in"}
+                </Button>
+              </form>
+              <button
+                type="button"
+                className="w-full text-center text-xs text-muted hover:text-fg"
+                onClick={() => {
+                  setError(null);
+                  setMode((m) => (m === "signin" ? "signup" : "signin"));
+                }}
+              >
+                {mode === "signup"
+                  ? "Already have an account? Sign in"
+                  : "Need an account? Create one"}
+              </button>
+              <div className="flex items-center gap-3 pt-1">
+                <span className="h-px flex-1 bg-raised" />
+                <span className="text-[11px] uppercase tracking-wide text-faint">or</span>
+                <span className="h-px flex-1 bg-raised" />
+              </div>
               {GROK_PROVIDERS.map((p) => (
                 <Button
                   key={p.providerId}
@@ -49,20 +148,19 @@ function Login() {
                   variant="secondary"
                   className="w-full justify-center"
                   disabled={busy !== null}
-                  onClick={() => void onSignIn(p.providerId)}
+                  onClick={() => void onSocial(p.providerId)}
                 >
                   {p.label === "Google" ? <GoogleMark /> : <XMark />}
                   {busy === p.providerId ? "Opening…" : `Continue with ${p.label}`}
                 </Button>
               ))}
               {error ? (
-                <p className="pt-2 text-sm text-danger" role="alert">
+                <p className="pt-1 text-sm text-danger" role="alert">
                   {error}
                 </p>
               ) : (
-                <p className="pt-2 text-xs text-faint">
-                  Allow pop-ups for this site. If the demo slept, sign in again
-                  — preview sessions reset after a long pause.
+                <p className="pt-1 text-xs text-faint">
+                  On this host use email — Google/X only work on the Grok demo.
                 </p>
               )}
             </div>

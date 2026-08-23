@@ -1,6 +1,6 @@
 import { o as getRequest } from "./ssr.mjs";
-import { n as auth, r as authConfigured } from "./server-Cfz4w_JD.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/verify.server-B95RxZL0.js
+import { n as auth, r as authConfigured } from "./server-C7Y7B70S.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/verify.server-BhyjbqMw.js
 /**
 * Server-side session resolution (server-only).
 *
