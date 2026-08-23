@@ -6,9 +6,14 @@ import { r as signIn, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as GROK_PROVIDERS } from "./server-C7Y7B70S.mjs";
 import { n as Input, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/login-C05vTRGV.js
+//#region node_modules/.nitro/vite/services/ssr/assets/login-yRCMsAbs.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
+function brokerHost() {
+	if (typeof window === "undefined") return false;
+	const h = window.location.hostname;
+	return h.endsWith(".grok-sandbox.com") || h === "localhost" || h === "127.0.0.1";
+}
 function Login() {
 	const navigate = useNavigate();
 	const [busy, setBusy] = (0, import_react.useState)(null);
@@ -17,13 +22,17 @@ function Login() {
 	const [email, setEmail] = (0, import_react.useState)("");
 	const [password, setPassword] = (0, import_react.useState)("");
 	const [name, setName] = (0, import_react.useState)("");
+	const [showBroker, setShowBroker] = (0, import_react.useState)(false);
+	(0, import_react.useEffect)(() => {
+		setShowBroker(brokerHost());
+	}, []);
 	async function onSocial(providerId) {
 		setError(null);
 		setBusy(providerId);
 		try {
 			await signIn(providerId, { callbackURL: "/" });
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Sign-in failed. Try again.";
+			const message = showBroker ? err instanceof Error ? err.message : "Sign-in failed. Try again." : "Google and X are not available on this host. Use email instead.";
 			setError(message);
 			toast(message);
 		} finally {
@@ -130,7 +139,7 @@ function Login() {
 								},
 								children: mode === "signup" ? "Already have an account? Sign in" : "Need an account? Create one"
 							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							showBroker ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "flex items-center gap-3 pt-1",
 								children: [
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "h-px flex-1 bg-raised" }),
@@ -140,22 +149,21 @@ function Login() {
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "h-px flex-1 bg-raised" })
 								]
-							}),
-							GROK_PROVIDERS.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+							}), GROK_PROVIDERS.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 								type: "button",
 								variant: "secondary",
 								className: "w-full justify-center",
 								disabled: busy !== null,
 								onClick: () => void onSocial(p.providerId),
 								children: [p.label === "Google" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GoogleMark, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(XMark, {}), busy === p.providerId ? "Opening…" : `Continue with ${p.label}`]
-							}, p.providerId)),
+							}, p.providerId))] }) : null,
 							error ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "pt-1 text-sm text-danger",
 								role: "alert",
 								children: error
 							}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "pt-1 text-xs text-faint",
-								children: "On this host use email — Google/X only work on the Grok demo."
+								children: showBroker ? "Allow pop-ups for this site." : "Use email on this host. Google and X are not available here."
 							})
 						]
 					})

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   GROK_PROVIDERS,
@@ -12,6 +12,16 @@ import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
+function brokerHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return (
+    h.endsWith(".grok-sandbox.com") ||
+    h === "localhost" ||
+    h === "127.0.0.1"
+  );
+}
+
 function Login() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
@@ -20,6 +30,11 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [showBroker, setShowBroker] = useState(false);
+
+  useEffect(() => {
+    setShowBroker(brokerHost());
+  }, []);
 
   async function onSocial(providerId: string) {
     setError(null);
@@ -27,8 +42,11 @@ function Login() {
     try {
       await signIn(providerId, { callbackURL: "/" });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Sign-in failed. Try again.";
+      const message = showBroker
+        ? err instanceof Error
+          ? err.message
+          : "Sign-in failed. Try again."
+        : "Google and X are not available on this host. Use email instead.";
       setError(message);
       toast(message);
     } finally {
@@ -136,31 +154,37 @@ function Login() {
                   ? "Already have an account? Sign in"
                   : "Need an account? Create one"}
               </button>
-              <div className="flex items-center gap-3 pt-1">
-                <span className="h-px flex-1 bg-raised" />
-                <span className="text-[11px] uppercase tracking-wide text-faint">or</span>
-                <span className="h-px flex-1 bg-raised" />
-              </div>
-              {GROK_PROVIDERS.map((p) => (
-                <Button
-                  key={p.providerId}
-                  type="button"
-                  variant="secondary"
-                  className="w-full justify-center"
-                  disabled={busy !== null}
-                  onClick={() => void onSocial(p.providerId)}
-                >
-                  {p.label === "Google" ? <GoogleMark /> : <XMark />}
-                  {busy === p.providerId ? "Opening…" : `Continue with ${p.label}`}
-                </Button>
-              ))}
+              {showBroker ? (
+                <>
+                  <div className="flex items-center gap-3 pt-1">
+                    <span className="h-px flex-1 bg-raised" />
+                    <span className="text-[11px] uppercase tracking-wide text-faint">or</span>
+                    <span className="h-px flex-1 bg-raised" />
+                  </div>
+                  {GROK_PROVIDERS.map((p) => (
+                    <Button
+                      key={p.providerId}
+                      type="button"
+                      variant="secondary"
+                      className="w-full justify-center"
+                      disabled={busy !== null}
+                      onClick={() => void onSocial(p.providerId)}
+                    >
+                      {p.label === "Google" ? <GoogleMark /> : <XMark />}
+                      {busy === p.providerId ? "Opening…" : `Continue with ${p.label}`}
+                    </Button>
+                  ))}
+                </>
+              ) : null}
               {error ? (
                 <p className="pt-1 text-sm text-danger" role="alert">
                   {error}
                 </p>
               ) : (
                 <p className="pt-1 text-xs text-faint">
-                  On this host use email — Google/X only work on the Grok demo.
+                  {showBroker
+                    ? "Allow pop-ups for this site."
+                    : "Use email on this host. Google and X are not available here."}
                 </p>
               )}
             </div>

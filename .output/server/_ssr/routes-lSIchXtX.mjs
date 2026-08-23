@@ -11,10 +11,10 @@ import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { C as CloudDrizzle, S as CloudFog, T as BookmarkCheck, _ as Cloud, a as Sun, b as CloudRain, c as MapPin, d as Locate, f as LoaderCircle, g as Droplets, h as Eye, i as Thermometer, l as LogOut, m as Gauge, n as Wind, o as Search, p as Info, s as Moon, t as X, u as LogIn, v as CloudSun, w as Bookmark, x as CloudLightning, y as CloudSnow } from "../_libs/lucide-react.mjs";
-import { n as createSsrRpc } from "./router-9_w83oUI.mjs";
+import { n as createSsrRpc } from "./router-BTTiDtjb.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-DlO-Isq1.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-lSIchXtX.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var placeSchema = object({
