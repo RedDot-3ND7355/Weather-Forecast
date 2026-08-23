@@ -1,10 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { GROK_PROVIDERS, authEnabled, signIn } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
 function Login() {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSignIn(providerId: string) {
+    setError(null);
+    setBusy(providerId);
+    try {
+      await signIn(providerId, { callbackURL: "/" });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Sign-in failed. Try again.";
+      setError(message);
+      toast(message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden px-6 py-12">
       <div aria-hidden="true" className="login-glow pointer-events-none absolute inset-0 opacity-40" />
@@ -28,12 +48,23 @@ function Login() {
                   type="button"
                   variant="secondary"
                   className="w-full justify-center"
-                  onClick={() => signIn(p.providerId, { callbackURL: "/" })}
+                  disabled={busy !== null}
+                  onClick={() => void onSignIn(p.providerId)}
                 >
                   {p.label === "Google" ? <GoogleMark /> : <XMark />}
-                  Continue with {p.label}
+                  {busy === p.providerId ? "Opening…" : `Continue with ${p.label}`}
                 </Button>
               ))}
+              {error ? (
+                <p className="pt-2 text-sm text-danger" role="alert">
+                  {error}
+                </p>
+              ) : (
+                <p className="pt-2 text-xs text-faint">
+                  Allow pop-ups for this site. If the demo slept, sign in again
+                  — preview sessions reset after a long pause.
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted">Sign-in is disabled.</p>

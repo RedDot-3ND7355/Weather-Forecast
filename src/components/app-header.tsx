@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Bookmark, BookmarkCheck, Locate, LogIn } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PlaceSearch } from "@/components/place-search";
@@ -22,7 +23,7 @@ export function AppHeader({
   saved: boolean;
   onSaved: () => void;
 }) {
-  const { user, isPending } = useCurrentUserState();
+  const { user } = useCurrentUserState();
   const place = useWeatherStore((s) => s.place);
   const units = useWeatherStore((s) => s.units);
   const setPlace = useWeatherStore((s) => s.setPlace);
@@ -98,32 +99,52 @@ export function AppHeader({
               </button>
             ))}
           </div>
-          {isPending ? (
-            <div className="size-11 shrink-0 rounded-full bg-raised" />
-          ) : user ? (
-            <>
-              <div className="hidden min-w-0 sm:block">
-                <UserButton />
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="sm:hidden"
-                onClick={() => void signOut()}
-              >
-                Sign out
-              </Button>
-            </>
-          ) : (
-            <Button variant="secondary" size="sm" asChild>
-              <Link to="/login">
-                <LogIn className="size-4" />
-                Sign in
-              </Link>
-            </Button>
-          )}
+          <AuthSlot />
         </div>
       </div>
     </header>
+  );
+}
+
+function AuthSlot() {
+  const { user, isPending } = useCurrentUserState();
+  const [waited, setWaited] = useState(false);
+
+  useEffect(() => {
+    if (!isPending) {
+      setWaited(false);
+      return;
+    }
+    const t = window.setTimeout(() => setWaited(true), 4000);
+    return () => window.clearTimeout(t);
+  }, [isPending]);
+
+  if (isPending && !waited) {
+    return <div className="size-11 shrink-0 rounded-full bg-raised" />;
+  }
+  if (user) {
+    return (
+      <>
+        <div className="hidden min-w-0 sm:block">
+          <UserButton />
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="sm:hidden"
+          onClick={() => void signOut()}
+        >
+          Sign out
+        </Button>
+      </>
+    );
+  }
+  return (
+    <Button variant="secondary" size="sm" asChild>
+      <Link to="/login">
+        <LogIn className="size-4" />
+        Sign in
+      </Link>
+    </Button>
   );
 }

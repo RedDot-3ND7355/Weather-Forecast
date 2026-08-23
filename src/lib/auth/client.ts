@@ -60,6 +60,11 @@ function setBearerToken(token: string | null): void {
   }
 }
 
+/** Drop a live-preview bearer that no longer maps to a session (server restart). */
+export function clearBearerToken(): void {
+  setBearerToken(null);
+}
+
 /**
  * The sandbox live preview runs this app inside an iframe on a `*.grok-sandbox.com`
  * host, where a full-page redirect to the broker can't work — so sign-in uses a
@@ -96,32 +101,23 @@ export async function signIn(
   const callbackURL = opts.callbackURL ?? "/";
   const errorCallbackURL = opts.errorCallbackURL ?? "/";
 
-  // Open the popup SYNCHRONOUSLY on the user gesture — before any await
-  // (including signOut). Awaiting first drops user-gesture privilege in some
-  // browsers when the opener is a cross-origin live-preview iframe.
-  const popup = inLivePreview() ? openSignInPopup(providerId) : null;
-
-  // Clear any prior session so switching providers actually switches identity.
-  // In the live preview the iframe has no session cookie — only a bearer token —
-  // so skip the network signOut when there's nothing to clear.
-  const hadBearer = Boolean(getBearerToken());
-  if (hadBearer || !inLivePreview()) {
-    try {
-      await authClient.signOut();
-    } catch {
-      // No active session (or a transient sign-out error) — proceed to sign in.
-    }
-  }
-  setBearerToken(null);
-
   if (inLivePreview()) {
-    if (!popup) throw new Error("Pop-up blocked — allow pop-ups for sign-in");
-    const token = await waitForPopupToken(popup);
+    // Listen BEFORE opening so a fast Google/X return (re-auth) cannot
+    // postMessage before the opener has a handler. Do not await signOut first:
+    // after the preview sleeps, the old bearer is dead and that request hangs
+    // long enough for the popup to finish and be missed.
+    const waiter = createPopupWaiter();
+    const popup = openSignInPopup(providerId);
+    if (!popup) {
+      waiter.cancel();
+      throw new Error("Pop-up blocked — allow pop-ups for this site, then try again");
+    }
+    waiter.watchClose(popup);
+    setBearerToken(null);
+
+    const token = await waiter.promise;
     if (!token) throw new Error("Sign-in was cancelled or failed");
     setBearerToken(token);
-    // Refresh the client session store with the bearer attached (onRequest).
-    // Avoid a full iframe reload when we're already on the destination — that
-    // reload was the slow "still loading after the popup closed" feeling.
     try {
       await authClient.getSession();
     } catch {
@@ -135,6 +131,12 @@ export async function signIn(
       }
     }
     return;
+  }
+
+  try {
+    await authClient.signOut();
+  } catch {
+    /* no active session */
   }
 
   const { data, error } = await authClient.signIn.oauth2({
@@ -165,39 +167,53 @@ function openSignInPopup(providerId: string): Window | null {
 
 /**
  * Wait for the popup's completion page to postMessage the session bearer (or
- * for the user to dismiss the popup).
+ * for the user to dismiss the popup). The message listener is attached at
+ * construction so a fast OAuth return cannot race the opener.
  */
-function waitForPopupToken(popup: Window): Promise<string | null> {
-  return new Promise((resolve) => {
-    const origin = window.location.origin;
-    let settled = false;
-    let closeTimer: number | undefined;
-    const settle = (token: string | null) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(token);
-    };
-    const onMessage = (event: MessageEvent) => {
-      if (event.origin !== origin) return;
-      const data = event.data as PopupMessage | undefined;
-      if (!data || data.source !== "grok-auth-popup") return;
-      settle(data.token ?? null);
-    };
-    // Fallback when the user dismisses the popup. Grace period lets the
-    // completion page's postMessage win over a racing `popup.closed`.
-    const pollTimer = window.setInterval(() => {
-      if (!popup.closed) return;
-      window.clearInterval(pollTimer);
-      closeTimer = window.setTimeout(() => settle(null), 400);
-    }, 300);
-    function cleanup() {
-      window.clearInterval(pollTimer);
-      if (closeTimer !== undefined) window.clearTimeout(closeTimer);
-      window.removeEventListener("message", onMessage);
-    }
-    window.addEventListener("message", onMessage);
+function createPopupWaiter(): {
+  promise: Promise<string | null>;
+  watchClose: (popup: Window) => void;
+  cancel: () => void;
+} {
+  let settled = false;
+  let closeTimer: number | undefined;
+  let pollTimer: number | undefined;
+  let resolve!: (token: string | null) => void;
+  const origin = window.location.origin;
+  const promise = new Promise<string | null>((r) => {
+    resolve = r;
   });
+  const settle = (token: string | null) => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    resolve(token);
+  };
+  const onMessage = (event: MessageEvent) => {
+    if (event.origin !== origin) return;
+    const data = event.data as PopupMessage | undefined;
+    if (!data || data.source !== "grok-auth-popup") return;
+    settle(data.token ?? null);
+  };
+  function cleanup() {
+    if (pollTimer !== undefined) window.clearInterval(pollTimer);
+    if (closeTimer !== undefined) window.clearTimeout(closeTimer);
+    window.removeEventListener("message", onMessage);
+  }
+  window.addEventListener("message", onMessage);
+  return {
+    promise,
+    watchClose(popup) {
+      pollTimer = window.setInterval(() => {
+        if (!popup.closed) return;
+        if (pollTimer !== undefined) window.clearInterval(pollTimer);
+        closeTimer = window.setTimeout(() => settle(null), 400);
+      }, 300);
+    },
+    cancel() {
+      settle(null);
+    },
+  };
 }
 
 /** Sign out of THIS app's local session, clear the preview token, then redirect. */
