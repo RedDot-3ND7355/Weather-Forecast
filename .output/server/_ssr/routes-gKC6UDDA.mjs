@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BQvGsBPB.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CCTConv8.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CmVhuXzA.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-gKC6UDDA.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1707,7 +1707,85 @@ function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
 	}
 	for (let i = 3; i < dd.length; i += 4) if (dd[i] > 8) dd[i] = Math.min(255, dd[i] * 1.35 + 18);
 	octx.putImageData(dst, 0, 0);
+	return withSmoke(out);
+}
+function blurAlpha(a, w, h, radius) {
+	const tmp = new Float32Array(w * h);
+	const out = new Float32Array(w * h);
+	const k = radius * 2 + 1;
+	for (let y = 0; y < h; y += 1) {
+		let sum = 0;
+		for (let x = -radius; x <= radius; x += 1) sum += a[y * w + Math.max(0, Math.min(w - 1, x))];
+		for (let x = 0; x < w; x += 1) {
+			tmp[y * w + x] = sum / k;
+			const add = a[y * w + Math.min(w - 1, x + radius + 1)];
+			const sub = a[y * w + Math.max(0, x - radius)];
+			sum += add - sub;
+		}
+	}
+	for (let x = 0; x < w; x += 1) {
+		let sum = 0;
+		for (let y = -radius; y <= radius; y += 1) sum += tmp[Math.max(0, Math.min(h - 1, y)) * w + x];
+		for (let y = 0; y < h; y += 1) {
+			out[y * w + x] = sum / k;
+			const add = tmp[Math.min(h - 1, y + radius + 1) * w + x];
+			const sub = tmp[Math.max(0, y - radius) * w + x];
+			sum += add - sub;
+		}
+	}
 	return out;
+}
+function smokeFringe(data, w, h) {
+	const a = new Uint16Array(w * h);
+	for (let p = 0, i = 3; i < data.length; i += 4, p += 1) a[p] = data[i];
+	const mist = blurAlpha(a, w, h, 4);
+	for (let p = 0, i = 0; i < data.length; i += 4, p += 1) {
+		const srcA = a[p];
+		const halo = mist[p];
+		const fringe = Math.max(0, halo - srcA * .72);
+		if (srcA < 18 && fringe > 6) {
+			const t = Math.min(1, fringe / 90);
+			data[i] = 236;
+			data[i + 1] = 246;
+			data[i + 2] = 252;
+			data[i + 3] = Math.min(170, 18 + fringe * 1.15 * t);
+			continue;
+		}
+		if (srcA > 18) {
+			const rim = Math.min(.5, fringe / 140);
+			data[i] = data[i] * (1 - rim) + 248 * rim;
+			data[i + 1] = data[i + 1] * (1 - rim) + 252 * rim;
+			data[i + 2] = data[i + 2] * (1 - rim) + 255 * rim;
+		}
+	}
+}
+function withSmoke(canvas) {
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return canvas;
+	const { width: w, height: h } = canvas;
+	const img = ctx.getImageData(0, 0, w, h);
+	smokeFringe(img.data, w, h);
+	ctx.putImageData(img, 0, 0);
+	const wrap = document.createElement("canvas");
+	wrap.width = w;
+	wrap.height = h;
+	const wctx = wrap.getContext("2d");
+	if (!wctx) return canvas;
+	wctx.filter = "blur(2.6px)";
+	wctx.drawImage(canvas, 0, 0);
+	wctx.filter = "none";
+	wctx.globalCompositeOperation = "source-atop";
+	wctx.fillStyle = "rgba(242, 250, 255, 0.42)";
+	wctx.fillRect(0, 0, w, h);
+	wctx.globalCompositeOperation = "destination-over";
+	wctx.filter = "blur(5px)";
+	wctx.globalAlpha = .55;
+	wctx.drawImage(canvas, 0, 0);
+	wctx.filter = "none";
+	wctx.globalAlpha = 1;
+	wctx.globalCompositeOperation = "source-over";
+	wctx.drawImage(canvas, 0, 0);
+	return wrap;
 }
 function integrateShift(args) {
 	const step = .25;
