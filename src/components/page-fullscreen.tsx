@@ -101,6 +101,7 @@ export function PageFullscreenButton() {
       size="icon"
       aria-label={on ? t("exitFullscreen") : t("fullscreen")}
       aria-pressed={on}
+      className="size-9 shrink-0 sm:size-11"
       title={on ? t("exitFullscreen") : t("fullscreen")}
       onClick={() => void toggle()}
     >

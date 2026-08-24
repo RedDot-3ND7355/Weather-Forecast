@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LogOut } from "lucide-react";
 import { Navigate } from "@tanstack/react-router";
 import { authEnabled, signOut } from "./client";
 import { useCurrentUser, useCurrentUserState } from "./use-current-user";
@@ -71,9 +72,10 @@ export function UserButton() {
         <button
           type="button"
           onClick={() => void signOut()}
-          className="h-11 px-2 text-sm text-muted hover:text-fg"
+          className="grid size-9 shrink-0 place-items-center rounded-md text-muted hover:bg-raised hover:text-fg"
+          aria-label="Sign out"
         >
-          Sign out
+          <LogOut className="size-4" />
         </button>
       )}
     </div>

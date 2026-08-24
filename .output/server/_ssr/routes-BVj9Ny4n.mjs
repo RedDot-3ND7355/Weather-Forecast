@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-CQBuJCaz.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-Boj0JZ5h.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-7Nz-NSXc.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-ZlyddBD9.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BVj9Ny4n.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -90,6 +90,7 @@ function PageFullscreenButton() {
 		size: "icon",
 		"aria-label": on ? t("exitFullscreen") : t("fullscreen"),
 		"aria-pressed": on,
+		className: "size-9 shrink-0 sm:size-11",
 		title: on ? t("exitFullscreen") : t("fullscreen"),
 		onClick: () => void toggle(),
 		children: on ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Minimize2, { className: "size-4" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Maximize2, { className: "size-4" })
@@ -290,8 +291,9 @@ function UserButton() {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 				type: "button",
 				onClick: () => void signOut(),
-				className: "h-11 px-2 text-sm text-muted hover:text-fg",
-				children: "Sign out"
+				className: "grid size-9 shrink-0 place-items-center rounded-md text-muted hover:bg-raised hover:text-fg",
+				"aria-label": "Sign out",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LogOut, { className: "size-4" })
 			})
 		]
 	});
@@ -306,6 +308,7 @@ var placeInput = object({
 var listPlaces = createServerFn({ method: "GET" }).middleware([authMiddleware]).handler(createSsrRpc("081437df3557afbac2388d4b291357d3b99a142553e0e9e3a4d9a1077e1662f3"));
 var savePlace = createServerFn({ method: "POST" }).middleware([authMiddleware]).validator(placeInput).handler(createSsrRpc("f66d8b6132ae1f1dd9832b327b21c23629a045fbbc1dd13c82f07361963325b3"));
 var removePlace = createServerFn({ method: "POST" }).middleware([authMiddleware]).validator(object({ id: number().int().positive() })).handler(createSsrRpc("21ad410098f5212eb73a8072460c39308832d91ccaec66faff1ebc0abcda6bd9"));
+var iconBtn = "size-9 shrink-0 sm:size-11";
 function AppHeader({ onLocate, locating, saved, onSaved }) {
 	const { user, isPending } = useCurrentUserState();
 	const { t } = useT();
@@ -329,100 +332,112 @@ function AppHeader({ onLocate, locating, saved, onSaved }) {
 			toast(t("toastSaveFail"));
 		}
 	}
-	const tools = /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+	const prefs = /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		className: "flex shrink-0 rounded-full bg-raised p-0.5 shadow-[var(--shadow-border)]",
+		children: ["en", "fr"].map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+			type: "button",
+			onClick: () => setLocale(l),
+			className: cn("h-8 min-w-7 rounded-full px-1.5 text-[11px] font-medium sm:h-9 sm:min-w-8 sm:px-2", locale === l ? "bg-accent text-accent-fg" : "text-muted"),
+			"aria-pressed": locale === l,
+			"aria-label": l === "fr" ? "Français" : "English",
+			children: l.toUpperCase()
+		}, l))
+	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		className: "flex shrink-0 rounded-full bg-raised p-0.5 shadow-[var(--shadow-border)]",
+		children: ["metric", "imperial"].map((u) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+			type: "button",
+			onClick: () => setUnits(u),
+			className: cn("h-8 min-w-8 rounded-full px-1.5 text-xs font-medium sm:h-9 sm:min-w-9 sm:px-2", units === u ? "bg-accent text-accent-fg" : "text-muted"),
+			"aria-pressed": units === u,
+			children: u === "metric" ? "°C" : "°F"
+		}, u))
+	})] });
+	const auth = isPending ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "size-9 shrink-0 rounded-full bg-raised sm:size-11" }) : user ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		className: "hidden min-w-0 lg:block",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserButton, {})
+	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+		variant: "ghost",
+		size: "icon",
+		className: cn(iconBtn, "lg:hidden"),
+		"aria-label": t("signOut"),
+		onClick: () => void signOut(),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LogOut, { className: "size-4" })
+	})] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+		variant: "ghost",
+		size: "icon",
+		className: iconBtn,
+		asChild: true,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+			to: "/login",
+			"aria-label": t("signIn"),
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LogIn, { className: "size-4" })
+		})
+	});
+	const actions = /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
 		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 			type: "button",
 			variant: "ghost",
 			size: "icon",
+			className: iconBtn,
 			"aria-label": t("locateAria"),
 			onClick: onLocate,
 			disabled: locating,
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Locate, { className: cn("size-4", locating && "animate-pulse") })
 		}),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageFullscreenButton, {}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "hidden sm:contents",
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageFullscreenButton, {})
+		}),
 		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 			type: "button",
 			variant: "ghost",
 			size: "icon",
+			className: iconBtn,
 			"aria-label": saved ? t("saved") : t("savePlace"),
 			onClick: () => void onSave(),
 			disabled: !place,
 			children: saved ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookmarkCheck, { className: "size-4 text-accent" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Bookmark, { className: "size-4" })
-		}),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: "flex rounded-full bg-raised p-0.5 shadow-[var(--shadow-border)]",
-			children: ["en", "fr"].map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-				type: "button",
-				onClick: () => setLocale(l),
-				className: cn("h-10 min-w-8 rounded-full px-1.5 text-[11px] font-medium sm:min-w-9 sm:px-2", locale === l ? "bg-accent text-accent-fg" : "text-muted"),
-				"aria-pressed": locale === l,
-				"aria-label": l === "fr" ? "Français" : "English",
-				children: l.toUpperCase()
-			}, l))
-		}),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: "flex rounded-full bg-raised p-0.5 shadow-[var(--shadow-border)]",
-			children: ["metric", "imperial"].map((u) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-				type: "button",
-				onClick: () => setUnits(u),
-				className: cn("h-10 min-w-9 rounded-full px-2 text-xs font-medium sm:min-w-10 sm:px-2.5", units === u ? "bg-accent text-accent-fg" : "text-muted"),
-				"aria-pressed": units === u,
-				children: u === "metric" ? "°C" : "°F"
-			}, u))
-		}),
-		isPending ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "size-10 shrink-0 rounded-full bg-raised sm:size-11" }) : user ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: "hidden min-w-0 sm:block",
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserButton, {})
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-			variant: "ghost",
-			size: "icon",
-			className: "sm:hidden",
-			"aria-label": t("signOut"),
-			onClick: () => void signOut(),
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LogOut, { className: "size-4" })
-		})] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-			variant: "secondary",
-			size: "sm",
-			asChild: true,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
-				to: "/login",
-				"aria-label": t("signIn"),
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LogIn, { className: "size-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "hidden sm:inline",
-					children: t("signIn")
-				})]
-			})
 		})
 	] });
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("header", {
-		className: "sticky top-0 z-30 border-b border-border bg-bg/90 backdrop-blur-md",
+		className: "sticky top-0 z-30 overflow-x-clip border-b border-border bg-bg/90 backdrop-blur-md",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "mx-auto flex max-w-6xl flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-4 sm:px-6 sm:py-3",
+			className: "mx-auto flex max-w-6xl min-w-0 flex-col gap-2 px-3 py-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] sm:flex-row sm:items-center sm:gap-3 sm:px-6 sm:py-3",
 			children: [
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-2",
+					className: "flex min-w-0 items-center gap-1",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
 						to: "/",
-						className: "flex shrink-0 items-baseline gap-2",
+						className: "flex shrink-0 items-baseline gap-2 pr-1",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 							className: "font-display text-xl font-medium tracking-tight text-fg sm:text-2xl",
 							children: "Vane"
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "hidden text-xs tracking-[0.14em] text-faint uppercase sm:inline",
+							className: "hidden text-xs tracking-[0.14em] text-faint uppercase xl:inline",
 							children: t("tagline")
 						})]
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						className: "ml-auto flex items-center gap-1 sm:hidden",
-						children: tools
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "ml-auto flex min-w-0 items-center sm:hidden",
+						children: [actions, auth]
 					})]
 				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					className: "min-w-0 flex-1",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PlaceSearch, { onSelect: (p) => setPlace(p) })
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex min-w-0 flex-1 items-center gap-1.5",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "min-w-0 flex-1",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PlaceSearch, { onSelect: (p) => setPlace(p) })
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "flex shrink-0 items-center gap-1 sm:hidden",
+						children: prefs
+					})]
 				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					className: "hidden items-center gap-1.5 sm:flex",
-					children: tools
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "hidden shrink-0 items-center gap-1 sm:flex",
+					children: [
+						actions,
+						prefs,
+						auth
+					]
 				})
 			]
 		})
