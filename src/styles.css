@@ -43,6 +43,19 @@
     scroll-behavior: auto;
   }
 
+  html.vane-page-fs,
+  html.vane-page-fs body {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  html.vane-page-fs body {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;

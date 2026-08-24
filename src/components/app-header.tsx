@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Bookmark, BookmarkCheck, Locate, LogIn, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PageFullscreenButton } from "@/components/page-fullscreen";
 import { PlaceSearch } from "@/components/place-search";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { UserButton } from "@/lib/auth/gates";
@@ -55,6 +56,7 @@ export function AppHeader({
       >
         <Locate className={cn("size-4", locating && "animate-pulse")} />
       </Button>
+      <PageFullscreenButton />
       <Button
         type="button"
         variant="ghost"

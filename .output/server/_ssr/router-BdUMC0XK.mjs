@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-B5p2VCbS.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-BdUMC0XK.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -590,7 +590,7 @@ function SmoothScroll() {
 	}, []);
 	return null;
 }
-var styles_default = "/assets/styles-C_fUgthr.css";
+var styles_default = "/assets/styles-mfB2OatG.css";
 var APP_NAME = "Vane";
 var fetchSessionUser = createServerFn({ method: "GET" }).handler(createSsrRpc("2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26"));
 var Route$3 = createRootRoute({
@@ -600,7 +600,7 @@ var Route$3 = createRootRoute({
 			{ charSet: "utf-8" },
 			{
 				name: "viewport",
-				content: "width=device-width, initial-scale=1"
+				content: "width=device-width, initial-scale=1, viewport-fit=cover"
 			},
 			{ title: APP_NAME },
 			{
@@ -672,7 +672,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-B3B78TMh.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-BLB9LGeP.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-yRCMsAbs.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });

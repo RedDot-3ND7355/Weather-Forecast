@@ -11,14 +11,89 @@ import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { i as offsetKm } from "./advection-DzL6mFo8.mjs";
-import { A as CloudDrizzle, C as Droplets, D as CloudRain, E as CloudSnow, M as ChevronLeft, N as Bookmark, O as CloudLightning, P as BookmarkCheck, S as Expand, T as CloudSun, _ as Locate, a as Sun, b as Gauge, c as Plus, d as Moon, f as Minus, g as LogIn, h as LogOut, i as Thermometer, j as ChevronRight, k as CloudFog, l as Play, m as MapPin, n as Wind, o as Search, p as Maximize2, s as Radar, t as X, u as Pause, v as LoaderCircle, w as Cloud, x as Eye, y as Info } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-B5p2VCbS.mjs";
+import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BdUMC0XK.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-B3B78TMh.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BLB9LGeP.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
+function currentFs() {
+	const d = document;
+	return document.fullscreenElement ?? d.webkitFullscreenElement ?? null;
+}
+function canOsFullscreen() {
+	if (typeof document === "undefined") return false;
+	const el = document.documentElement;
+	return Boolean(el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen);
+}
+function usePageFullscreen() {
+	const [on, setOn] = (0, import_react.useState)(false);
+	const sync = (0, import_react.useCallback)(() => {
+		const os = Boolean(currentFs());
+		const fill = document.documentElement.classList.contains("vane-page-fs");
+		setOn(os || fill);
+		if (!os && !fill) document.documentElement.classList.remove("vane-page-fs");
+	}, []);
+	(0, import_react.useEffect)(() => {
+		sync();
+		document.addEventListener("fullscreenchange", sync);
+		document.addEventListener("webkitfullscreenchange", sync);
+		const onKey = (e) => {
+			if (e.key === "Escape") {
+				document.documentElement.classList.remove("vane-page-fs");
+				sync();
+			}
+		};
+		window.addEventListener("keydown", onKey);
+		return () => {
+			document.removeEventListener("fullscreenchange", sync);
+			document.removeEventListener("webkitfullscreenchange", sync);
+			window.removeEventListener("keydown", onKey);
+		};
+	}, [sync]);
+	return {
+		on,
+		toggle: (0, import_react.useCallback)(async () => {
+			if (on) {
+				const d = document;
+				if (currentFs()) {
+					const exit = document.exitFullscreen ?? d.webkitExitFullscreen ?? d.webkitCancelFullScreen;
+					try {
+						await Promise.resolve(exit?.call(document));
+					} catch {}
+				}
+				document.documentElement.classList.remove("vane-page-fs");
+				setOn(false);
+				return;
+			}
+			const el = document.documentElement;
+			const req = el.requestFullscreen ?? el.webkitRequestFullscreen ?? el.webkitRequestFullScreen;
+			if (req && canOsFullscreen()) try {
+				await Promise.resolve(req.call(el));
+				document.documentElement.classList.add("vane-page-fs");
+				setOn(true);
+				return;
+			} catch {}
+			document.documentElement.classList.add("vane-page-fs");
+			setOn(true);
+		}, [on])
+	};
+}
+function PageFullscreenButton() {
+	const { on, toggle } = usePageFullscreen();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+		type: "button",
+		variant: "ghost",
+		size: "icon",
+		"aria-label": on ? "Exit fullscreen" : "Fullscreen page",
+		"aria-pressed": on,
+		title: on ? "Exit fullscreen" : "Fullscreen",
+		onClick: () => void toggle(),
+		children: on ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Minimize2, { className: "size-4" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Maximize2, { className: "size-4" })
+	});
+}
 var placeSchema = object({
 	name: string(),
 	latitude: number(),
@@ -273,6 +348,7 @@ function AppHeader({ onLocate, locating, saved, onSaved }) {
 			disabled: locating,
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Locate, { className: cn("size-4", locating && "animate-pulse") })
 		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageFullscreenButton, {}),
 		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 			type: "button",
 			variant: "ghost",
