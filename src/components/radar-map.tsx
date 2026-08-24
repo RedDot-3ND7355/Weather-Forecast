@@ -371,8 +371,8 @@ function evolveRain(
       const jy = (fbm(x * 0.07 + 4, y * 0.07) - 0.5) * hours * 10;
       const dx = vx * hours + jx;
       const dy = vy * hours + jy;
-      const grow = Math.max(1, Math.min(1.85, 1.2 + f.g * hours * 0.55));
-      const aa = Math.min(255, Math.max(a0 * 1.35, a0 * grow * 1.4));
+      const grow = Math.max(0.92, Math.min(1.28, 1 + f.g * hours * 0.4));
+      const aa = Math.min(255, a0 * grow);
       splat(dd, w, h, x + dx, y + dy, sd[i], sd[i + 1], sd[i + 2], aa);
       if (f.g > 0.12 && hours > 0.15) {
         const lead = Math.min(28, (6 + f.g * 18) * hours);
@@ -385,13 +385,10 @@ function evolveRain(
           sd[i],
           sd[i + 1],
           sd[i + 2],
-          aa * Math.min(0.85, 0.5 + f.g * 0.4),
+          aa * Math.min(0.55, 0.28 + f.g * 0.3),
         );
       }
     }
-  }
-  for (let i = 3; i < dd.length; i += 4) {
-    if (dd[i] > 8) dd[i] = Math.min(255, dd[i] * 1.35 + 18);
   }
   octx.putImageData(dst, 0, 0);
   return withSmoke(out);
@@ -431,25 +428,17 @@ function blurAlpha(a: Uint16Array, w: number, h: number, radius: number): Float3
 function smokeFringe(data: Uint8ClampedArray, w: number, h: number) {
   const a = new Uint16Array(w * h);
   for (let p = 0, i = 3; i < data.length; i += 4, p += 1) a[p] = data[i];
-  const mist = blurAlpha(a, w, h, 4);
+  const mist = blurAlpha(a, w, h, 2);
   for (let p = 0, i = 0; i < data.length; i += 4, p += 1) {
     const srcA = a[p];
-    const halo = mist[p];
-    const fringe = Math.max(0, halo - srcA * 0.72);
-    if (srcA < 18 && fringe > 6) {
-      const t = Math.min(1, fringe / 90);
-      data[i] = 236;
-      data[i + 1] = 246;
-      data[i + 2] = 252;
-      data[i + 3] = Math.min(170, 18 + fringe * 1.15 * t);
-      continue;
-    }
-    if (srcA > 18) {
-      const rim = Math.min(0.5, fringe / 140);
-      data[i] = data[i] * (1 - rim) + 248 * rim;
-      data[i + 1] = data[i + 1] * (1 - rim) + 252 * rim;
-      data[i + 2] = data[i + 2] * (1 - rim) + 255 * rim;
-    }
+    if (srcA >= 22) continue;
+    const fringe = mist[p];
+    if (fringe < 14) continue;
+    const t = Math.min(1, (fringe - 14) / 70);
+    data[i] = 186;
+    data[i + 1] = 214;
+    data[i + 2] = 226;
+    data[i + 3] = Math.min(72, 10 + fringe * 0.38 * t);
   }
 }
 
@@ -465,19 +454,11 @@ function withSmoke(canvas: HTMLCanvasElement): HTMLCanvasElement {
   wrap.height = h;
   const wctx = wrap.getContext("2d");
   if (!wctx) return canvas;
-  wctx.filter = "blur(2.6px)";
+  wctx.imageSmoothingEnabled = true;
+  wctx.filter = "blur(0.9px)";
   wctx.drawImage(canvas, 0, 0);
   wctx.filter = "none";
-  wctx.globalCompositeOperation = "source-atop";
-  wctx.fillStyle = "rgba(242, 250, 255, 0.42)";
-  wctx.fillRect(0, 0, w, h);
-  wctx.globalCompositeOperation = "destination-over";
-  wctx.filter = "blur(5px)";
-  wctx.globalAlpha = 0.55;
-  wctx.drawImage(canvas, 0, 0);
-  wctx.filter = "none";
-  wctx.globalAlpha = 1;
-  wctx.globalCompositeOperation = "source-over";
+  wctx.globalAlpha = 0.88;
   wctx.drawImage(canvas, 0, 0);
   return wrap;
 }
