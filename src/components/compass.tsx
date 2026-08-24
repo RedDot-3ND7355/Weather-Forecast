@@ -1,7 +1,7 @@
 import { precipWord } from "@/lib/weather/codes";
 import { compassPoint, fromThe, windLong } from "@/lib/weather/compass";
 import { useDeviceHeading } from "@/lib/weather/device-heading";
-import { WeatherScene } from "@/components/weather-scene";
+import { WeatherSceneGroup } from "@/components/weather-scene";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -42,12 +42,10 @@ export function Compass({
 
   return (
     <div className={cn("mx-auto w-full max-w-64 sm:max-w-80", className)}>
-      {/* Disc only — weather + rose share this square so they stay centered together */}
-      <div className="relative aspect-square w-full overflow-hidden">
-        <WeatherScene code={weatherCode} isDay={isDay} windKmh={windKmh} />
+      <div className="relative aspect-square w-full">
         <svg
           viewBox="0 0 240 240"
-          className="relative z-[1] size-full"
+          className="size-full"
           role="img"
           aria-label={
             live
@@ -67,7 +65,9 @@ export function Compass({
             </linearGradient>
           </defs>
 
-          <circle cx="120" cy="120" r="112" fill="transparent" />
+          {/* Weather disc — same viewBox / center as the rose */}
+          <WeatherSceneGroup code={weatherCode} isDay={isDay} windKmh={windKmh} />
+
           <circle
             cx="120"
             cy="120"
@@ -209,7 +209,7 @@ export function Compass({
           </g>
         </svg>
 
-        <div className="pointer-events-none absolute inset-0 z-[2] flex flex-col items-center justify-center">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <p className="font-display text-3xl font-medium tabular-nums leading-none tracking-tight text-fg [text-shadow:0_1px_12px_#0b1014] sm:text-4xl">
             {chance}
             <span className="text-lg text-muted">%</span>
