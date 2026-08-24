@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BV536coS.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BQvGsBPB.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BsnnawA_.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CmVhuXzA.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1661,7 +1661,7 @@ function splat(data, w, h, x, y, r, g, b, a) {
 		const py = y0 + oy;
 		if (px < 0 || py < 0 || px >= w || py >= h) continue;
 		const i = (py * w + px) * 4;
-		const aa = ox === 0 && oy === 0 ? a : a * .85;
+		const aa = ox === 0 && oy === 0 ? a : a * .92;
 		if (aa <= data[i + 3]) continue;
 		data[i] = r;
 		data[i + 1] = g;
@@ -1697,14 +1697,15 @@ function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
 		const jy = (fbm(x * .07 + 4, y * .07) - .5) * hours * 10;
 		const dx = vx * hours + jx;
 		const dy = vy * hours + jy;
-		const grow = Math.max(.82, Math.min(1.65, 1 + f.g * hours * .55));
-		const aa = Math.min(255, a0 * grow * 1.15);
+		const grow = Math.max(1, Math.min(1.85, 1.2 + f.g * hours * .55));
+		const aa = Math.min(255, Math.max(a0 * 1.35, a0 * grow * 1.4));
 		splat(dd, w, h, x + dx, y + dy, sd[i], sd[i + 1], sd[i + 2], aa);
 		if (f.g > .12 && hours > .15) {
 			const lead = Math.min(28, (6 + f.g * 18) * hours);
-			splat(dd, w, h, x + dx + steerUx * lead, y + dy + steerUy * lead, sd[i], sd[i + 1], sd[i + 2], aa * Math.min(.7, .35 + f.g * .4));
+			splat(dd, w, h, x + dx + steerUx * lead, y + dy + steerUy * lead, sd[i], sd[i + 1], sd[i + 2], aa * Math.min(.85, .5 + f.g * .4));
 		}
 	}
+	for (let i = 3; i < dd.length; i += 4) if (dd[i] > 8) dd[i] = Math.min(255, dd[i] * 1.35 + 18);
 	octx.putImageData(dst, 0, 0);
 	return out;
 }
@@ -1879,7 +1880,7 @@ function composeRadar(args) {
 		if (!t.base) continue;
 		ctx.drawImage(t.base, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
 	}
-	const radarAlpha = hoursAhead <= 0 ? .95 : Math.max(.82, .96 - hoursAhead * .03);
+	const radarAlpha = hoursAhead <= 0 ? 1 : Math.max(.9, 1 - hoursAhead * .018);
 	const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(.72, .08 + hoursAhead * .11);
 	if (evolvedRain && radarAlpha > .04) {
 		ctx.save();

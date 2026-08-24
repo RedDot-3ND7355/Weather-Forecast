@@ -325,7 +325,7 @@ function splat(
       const py = y0 + oy;
       if (px < 0 || py < 0 || px >= w || py >= h) continue;
       const i = (py * w + px) * 4;
-      const aa = ox === 0 && oy === 0 ? a : a * 0.85;
+      const aa = ox === 0 && oy === 0 ? a : a * 0.92;
       if (aa <= data[i + 3]) continue;
       data[i] = r;
       data[i + 1] = g;
@@ -371,8 +371,8 @@ function evolveRain(
       const jy = (fbm(x * 0.07 + 4, y * 0.07) - 0.5) * hours * 10;
       const dx = vx * hours + jx;
       const dy = vy * hours + jy;
-      const grow = Math.max(0.82, Math.min(1.65, 1 + f.g * hours * 0.55));
-      const aa = Math.min(255, a0 * grow * 1.15);
+      const grow = Math.max(1, Math.min(1.85, 1.2 + f.g * hours * 0.55));
+      const aa = Math.min(255, Math.max(a0 * 1.35, a0 * grow * 1.4));
       splat(dd, w, h, x + dx, y + dy, sd[i], sd[i + 1], sd[i + 2], aa);
       if (f.g > 0.12 && hours > 0.15) {
         const lead = Math.min(28, (6 + f.g * 18) * hours);
@@ -385,10 +385,13 @@ function evolveRain(
           sd[i],
           sd[i + 1],
           sd[i + 2],
-          aa * Math.min(0.7, 0.35 + f.g * 0.4),
+          aa * Math.min(0.85, 0.5 + f.g * 0.4),
         );
       }
     }
+  }
+  for (let i = 3; i < dd.length; i += 4) {
+    if (dd[i] > 8) dd[i] = Math.min(255, dd[i] * 1.35 + 18);
   }
   octx.putImageData(dst, 0, 0);
   return out;
@@ -638,7 +641,7 @@ function composeRadar(args: {
     );
   }
 
-  const radarAlpha = hoursAhead <= 0 ? 0.95 : Math.max(0.82, 0.96 - hoursAhead * 0.03);
+  const radarAlpha = hoursAhead <= 0 ? 1 : Math.max(0.9, 1 - hoursAhead * 0.018);
   const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(0.72, 0.08 + hoursAhead * 0.11);
 
   if (evolvedRain && radarAlpha > 0.04) {
