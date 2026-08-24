@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 export const CRITICAL_BOOT_CSS = `
 html{color-scheme:dark;background:#0b1014}
 html,body,#app{background:#0b1014;color:#e7eef4;margin:0}
-#vane-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#0b1014;color:#e7eef4;opacity:1;transition:opacity .7s cubic-bezier(.22,1,.36,1)}
+#vane-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#0b1014;color:#e7eef4;opacity:1;transition:opacity .55s cubic-bezier(.22,1,.36,1)}
 #vane-splash.is-out{opacity:0;pointer-events:none}
 #vane-splash .inner{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px}
 #vane-splash .mark{width:52px;height:52px}
@@ -17,35 +17,58 @@ html,body,#app{background:#0b1014;color:#e7eef4;margin:0}
 }
 `;
 
+function sheetReady(link: HTMLLinkElement): boolean {
+  try {
+    return Boolean(link.sheet);
+  } catch {
+    // Cross-origin stylesheets (e.g. Google Fonts) throw on .sheet access.
+    return true;
+  }
+}
+
 export function BootSplash() {
   const [out, setOut] = useState(false);
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    const started = performance.now();
     let startTimer = 0;
     let fallback = 0;
-    const MIN_MS = 700;
-    const fade = () => {
+    let settled = false;
+    const started = performance.now();
+    const MIN_MS = 550;
+
+    const dismiss = () => {
+      if (settled) return;
+      settled = true;
       const wait = Math.max(0, MIN_MS - (performance.now() - started));
       startTimer = window.setTimeout(() => setOut(true), wait);
     };
-    const links = [...document.querySelectorAll('link[rel="stylesheet"]')];
-    const pending = links.filter((n) => !(n as HTMLLinkElement).sheet);
-    if (pending.length === 0) {
-      requestAnimationFrame(() => requestAnimationFrame(fade));
-    } else {
-      let left = pending.length;
-      const onOne = () => {
-        left -= 1;
-        if (left <= 0) fade();
-      };
-      for (const n of pending) {
-        n.addEventListener("load", onOne, { once: true });
-        n.addEventListener("error", onOne, { once: true });
+
+    // Always schedule a hard fallback first so a thrown/hanging check can't stick the splash.
+    fallback = window.setTimeout(dismiss, 1800);
+
+    try {
+      const links = [
+        ...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
+      ];
+      const pending = links.filter((n) => !sheetReady(n));
+      if (pending.length === 0) {
+        requestAnimationFrame(() => requestAnimationFrame(dismiss));
+      } else {
+        let left = pending.length;
+        const onOne = () => {
+          left -= 1;
+          if (left <= 0) dismiss();
+        };
+        for (const n of pending) {
+          n.addEventListener("load", onOne, { once: true });
+          n.addEventListener("error", onOne, { once: true });
+        }
       }
+    } catch {
+      dismiss();
     }
-    fallback = window.setTimeout(() => setOut(true), 2400);
+
     return () => {
       window.clearTimeout(startTimer);
       window.clearTimeout(fallback);
@@ -54,7 +77,7 @@ export function BootSplash() {
 
   useEffect(() => {
     if (!out) return;
-    const t = window.setTimeout(() => setGone(true), 900);
+    const t = window.setTimeout(() => setGone(true), 700);
     return () => window.clearTimeout(t);
   }, [out]);
 
