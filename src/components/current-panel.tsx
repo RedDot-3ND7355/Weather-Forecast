@@ -1,5 +1,6 @@
 import { CloudRain, Droplets, Eye, Gauge, Sunrise, Sunset, Thermometer, Wind } from "lucide-react";
 import { useEffect, useState } from "react";
+import { WeatherBackdrop } from "@/components/weather-scene";
 import { useT } from "@/lib/i18n";
 import { precipKind, weatherIcon, weatherLabel } from "@/lib/weather/codes";
 import {
@@ -70,76 +71,90 @@ export function CurrentPanel({
   ];
 
   return (
-    <section className="min-w-0 rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-            {placeLabel(place)}
-          </p>
-          <p className="mt-1 text-sm text-muted">{formatLongDate(current.time, locale)}</p>
-        </div>
-        <p className="shrink-0 text-[11px] text-faint tabular-nums">
-          {refreshing ? t("updating") : formatUpdated(updatedAt, locale)}
-        </p>
-      </div>
-      <div className="mt-4 flex flex-wrap items-end gap-3 sm:gap-4">
-        <p className="font-display text-5xl leading-none font-medium tracking-tight tabular-nums text-fg sm:text-7xl">
-          {formatTemp(current.temperatureC, units)}
-          <span className="ml-1 align-top font-sans text-base font-medium text-muted sm:text-lg">
-            {tempUnit(units)}
-          </span>
-        </p>
-        <div className="mb-1 flex items-center gap-2 text-muted">
-          <Icon className="size-5 sm:size-6" />
-          <span className="text-sm">{weatherLabel(current.weatherCode, locale)}</span>
-        </div>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {today ? (
-          <>
-            <div className="rounded-xl bg-raised px-2.5 py-2.5 sm:px-3">
-              <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
-                <Sunrise className="size-3.5" />
-                {t("sunrise")}
-              </p>
-              <p className="mt-1 text-sm font-medium tabular-nums text-fg">
-                {formatClock(today.sunrise, locale)}
-              </p>
-            </div>
-            <div className="rounded-xl bg-raised px-2.5 py-2.5 sm:px-3">
-              <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
-                <Sunset className="size-3.5" />
-                {t("sunset")}
-              </p>
-              <p className="mt-1 text-sm font-medium tabular-nums text-fg">
-                {formatClock(today.sunset, locale)}
-              </p>
-            </div>
-          </>
-        ) : null}
-        <div className="rounded-xl bg-raised px-2.5 py-2.5 sm:col-span-1 sm:px-3">
-          <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
-            <CloudRain className="size-3.5" />
-            {t("nextWet")}
-          </p>
-          <p className="mt-1 text-sm font-medium text-fg">
-            {nextRain
-              ? `${snow || precipKind(nextRain.weatherCode) === "snow" ? t("snowWord") : t("rainWord")} · ${formatClock(nextRain.time, locale)}`
-              : t("nextWetNone")}
-          </p>
-        </div>
-      </div>
-      <dl className="mt-5 grid grid-cols-2 gap-2 sm:mt-6 sm:grid-cols-3 sm:gap-3">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-xl bg-raised px-2.5 py-2.5 sm:px-3 sm:py-3">
-            <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
-              <s.icon className="size-3.5 shrink-0" />
-              <span className="truncate">{s.label}</span>
-            </dt>
-            <dd className="mt-1 text-sm font-medium tabular-nums text-fg">{s.value}</dd>
+    <section className="relative min-w-0 overflow-hidden rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
+      <WeatherBackdrop
+        code={current.weatherCode}
+        isDay={current.isDay}
+        windKmh={current.windSpeedKmh}
+        density="full"
+        className="rounded-2xl opacity-95"
+      />
+      <div className="relative z-[1]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-medium uppercase tracking-[0.16em] text-faint [text-shadow:0_1px_8px_#0b1014]">
+              {placeLabel(place)}
+            </p>
+            <p className="mt-1 text-sm text-muted [text-shadow:0_1px_8px_#0b1014]">
+              {formatLongDate(current.time, locale)}
+            </p>
           </div>
-        ))}
-      </dl>
+          <p className="shrink-0 text-[11px] text-faint tabular-nums [text-shadow:0_1px_8px_#0b1014]">
+            {refreshing ? t("updating") : formatUpdated(updatedAt, locale)}
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap items-end gap-3 sm:gap-4">
+          <p className="font-display text-5xl leading-none font-medium tracking-tight tabular-nums text-fg [text-shadow:0_2px_16px_#0b1014] sm:text-7xl">
+            {formatTemp(current.temperatureC, units)}
+            <span className="ml-1 align-top font-sans text-base font-medium text-muted sm:text-lg">
+              {tempUnit(units)}
+            </span>
+          </p>
+          <div className="mb-1 flex items-center gap-2 text-muted [text-shadow:0_1px_8px_#0b1014]">
+            <Icon className="size-5 sm:size-6" />
+            <span className="text-sm">{weatherLabel(current.weatherCode, locale)}</span>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {today ? (
+            <>
+              <div className="rounded-xl bg-bg/35 px-2.5 py-2.5 backdrop-blur-[2px] sm:px-3">
+                <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
+                  <Sunrise className="size-3.5" />
+                  {t("sunrise")}
+                </p>
+                <p className="mt-1 text-sm font-medium tabular-nums text-fg">
+                  {formatClock(today.sunrise, locale)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-bg/35 px-2.5 py-2.5 backdrop-blur-[2px] sm:px-3">
+                <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
+                  <Sunset className="size-3.5" />
+                  {t("sunset")}
+                </p>
+                <p className="mt-1 text-sm font-medium tabular-nums text-fg">
+                  {formatClock(today.sunset, locale)}
+                </p>
+              </div>
+            </>
+          ) : null}
+          <div className="rounded-xl bg-bg/35 px-2.5 py-2.5 backdrop-blur-[2px] sm:col-span-1 sm:px-3">
+            <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
+              <CloudRain className="size-3.5" />
+              {t("nextWet")}
+            </p>
+            <p className="mt-1 text-sm font-medium text-fg">
+              {nextRain
+                ? `${snow || precipKind(nextRain.weatherCode) === "snow" ? t("snowWord") : t("rainWord")} · ${formatClock(nextRain.time, locale)}`
+                : t("nextWetNone")}
+            </p>
+          </div>
+        </div>
+        <dl className="mt-5 grid grid-cols-2 gap-2 sm:mt-6 sm:grid-cols-3 sm:gap-3">
+          {stats.map((s) => (
+            <div
+              key={s.label}
+              className="rounded-xl bg-bg/35 px-2.5 py-2.5 backdrop-blur-[2px] sm:px-3 sm:py-3"
+            >
+              <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
+                <s.icon className="size-3.5 shrink-0" />
+                <span className="truncate">{s.label}</span>
+              </dt>
+              <dd className="mt-1 text-sm font-medium tabular-nums text-fg">{s.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </section>
   );
 }
