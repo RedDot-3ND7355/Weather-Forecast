@@ -98,7 +98,7 @@ const EN = {
   noRainHeaded: "No rain headed this way",
   watchThe: "Watch the {from}",
   radarCopy:
-    "Wind is {from}. Live radar plus Environment Canada’s 1 km nowcast; we only run that two hours out.",
+    "Wind is {from}. First hour is Environment Canada’s 1 km radar nowcast; after that it’s their 10 km RDPS rain field out to +6h.",
   fromThe: "From the {from}",
   radarUnavailable:
     "Radar is unavailable right now. The hourly estimate below still uses wind and the forecast model.",
@@ -261,7 +261,7 @@ const FR: Record<keyof typeof EN, string> = {
   noRainHeaded: "Pas de pluie en approche",
   watchThe: "Surveiller {from}",
   radarCopy:
-    "Le vent est {from}. Radar en direct plus le nowcast 1 km d’Environnement Canada ; on ne pousse ça que deux heures.",
+    "Le vent est {from}. La première heure, c’est le nowcast radar 1 km d’Environnement Canada ; ensuite leur champ de pluie RDPS 10 km jusqu’à +6 h.",
   fromThe: "Depuis {from}",
   radarUnavailable:
     "Radar indisponible pour le moment. L’estimation horaire utilise encore le vent et le modèle.",

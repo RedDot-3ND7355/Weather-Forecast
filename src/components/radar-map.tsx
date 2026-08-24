@@ -14,6 +14,7 @@ import {
   inMscDomain,
   mscGetMapUrl,
   nowFrameIndex,
+  overlayLayer,
   viewBBox3857,
   type PrecipCell,
   type RadarFrame,
@@ -1013,7 +1014,7 @@ export function RadarMap({
           ? mscQuery.data
           : null,
         stepSec: 10 * 60,
-        futureHours: 2,
+        futureHours: 6,
       }),
     [
       catalogQuery.data?.frames,
@@ -1190,7 +1191,7 @@ export function RadarMap({
       });
       const overlayUrl = active.overlay
         ? mscGetMapUrl({
-            layer: active.overlay === "msc-fc" ? "fc" : "obs",
+            layer: overlayLayer(active.overlay),
             time: active.time,
             bbox,
             width: cssW,
@@ -1207,7 +1208,7 @@ export function RadarMap({
         if (!f?.overlay) return Promise.resolve(null as HTMLImageElement | null);
         return loadImg(
           mscGetMapUrl({
-            layer: f.overlay === "msc-fc" ? "fc" : "obs",
+            layer: overlayLayer(f.overlay),
             time: f.time,
             bbox,
             width: cssW,
@@ -1669,7 +1670,7 @@ export function RadarMap({
             >
               {t("now")}
             </span>
-            {hasForecast ? <span className="absolute right-0">+2h</span> : null}
+            {hasForecast ? <span className="absolute right-0">+6h</span> : null}
           </div>
         </div>
       </div>

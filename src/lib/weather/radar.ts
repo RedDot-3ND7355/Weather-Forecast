@@ -30,12 +30,13 @@ export type RadarFrame = {
   kind: "observed" | "forecast";
   tileUrl?: string;
   cells?: PrecipCell[];
-  overlay?: "msc-obs" | "msc-fc";
+  overlay?: "msc-obs" | "msc-fc" | "rdps";
 };
 
 export type MscRadar = {
   observed: number[];
   forecast: number[];
+  model: number[];
 };
 
 function parseIsoDuration(s: string): number {
@@ -75,9 +76,9 @@ export const fetchMscRadar = createServerFn({ method: "GET" }).handler(
     if (mscCache.value && Date.now() - mscCache.at < 2 * 60 * 1000) {
       return mscCache.value;
     }
-    const empty: MscRadar = { observed: [], forecast: [] };
+    const empty: MscRadar = { observed: [], forecast: [], model: [] };
     try {
-      const [obsXml, fcXml] = await Promise.all([
+      const [obsXml, fcXml, modelXml] = await Promise.all([
         fetch(
           "https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RADAR_1KM_RRAI",
           { headers: { accept: "application/xml", "user-agent": UA } },
@@ -86,10 +87,15 @@ export const fetchMscRadar = createServerFn({ method: "GET" }).handler(
           "https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=Radar_1km_RainPrecipRate-Extrapolation",
           { headers: { accept: "application/xml", "user-agent": UA } },
         ).then((r) => r.text()),
+        fetch(
+          "https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RDPS_10km_Precip-Accum1h",
+          { headers: { accept: "application/xml", "user-agent": UA } },
+        ).then((r) => r.text()),
       ]);
       const value: MscRadar = {
         observed: timeDimFromCaps(obsXml),
         forecast: timeDimFromCaps(fcXml),
+        model: timeDimFromCaps(modelXml),
       };
       mscCache.at = Date.now();
       mscCache.value = value;
@@ -106,25 +112,36 @@ export function inMscDomain(lat: number, lon: number): boolean {
   return lat >= 24 && lat <= 72 && lon >= -168 && lon <= -52;
 }
 
-export function mscTimeIso(unix: number): string {
+export function overlayLayer(
+  kind: RadarFrame["overlay"],
+): "obs" | "fc" | "rdps" {
+  if (kind === "msc-fc") return "fc";
+  if (kind === "rdps") return "rdps";
+  return "obs";
+}
   return new Date(unix * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 export function mscGetMapUrl(args: {
-  layer: "obs" | "fc";
+  layer: "obs" | "fc" | "rdps";
   time: number;
   bbox: string;
   width: number;
   height: number;
 }): string {
   const layer =
-    args.layer === "obs" ? "RADAR_1KM_RRAI" : "Radar_1km_RainPrecipRate-Extrapolation";
+    args.layer === "obs"
+      ? "RADAR_1KM_RRAI"
+      : args.layer === "fc"
+        ? "Radar_1km_RainPrecipRate-Extrapolation"
+        : "RDPS_10km_Precip-Accum1h";
+  const style = args.layer === "rdps" ? "PRECIPMM-LINEAR" : "Radar-Rain_14colors";
   const q = new URLSearchParams({
     SERVICE: "WMS",
     VERSION: "1.3.0",
     REQUEST: "GetMap",
     LAYERS: layer,
-    STYLES: "Radar-Rain_14colors",
+    STYLES: style,
     CRS: "EPSG:3857",
     BBOX: args.bbox,
     WIDTH: String(Math.max(64, Math.round(args.width))),
@@ -212,7 +229,7 @@ export function buildRadarTimeline(args: {
   const now = args.now ?? Date.now() / 1000;
   const step = args.stepSec ?? 10 * 60;
   const nowTick = Math.floor(now / step) * step;
-  const end = nowTick + (args.futureHours ?? 2) * 3600;
+  const end = nowTick + (args.futureHours ?? 6) * 3600;
   const out: RadarFrame[] = [];
   const seen = new Set<number>();
   const push = (f: RadarFrame) => {
@@ -224,6 +241,7 @@ export function buildRadarTimeline(args: {
 
   const mscObs = args.msc?.observed ?? [];
   const mscFc = args.msc?.forecast ?? [];
+  const mscModel = args.msc?.model ?? [];
   if (mscObs.length) {
     for (const t of mscObs) {
       if (t > now + 90) continue;
@@ -245,15 +263,22 @@ export function buildRadarTimeline(args: {
       lastCovered = Math.max(lastCovered, t);
     }
   }
-
-  for (let t = Math.floor(lastCovered / step) * step + step; t <= end + 1; t += step) {
-    const rv = nearestFrame(args.catalog, t, 8 * 60);
-    if (rv && rv.time > now) {
-      push({ ...rv, time: t });
-      continue;
+  if (mscModel.length) {
+    for (const t of mscModel) {
+      if (t <= lastCovered + 10 * 60) continue;
+      if (t > end + 1) break;
+      push({ time: t, kind: "forecast", overlay: "rdps" });
     }
-    const model = nearestFrame(args.grid, t, 25 * 60);
-    push(model ? { ...model, time: t } : { time: t, kind: "forecast", cells: [] });
+  } else {
+    for (let t = Math.floor(lastCovered / step) * step + step; t <= end + 1; t += step) {
+      const rv = nearestFrame(args.catalog, t, 8 * 60);
+      if (rv && rv.time > now) {
+        push({ ...rv, time: t });
+        continue;
+      }
+      const model = nearestFrame(args.grid, t, 25 * 60);
+      push(model ? { ...model, time: t } : { time: t, kind: "forecast", cells: [] });
+    }
   }
   return out;
 }
