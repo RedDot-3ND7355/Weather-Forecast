@@ -11,11 +11,11 @@ import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { i as offsetKm } from "./advection-Dpy-6hLP.mjs";
-import { A as CloudDrizzle, C as Droplets, D as CloudRain, E as CloudSnow, M as BookmarkCheck, O as CloudLightning, S as Expand, T as CloudSun, _ as Locate, a as Sun, b as Gauge, c as Plus, d as Moon, f as Minus, g as LogIn, h as LogOut, i as Thermometer, j as Bookmark, k as CloudFog, l as Play, m as MapPin, n as Wind, o as Search, p as Maximize2, s as Radar, t as X, u as Pause, v as LoaderCircle, w as Cloud, x as Eye, y as Info } from "../_libs/lucide-react.mjs";
-import { n as createSsrRpc } from "./router-DUwAuQHu.mjs";
+import { A as CloudDrizzle, C as Droplets, D as CloudRain, E as CloudSnow, M as ChevronLeft, N as Bookmark, O as CloudLightning, P as BookmarkCheck, S as Expand, T as CloudSun, _ as Locate, a as Sun, b as Gauge, c as Plus, d as Moon, f as Minus, g as LogIn, h as LogOut, i as Thermometer, j as ChevronRight, k as CloudFog, l as Play, m as MapPin, n as Wind, o as Search, p as Maximize2, s as Radar, t as X, u as Pause, v as LoaderCircle, w as Cloud, x as Eye, y as Info } from "../_libs/lucide-react.mjs";
+import { n as createSsrRpc } from "./router-eVrs--J1.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-C7LvLp0Q.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CJge3iUk.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -861,6 +861,186 @@ function DailyList({ days, units }) {
 		})]
 	});
 }
+function snapLeft(el) {
+	const kids = [...el.children];
+	if (!kids.length) return el.scrollLeft;
+	let best = el.scrollLeft;
+	let bestD = Infinity;
+	for (const kid of kids) {
+		const d = Math.abs(kid.offsetLeft - el.scrollLeft);
+		if (d < bestD) {
+			bestD = d;
+			best = kid.offsetLeft;
+		}
+	}
+	const max = Math.max(0, el.scrollWidth - el.clientWidth);
+	return Math.max(0, Math.min(max, best));
+}
+function HScroll({ children, className, contentClassName, label = "More items", fadeFrom = "from-surface" }) {
+	const scroller = (0, import_react.useRef)(null);
+	const skipClick = (0, import_react.useRef)(false);
+	const motion = (0, import_react.useRef)({
+		raf: 0,
+		vel: 0,
+		dragging: false
+	});
+	const [edge, setEdge] = (0, import_react.useState)({
+		left: false,
+		right: false
+	});
+	const stopCoast = () => {
+		cancelAnimationFrame(motion.current.raf);
+		motion.current.raf = 0;
+	};
+	const settle = () => {
+		const el = scroller.current;
+		if (!el) return;
+		el.style.scrollBehavior = "smooth";
+		el.scrollTo({
+			left: snapLeft(el),
+			behavior: "smooth"
+		});
+	};
+	const coast = () => {
+		const el = scroller.current;
+		if (!el) return;
+		stopCoast();
+		el.style.scrollBehavior = "auto";
+		const tick = () => {
+			if (motion.current.dragging) return;
+			const max = Math.max(0, el.scrollWidth - el.clientWidth);
+			motion.current.vel *= .92;
+			el.scrollLeft += motion.current.vel;
+			if (el.scrollLeft <= 0 || el.scrollLeft >= max) {
+				el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft));
+				motion.current.vel = 0;
+			}
+			if (Math.abs(motion.current.vel) < .35) {
+				motion.current.vel = 0;
+				settle();
+				return;
+			}
+			motion.current.raf = requestAnimationFrame(tick);
+		};
+		motion.current.raf = requestAnimationFrame(tick);
+	};
+	const sync = () => {
+		const el = scroller.current;
+		if (!el) return;
+		setEdge({
+			left: el.scrollLeft > 6,
+			right: el.scrollLeft < el.scrollWidth - el.clientWidth - 6
+		});
+	};
+	(0, import_react.useEffect)(() => {
+		const el = scroller.current;
+		if (!el) return;
+		sync();
+		const ro = new ResizeObserver(sync);
+		ro.observe(el);
+		el.addEventListener("scroll", sync, { passive: true });
+		const onWheel = (e) => {
+			if (el.scrollWidth <= el.clientWidth + 4) return;
+			if (Math.abs(e.deltaX) >= Math.abs(e.deltaY) && e.deltaX !== 0) return;
+			e.preventDefault();
+			stopCoast();
+			const impulse = e.deltaMode === 1 ? e.deltaY * 10 : e.deltaY;
+			motion.current.vel += impulse * .42;
+			coast();
+		};
+		el.addEventListener("wheel", onWheel, { passive: false });
+		return () => {
+			stopCoast();
+			ro.disconnect();
+			el.removeEventListener("scroll", sync);
+			el.removeEventListener("wheel", onWheel);
+		};
+	}, [children]);
+	const overflow = edge.left || edge.right;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: cn("relative min-w-0", className),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				ref: scroller,
+				className: cn("relative flex min-w-0 touch-pan-x snap-x snap-proximity gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth scroll-px-2 pb-1.5 sm:gap-2", "[&>*]:snap-start [&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
+				"aria-label": label,
+				style: { WebkitOverflowScrolling: "touch" },
+				onPointerDown: (e) => {
+					if (e.pointerType === "touch") return;
+					if (e.button !== 0) return;
+					const el = scroller.current;
+					if (!el) return;
+					stopCoast();
+					motion.current.dragging = true;
+					motion.current.vel = 0;
+					el.style.scrollBehavior = "auto";
+					const startX = e.clientX;
+					const startScroll = el.scrollLeft;
+					let lastX = e.clientX;
+					let lastT = performance.now();
+					let moved = false;
+					const move = (ev) => {
+						const dx = ev.clientX - startX;
+						if (Math.abs(dx) < 6 && !moved) return;
+						moved = true;
+						skipClick.current = true;
+						const now = performance.now();
+						const dt = Math.max(8, now - lastT);
+						motion.current.vel = (lastX - ev.clientX) / dt * 16.6;
+						lastX = ev.clientX;
+						lastT = now;
+						el.scrollLeft = startScroll - dx;
+					};
+					const up = () => {
+						motion.current.dragging = false;
+						window.removeEventListener("pointermove", move);
+						window.removeEventListener("pointerup", up);
+						window.removeEventListener("pointercancel", up);
+						if (moved) coast();
+						else settle();
+					};
+					window.addEventListener("pointermove", move);
+					window.addEventListener("pointerup", up);
+					window.addEventListener("pointercancel", up);
+				},
+				onClickCapture: (e) => {
+					if (!skipClick.current) return;
+					e.preventDefault();
+					e.stopPropagation();
+					skipClick.current = false;
+				},
+				children
+			}),
+			edge.left ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: cn("pointer-events-none absolute inset-y-0 left-0 z-[1] w-10 bg-linear-to-r to-transparent", fadeFrom) }) : null,
+			edge.right ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: cn("pointer-events-none absolute inset-y-0 right-0 z-[1] w-10 bg-linear-to-l to-transparent", fadeFrom) }) : null,
+			overflow ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+				type: "button",
+				size: "icon",
+				variant: "secondary",
+				className: "absolute top-1/2 left-0 z-10 hidden size-8 -translate-y-1/2 sm:grid",
+				disabled: !edge.left,
+				"aria-label": "Scroll left",
+				onClick: () => scroller.current?.scrollBy({
+					left: -220,
+					behavior: "smooth"
+				}),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { className: "size-4" })
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+				type: "button",
+				size: "icon",
+				variant: "secondary",
+				className: "absolute top-1/2 right-0 z-10 hidden size-8 -translate-y-1/2 sm:grid",
+				disabled: !edge.right,
+				"aria-label": "Scroll right",
+				onClick: () => scroller.current?.scrollBy({
+					left: 220,
+					behavior: "smooth"
+				}),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, { className: "size-4" })
+			})] }) : null
+		]
+	});
+}
 function HourlyStrip({ hours, units }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		className: "min-w-0 overflow-hidden rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5",
@@ -870,11 +1050,11 @@ function HourlyStrip({ hours, units }) {
 				className: "text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
 				children: "Next 24 hours"
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "hidden text-xs text-muted sm:block",
-				children: "Arrow points into the wind"
+				className: "text-xs text-muted",
+				children: "Swipe or drag"
 			})]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: "flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2",
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HScroll, {
+			label: "Next 24 hours",
 			children: hours.map((h, i) => {
 				const wet = h.rain.chance >= 40;
 				return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -1532,8 +1712,8 @@ function RadarMap({ forecast, units }) {
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
 					children: "Next 6 hours"
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					className: "flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HScroll, {
+					label: "Next 6 hours",
 					children: hours.map((h, i) => {
 						const status = hourStatus(h);
 						const wet = status !== "Dry";
@@ -1701,8 +1881,10 @@ function RainBrief({ forecast }) {
 }
 function SavedRow({ places, recent, onPick, onRemove }) {
 	if (places.length === 0 && recent.length === 0) return null;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(HScroll, {
+		label: "Saved places",
+		fadeFrom: "from-bg",
+		contentClassName: "gap-2 px-1",
 		children: [places.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 			className: "inline-flex shrink-0 items-center gap-1 rounded-full bg-raised py-1 pr-1 pl-2.5 text-xs text-fg shadow-[var(--shadow-border)]",
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {

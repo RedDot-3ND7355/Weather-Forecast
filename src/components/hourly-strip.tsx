@@ -1,3 +1,4 @@
+import { HScroll } from "@/components/h-scroll";
 import { WindArrow } from "@/components/wind-arrow";
 import { formatHour, formatTemp } from "@/lib/weather/format";
 import type { HourPoint, Units } from "@/lib/weather/types";
@@ -16,9 +17,9 @@ export function HourlyStrip({
         <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
           Next 24 hours
         </h2>
-        <p className="hidden text-xs text-muted sm:block">Arrow points into the wind</p>
+        <p className="text-xs text-muted">Swipe or drag</p>
       </div>
-      <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2">
+      <HScroll label="Next 24 hours">
         {hours.map((h, i) => {
           const wet = h.rain.chance >= 40;
           return (
@@ -56,7 +57,7 @@ export function HourlyStrip({
             </div>
           );
         })}
-      </div>
+      </HScroll>
     </section>
   );
 }

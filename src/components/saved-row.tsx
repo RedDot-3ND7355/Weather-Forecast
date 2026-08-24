@@ -1,4 +1,5 @@
 import { MapPin, X } from "lucide-react";
+import { HScroll } from "@/components/h-scroll";
 import type { SavedPlace } from "@/lib/places";
 import { placeLabel } from "@/lib/weather/format";
 import type { Place } from "@/lib/weather/types";
@@ -16,7 +17,7 @@ export function SavedRow({
 }) {
   if (places.length === 0 && recent.length === 0) return null;
   return (
-    <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <HScroll label="Saved places" fadeFrom="from-bg" contentClassName="gap-2 px-1">
       {places.map((p) => (
         <span
           key={p.id}
@@ -49,7 +50,7 @@ export function SavedRow({
             {p.name}
           </button>
         ))}
-    </div>
+    </HScroll>
   );
 }
 

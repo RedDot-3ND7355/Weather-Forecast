@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Expand, Maximize2, Minus, Pause, Play, Plus, Radar, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { HScroll } from "@/components/h-scroll";
 import { Button } from "@/components/ui/button";
 import { WindArrow } from "@/components/wind-arrow";
 import {
@@ -677,7 +678,7 @@ export function RadarMap({
           <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
             Next 6 hours
           </p>
-          <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <HScroll label="Next 6 hours">
             {hours.map((h, i) => {
               const status = hourStatus(h);
               const wet = status !== "Dry";
@@ -706,7 +707,7 @@ export function RadarMap({
                 </div>
               );
             })}
-          </div>
+          </HScroll>
         </div>
       ) : null}
     </section>
