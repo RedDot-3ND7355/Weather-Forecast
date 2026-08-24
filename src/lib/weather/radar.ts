@@ -12,11 +12,17 @@ import type { HourPoint } from "./types";
 
 const UA = "Vane/1.0 (wind-aware weather forecast)";
 
+function num(v: unknown, fallback = 0): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
+
 export type PrecipCell = {
   latitude: number;
   longitude: number;
   precipMm: number;
   chance?: number;
+  windDir?: number;
+  windSpeedKmh?: number;
 };
 
 export type RadarFrame = {
@@ -206,8 +212,8 @@ export const fetchRadarCatalog = createServerFn({ method: "GET" }).handler(
 const gridCache = new Map<string, { at: number; value: RadarFrame[] }>();
 
 function makeGrid(lat: number, lon: number, n = 6): { latitude: number; longitude: number }[] {
-  const dLat = 1.7;
-  const dLon = 1.7 / Math.max(0.35, Math.cos((lat * Math.PI) / 180));
+  const dLat = 1.15;
+  const dLon = 1.15 / Math.max(0.35, Math.cos((lat * Math.PI) / 180));
   const pts: { latitude: number; longitude: number }[] = [];
   for (let i = 0; i < n; i += 1) {
     for (let j = 0; j < n; j += 1) {
@@ -238,7 +244,7 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
       longitude: points.map((p) => p.longitude.toFixed(4)).join(","),
       timezone: "GMT",
       forecast_hours: "12",
-      hourly: "precipitation,precipitation_probability",
+      hourly: "precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m",
     });
     type HourLoc = {
       latitude?: number;
@@ -247,6 +253,8 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
         time: string[];
         precipitation: number[];
         precipitation_probability: number[];
+        wind_speed_10m?: number[];
+        wind_direction_10m?: number[];
       };
       error?: boolean;
     };
@@ -271,6 +279,8 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
       const times = loc.hourly?.time ?? [];
       const precip = loc.hourly?.precipitation ?? [];
       const chance = loc.hourly?.precipitation_probability ?? [];
+      const speed = loc.hourly?.wind_speed_10m ?? [];
+      const dir = loc.hourly?.wind_direction_10m ?? [];
       times.forEach((iso, t) => {
         const unix = Math.floor(new Date(iso).getTime() / 1000);
         if (!Number.isFinite(unix)) return;
@@ -281,12 +291,15 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
         }
         const id = `${pt.latitude.toFixed(3)},${pt.longitude.toFixed(3)}`;
         const mm = num(precip[t]);
-        if (mm < 0.05) return;
+        const p = num(chance[t]);
+        if (mm < 0.03 && p < 38) return;
         grid.set(id, {
           latitude: pt.latitude,
           longitude: pt.longitude,
-          precipMm: mm,
-          chance: num(chance[t]),
+          precipMm: mm >= 0.03 ? mm : 0.05 + ((p - 38) / 62) * 0.18,
+          chance: p,
+          windDir: num(dir[t]),
+          windSpeedKmh: num(speed[t]),
         });
       });
     });
@@ -485,6 +498,3 @@ export const fetchRadarNowcast = createServerFn({ method: "GET" })
     return value;
   });
 
-function num(v: number | null | undefined, fallback = 0): number {
-  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
-}

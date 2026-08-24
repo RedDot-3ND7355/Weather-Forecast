@@ -98,7 +98,7 @@ const EN = {
   noRainHeaded: "No rain headed this way",
   watchThe: "Watch the {from}",
   radarCopy:
-    "Wind is {from}. Past 2 hours is live radar; the next 6 hours is a model forecast on the same map.",
+    "Wind is {from}. Past 2 hours is live radar; the next 6 hours slides that scan with the wind, then fades in the model.",
   fromThe: "From the {from}",
   radarUnavailable:
     "Radar is unavailable right now. The hourly estimate below still uses wind and the forecast model.",
@@ -261,7 +261,7 @@ const FR: Record<keyof typeof EN, string> = {
   noRainHeaded: "Pas de pluie en approche",
   watchThe: "Surveiller {from}",
   radarCopy:
-    "Le vent est {from}. Les 2 dernières heures sont le radar en direct ; les 6 prochaines sont une prévision sur la même carte.",
+    "Le vent est {from}. Les 2 dernières heures sont le radar en direct ; les 6 prochaines glissent ce scan avec le vent, puis le modèle prend le relais.",
   fromThe: "Depuis {from}",
   radarUnavailable:
     "Radar indisponible pour le moment. L’estimation horaire utilise encore le vent et le modèle.",

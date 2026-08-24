@@ -1,10 +1,13 @@
 import { r as createServerFn } from "./ssr.mjs";
 import { t as createServerRpc } from "./createServerRpc-CcvdN_gc.mjs";
-import { i as estimateRain } from "./rain-BTolBrM-.mjs";
+import { i as estimateRain } from "./rain-D166MaFx.mjs";
 import { hn as object, mn as number } from "../_libs/@better-auth/core+[...].mjs";
-import { a as travelHours, i as offsetKm, n as arrivalCopy, r as formatEta, t as FETCH_KM } from "./advection-CQBuJCaz.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/radar-CS8BtWVO.js
+import { a as travelHours, i as offsetKm, n as arrivalCopy, r as formatEta, t as FETCH_KM } from "./advection-80XZHdN1.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/radar-BhTDfcQk.js
 var UA = "Vane/1.0 (wind-aware weather forecast)";
+function num(v, fallback = 0) {
+	return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
 var catalogCache = {
 	at: 0,
 	value: null
@@ -41,8 +44,8 @@ var fetchRadarCatalog = createServerFn({ method: "GET" }).handler(fetchRadarCata
 });
 var gridCache = /* @__PURE__ */ new Map();
 function makeGrid(lat, lon, n = 6) {
-	const dLat = 1.7;
-	const dLon = 1.7 / Math.max(.35, Math.cos(lat * Math.PI / 180));
+	const dLat = 1.15;
+	const dLon = 1.15 / Math.max(.35, Math.cos(lat * Math.PI / 180));
 	const pts = [];
 	for (let i = 0; i < n; i += 1) for (let j = 0; j < n; j += 1) pts.push({
 		latitude: lat - dLat + 2 * dLat * i / (n - 1),
@@ -68,7 +71,7 @@ var fetchPrecipGrid = createServerFn({ method: "GET" }).validator(object({
 		longitude: points.map((p) => p.longitude.toFixed(4)).join(","),
 		timezone: "GMT",
 		forecast_hours: "12",
-		hourly: "precipitation,precipitation_probability"
+		hourly: "precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m"
 	});
 	let raw;
 	try {
@@ -95,6 +98,8 @@ var fetchPrecipGrid = createServerFn({ method: "GET" }).validator(object({
 		const times = loc.hourly?.time ?? [];
 		const precip = loc.hourly?.precipitation ?? [];
 		const chance = loc.hourly?.precipitation_probability ?? [];
+		const speed = loc.hourly?.wind_speed_10m ?? [];
+		const dir = loc.hourly?.wind_direction_10m ?? [];
 		times.forEach((iso, t) => {
 			const unix = Math.floor(new Date(iso).getTime() / 1e3);
 			if (!Number.isFinite(unix)) return;
@@ -105,12 +110,15 @@ var fetchPrecipGrid = createServerFn({ method: "GET" }).validator(object({
 			}
 			const id = `${pt.latitude.toFixed(3)},${pt.longitude.toFixed(3)}`;
 			const mm = num(precip[t]);
-			if (mm < .05) return;
+			const p = num(chance[t]);
+			if (mm < .03 && p < 38) return;
 			grid.set(id, {
 				latitude: pt.latitude,
 				longitude: pt.longitude,
-				precipMm: mm,
-				chance: num(chance[t])
+				precipMm: mm >= .03 ? mm : .05 + (p - 38) / 62 * .18,
+				chance: p,
+				windDir: num(dir[t]),
+				windSpeedKmh: num(speed[t])
 			});
 		});
 	});
@@ -295,8 +303,5 @@ var fetchRadarNowcast = createServerFn({ method: "GET" }).validator(object({
 	});
 	return value;
 });
-function num(v, fallback = 0) {
-	return typeof v === "number" && Number.isFinite(v) ? v : fallback;
-}
 //#endregion
 export { fetchPrecipGrid_createServerFn_handler, fetchRadarCatalog_createServerFn_handler, fetchRadarNowcast_createServerFn_handler };

@@ -3,19 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-CJOFeXbl.mjs";
-import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BTolBrM-.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-xmHdaacp.mjs";
+import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-D166MaFx.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { n as arrivalCopy, r as formatEta } from "./advection-CQBuJCaz.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BktFmXMT.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-C9SLai8B.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-B2ToH7FN.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CHD-XBE_.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1484,21 +1484,103 @@ function hash2(x, y) {
 	const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
 	return s - Math.floor(s);
 }
-function drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale, z, x0, y0) {
-	const pts = cells.filter((c) => c.precipMm >= .05).map((c) => ({
+function fbm(x, y) {
+	return .57 * hash2(x, y) + .28 * hash2(x * 2.1 + 3.1, y * 2.03) + .15 * hash2(x * 4.2, y * 3.9 + 1.7);
+}
+function windAxes(deg) {
+	const to = (deg + 180) * Math.PI / 180;
+	const ux = Math.sin(to);
+	const uy = -Math.cos(to);
+	return {
+		ux,
+		uy,
+		px: -uy,
+		py: ux
+	};
+}
+function metersPerPixel(lat, z) {
+	return 156543.03392 * Math.cos(lat * Math.PI / 180) / 2 ** z;
+}
+function radarRgba(mm) {
+	const t = Math.min(1, Math.log2(1 + mm * 3.4) / 3.6);
+	if (t < .4) {
+		const u = t / .4;
+		return [
+			36 + u * 20,
+			110 + u * 70,
+			118 + u * 10,
+			22 + u * 90
+		];
+	}
+	if (t < .72) {
+		const u = (t - .4) / .32;
+		return [
+			70 + u * 150,
+			175 + u * 35,
+			70 - u * 35,
+			110 + u * 45
+		];
+	}
+	const u = (t - .72) / .28;
+	return [
+		210 + u * 40,
+		200 - u * 130,
+		36,
+		155 + u * 50
+	];
+}
+function drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale, z, x0, y0, windDir, alpha = .85) {
+	const seeds = cells.filter((c) => c.precipMm >= .04 || (c.chance ?? 0) >= 38).map((c) => ({
 		x: originX + (lon2tile(c.longitude, z) - x0) * tile * scale,
 		y: originY + (lat2tile(c.latitude, z) - y0) * tile * scale,
-		mm: c.precipMm
+		mm: Math.max(c.precipMm, .05),
+		dir: c.windDir ?? windDir
 	}));
-	if (!pts.length) return;
-	let spacing = 72;
-	for (let i = 0; i < pts.length; i += 1) for (let j = i + 1; j < pts.length; j += 1) {
-		const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
-		if (d > 10 && d < spacing) spacing = d;
+	if (!seeds.length) return;
+	const pts = [];
+	for (const s of seeds) {
+		const { ux, uy, px, py } = windAxes(s.dir);
+		pts.push({
+			x: s.x,
+			y: s.y,
+			mm: s.mm,
+			ux,
+			uy
+		});
+		for (const along of [
+			-1.6,
+			-.9,
+			-.4,
+			.45,
+			.95,
+			1.55,
+			2.2
+		]) {
+			const fall = 1 - Math.min(.72, Math.abs(along) * .26);
+			pts.push({
+				x: s.x + ux * along * 34,
+				y: s.y + uy * along * 34,
+				mm: s.mm * fall,
+				ux,
+				uy
+			});
+		}
+		pts.push({
+			x: s.x + px * 11,
+			y: s.y + py * 11,
+			mm: s.mm * .38,
+			ux,
+			uy
+		});
+		pts.push({
+			x: s.x - px * 11,
+			y: s.y - py * 11,
+			mm: s.mm * .38,
+			ux,
+			uy
+		});
 	}
-	const maxR = Math.max(22, spacing * .92);
-	const maxR2 = maxR * maxR;
-	const step = 3;
+	const step = 2;
 	const w = Math.max(1, Math.ceil(cssW / step));
 	const h = Math.max(1, Math.ceil(cssH / step));
 	const off = document.createElement("canvas");
@@ -1508,39 +1590,46 @@ function drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale
 	if (!octx) return;
 	const img = octx.createImageData(w, h);
 	const data = img.data;
+	const { ux: gux, uy: guy, px: gpx, py: gpy } = windAxes(windDir);
 	for (let iy = 0; iy < h; iy += 1) for (let ix = 0; ix < w; ix += 1) {
-		const n1 = hash2(ix * .31, iy * .29);
-		const n2 = hash2(ix * .17 + 8, iy * .19);
-		const x = (ix + .5) * step + (n1 - .5) * 16;
-		const y = (iy + .5) * step + (n2 - .5) * 16;
+		const n0 = fbm(ix * .045, iy * .045);
+		const n1 = fbm(ix * .11 + 4, iy * .1);
+		const x = (ix + .5) * step + gux * (n0 - .5) * 38 + gpx * (n1 - .5) * 9;
+		const y = (iy + .5) * step + guy * (n0 - .5) * 38 + gpy * (n1 - .5) * 9;
 		let num = 0;
 		let den = 0;
 		for (const p of pts) {
-			const d2 = (x - p.x) ** 2 + (y - p.y) ** 2;
-			if (d2 > maxR2) continue;
-			const wt = 1 / (d2 + 28);
+			const dx = x - p.x;
+			const dy = y - p.y;
+			const along = dx * p.ux + dy * p.uy;
+			const across = dx * -p.uy + dy * p.ux;
+			const d2 = (along / 52) ** 2 + (across / 13) ** 2;
+			if (d2 > 1.15) continue;
+			const wt = (1 - d2) * (1 - d2);
 			num += p.mm * wt;
 			den += wt;
 		}
 		if (den <= 0) continue;
-		let mm = num / den * (.55 + .45 * hash2(ix * .73, iy * .81));
-		if (mm < .09) continue;
-		const t = Math.min(1, Math.log2(1 + mm * 4) / 3.2);
+		const ragged = .42 + .58 * fbm(ix * .09 + 9, iy * .08);
+		let mm = num / den * ragged;
+		if (mm < .07) continue;
+		const [r, g, b, a] = radarRgba(mm);
 		const i = (iy * w + ix) * 4;
-		data[i] = Math.round(55 + t * 120);
-		data[i + 1] = Math.round(118 + t * 90);
-		data[i + 2] = Math.round(128 + t * 80);
-		data[i + 3] = Math.min(175, 28 + mm * 70);
+		data[i] = r;
+		data[i + 1] = g;
+		data[i + 2] = b;
+		data[i + 3] = Math.min(200, a * alpha);
 	}
 	octx.putImageData(img, 0, 0);
 	ctx.save();
+	ctx.globalAlpha = alpha;
 	ctx.imageSmoothingEnabled = true;
 	ctx.imageSmoothingQuality = "high";
 	ctx.drawImage(off, 0, 0, cssW, cssH);
 	ctx.restore();
 }
 function composeRadar(args) {
-	const { cssW, cssH, dpr, tiles, originX, originY, tile, scale, windDir, z, x0, y0, cells } = args;
+	const { cssW, cssH, dpr, tiles, originX, originY, tile, scale, windDir, windSpeedKmh, z, x0, y0, latitude, hoursAhead, cells, advectRain } = args;
 	const off = document.createElement("canvas");
 	off.width = Math.round(cssW * dpr);
 	off.height = Math.round(cssH * dpr);
@@ -1557,13 +1646,31 @@ function composeRadar(args) {
 		if (!t.base) continue;
 		ctx.drawImage(t.base, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
 	}
-	ctx.globalAlpha = .9;
-	for (const t of tiles) {
-		if (!t.rain) continue;
-		ctx.drawImage(t.rain, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
+	const { ux, uy } = windAxes(windDir);
+	const mpp = metersPerPixel(latitude, z) / Math.max(scale, .2);
+	const driftPx = Math.max(windSpeedKmh, 8) * Math.max(0, hoursAhead) * 1e3 / mpp;
+	const shiftX = ux * driftPx;
+	const shiftY = uy * driftPx;
+	const radarAlpha = hoursAhead <= 0 ? .9 : Math.max(0, .84 - hoursAhead * .13);
+	const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(.88, .18 + hoursAhead * .14);
+	if (advectRain?.length && radarAlpha > .04) {
+		ctx.save();
+		ctx.globalAlpha = radarAlpha;
+		for (const t of advectRain) {
+			if (!t.rain) continue;
+			ctx.drawImage(t.rain, originX + t.dx * tile * scale + shiftX, originY + t.dy * tile * scale + shiftY, tile * scale, tile * scale);
+		}
+		ctx.restore();
+	} else {
+		ctx.globalAlpha = .9;
+		for (const t of tiles) {
+			if (!t.rain) continue;
+			ctx.drawImage(t.rain, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
+		}
+		ctx.globalAlpha = 1;
 	}
+	if (cells?.length && (hoursAhead > .05 || !advectRain?.some((t) => t.rain))) drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale, z, x0, y0, windDir, Boolean(advectRain?.some((t) => t.rain)) ? modelAlpha : Math.max(modelAlpha, .62));
 	ctx.globalAlpha = 1;
-	if (cells?.length) drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale, z, x0, y0);
 	const px = cssW / 2;
 	const py = cssH / 2;
 	const rad = (windDir - 90) * Math.PI / 180;
@@ -1766,6 +1873,11 @@ function RadarMap({ forecast, units }) {
 		(async () => {
 			const tiles = await loadTiles(active);
 			if (cancelled) return;
+			const lastObs = [...frames].reverse().find((f) => f.kind === "observed" && f.tileUrl);
+			const forecast = active.kind === "forecast";
+			const advectRain = forecast && lastObs && lastObs !== active ? await loadTiles(lastObs) : void 0;
+			if (cancelled) return;
+			const hoursAhead = forecast ? Math.max(0, (active.time - Date.now() / 1e3) / 3600) : 0;
 			const next = composeRadar({
 				cssW,
 				cssH,
@@ -1776,10 +1888,14 @@ function RadarMap({ forecast, units }) {
 				tile,
 				scale,
 				windDir: current.windDir,
+				windSpeedKmh: current.windSpeedKmh,
 				z,
 				x0,
 				y0,
-				cells: active.kind === "forecast" ? active.cells : void 0
+				latitude: place.latitude,
+				hoursAhead,
+				cells: forecast ? active.cells : void 0,
+				advectRain
 			});
 			const prev = lastBitmap.current;
 			lastBitmap.current = next;
@@ -1817,6 +1933,8 @@ function RadarMap({ forecast, units }) {
 		active,
 		tilePlan,
 		current.windDir,
+		current.windSpeedKmh,
+		place.latitude,
 		size.w,
 		size.h,
 		frames
