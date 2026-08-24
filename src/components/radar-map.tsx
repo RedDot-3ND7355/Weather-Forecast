@@ -580,6 +580,7 @@ export function RadarMap({
 
       <div
         ref={wrapRef}
+        data-no-smooth=""
         className={cn(
           "relative mt-3 w-full overflow-hidden bg-raised",
           mode === "inline" ? "h-[240px] sm:h-[300px]" : "min-h-0 flex-1",

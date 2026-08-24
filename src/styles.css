@@ -36,6 +36,17 @@
     overflow-x: clip;
     color-scheme: dark;
     background: #0b1014;
+    scroll-behavior: smooth;
+  }
+
+  html.vane-smooth {
+    scroll-behavior: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   html,

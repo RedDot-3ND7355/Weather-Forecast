@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { AppProviders } from "@/components/app-providers";
 import { BootSplash, CRITICAL_BOOT_CSS } from "@/components/boot-splash";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { SmoothScroll } from "@/components/smooth-scroll";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Vane";
@@ -61,6 +62,7 @@ function RootDocument() {
         style={{ background: "#0b1014", color: "#e7eef4" }}
       >
         <BootSplash />
+        <SmoothScroll />
         <PreviewHostBridge />
         <AuthProvider>
           <AppProviders>

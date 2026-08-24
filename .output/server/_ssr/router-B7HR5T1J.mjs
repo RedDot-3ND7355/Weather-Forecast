@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-CRJzKULD.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-B7HR5T1J.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -420,7 +420,155 @@ function PreviewHostBridge() {
 	}, [router]);
 	return null;
 }
-var styles_default = "/assets/styles-CNArJN70.css";
+var IGNORE = "input, textarea, select, [contenteditable], canvas, [data-h-scroll], [data-no-smooth]";
+function ignore(target) {
+	return target instanceof Element && Boolean(target.closest(IGNORE));
+}
+function maxY() {
+	return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+}
+function clamp(y) {
+	return Math.max(0, Math.min(maxY(), y));
+}
+function SmoothScroll() {
+	(0, import_react.useEffect)(() => {
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+		const html = document.documentElement;
+		html.classList.add("vane-smooth");
+		let current = window.scrollY;
+		let target = window.scrollY;
+		let vel = 0;
+		let raf = 0;
+		let dragging = false;
+		let axis = null;
+		let startY = 0;
+		let startX = 0;
+		let startScroll = 0;
+		let lastY = 0;
+		let lastT = 0;
+		let driving = false;
+		const stop = () => {
+			cancelAnimationFrame(raf);
+			raf = 0;
+		};
+		const tick = () => {
+			if (dragging) {
+				raf = requestAnimationFrame(tick);
+				return;
+			}
+			vel *= .925;
+			target = clamp(target + vel);
+			current += (target - current) * .18;
+			if (Math.abs(target - current) < .35 && Math.abs(vel) < .18) {
+				current = target;
+				vel = 0;
+				driving = true;
+				window.scrollTo(0, current);
+				driving = false;
+				raf = 0;
+				return;
+			}
+			driving = true;
+			window.scrollTo(0, current);
+			driving = false;
+			raf = requestAnimationFrame(tick);
+		};
+		const kick = () => {
+			if (!raf) raf = requestAnimationFrame(tick);
+		};
+		const onWheel = (e) => {
+			if (e.ctrlKey) return;
+			if (ignore(e.target)) return;
+			if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+			e.preventDefault();
+			target = clamp(target + e.deltaY);
+			vel += e.deltaY * .04;
+			kick();
+		};
+		const onTouchStart = (e) => {
+			if (e.touches.length !== 1) {
+				axis = null;
+				dragging = false;
+				return;
+			}
+			if (ignore(e.target)) {
+				axis = "x";
+				return;
+			}
+			stop();
+			vel = 0;
+			axis = null;
+			const t = e.touches[0];
+			startY = t.clientY;
+			startX = t.clientX;
+			lastY = t.clientY;
+			lastT = performance.now();
+			startScroll = window.scrollY;
+			current = startScroll;
+			target = startScroll;
+		};
+		const onTouchMove = (e) => {
+			if (e.touches.length !== 1 || axis === "x") return;
+			const t = e.touches[0];
+			const dx = t.clientX - startX;
+			const dy = t.clientY - startY;
+			if (!axis) {
+				if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) + 4) {
+					axis = "x";
+					return;
+				}
+				if (Math.abs(dy) < 8) return;
+				axis = "y";
+				dragging = true;
+			}
+			if (axis !== "y") return;
+			e.preventDefault();
+			const now = performance.now();
+			const dt = Math.max(8, now - lastT);
+			vel = (lastY - t.clientY) / dt * 16.6;
+			lastY = t.clientY;
+			lastT = now;
+			current = clamp(startScroll - dy);
+			target = current;
+			driving = true;
+			window.scrollTo(0, current);
+			driving = false;
+		};
+		const onTouchEnd = () => {
+			if (axis === "y") {
+				dragging = false;
+				target = clamp(target + vel * 8);
+				kick();
+			}
+			axis = null;
+			dragging = false;
+		};
+		const onScroll = () => {
+			if (driving || dragging) return;
+			current = window.scrollY;
+			target = current;
+			vel = 0;
+		};
+		window.addEventListener("wheel", onWheel, { passive: false });
+		window.addEventListener("touchstart", onTouchStart, { passive: true });
+		window.addEventListener("touchmove", onTouchMove, { passive: false });
+		window.addEventListener("touchend", onTouchEnd);
+		window.addEventListener("touchcancel", onTouchEnd);
+		window.addEventListener("scroll", onScroll, { passive: true });
+		return () => {
+			stop();
+			html.classList.remove("vane-smooth");
+			window.removeEventListener("wheel", onWheel);
+			window.removeEventListener("touchstart", onTouchStart);
+			window.removeEventListener("touchmove", onTouchMove);
+			window.removeEventListener("touchend", onTouchEnd);
+			window.removeEventListener("touchcancel", onTouchEnd);
+			window.removeEventListener("scroll", onScroll);
+		};
+	}, []);
+	return null;
+}
+var styles_default = "/assets/styles-BQ771eky.css";
 var APP_NAME = "Vane";
 var fetchSessionUser = createServerFn({ method: "GET" }).handler(createSsrRpc("2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26"));
 var Route$3 = createRootRoute({
@@ -494,6 +642,7 @@ function RootDocument() {
 			},
 			children: [
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BootSplash, {}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SmoothScroll, {}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PreviewHostBridge, {}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AppProviders, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {}) }) }),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Scripts, {})
@@ -501,7 +650,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-idfDAg6L.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-BaYuxqQ4.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-yRCMsAbs.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });

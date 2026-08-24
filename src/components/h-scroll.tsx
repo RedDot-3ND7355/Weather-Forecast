@@ -122,6 +122,7 @@ export function HScroll({
           contentClassName,
         )}
         aria-label={label}
+        data-h-scroll=""
         style={{ WebkitOverflowScrolling: "touch" }}
         onPointerDown={(e) => {
           if (e.pointerType === "touch") return;
