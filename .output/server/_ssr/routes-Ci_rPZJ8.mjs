@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CXW8hfDC.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CRlkN5Fd.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-SsGOntAi.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-Ci_rPZJ8.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1505,7 +1505,7 @@ function paintRainLayer(tiles, originX, originY, tile, scale, cssW, cssH) {
 	const c = document.createElement("canvas");
 	c.width = Math.max(1, Math.round(cssW));
 	c.height = Math.max(1, Math.round(cssH));
-	const ctx = c.getContext("2d");
+	const ctx = c.getContext("2d", { willReadFrequently: true });
 	if (!ctx) return c;
 	for (const t of tiles) {
 		if (!t.rain) continue;
@@ -1513,29 +1513,223 @@ function paintRainLayer(tiles, originX, originY, tile, scale, cssW, cssH) {
 	}
 	return c;
 }
-function rainCentroid(canvas) {
-	const ctx = canvas.getContext("2d");
-	if (!ctx) return null;
-	const { width, height } = canvas;
-	if (width < 4 || height < 4) return null;
-	const data = ctx.getImageData(0, 0, width, height).data;
-	let mass = 0;
-	let sx = 0;
-	let sy = 0;
-	for (let y = 0; y < height; y += 2) for (let x = 0; x < width; x += 2) {
-		const a = data[(y * width + x) * 4 + 3];
-		if (a < 28) continue;
-		const w = a / 255;
-		mass += w;
-		sx += x * w;
-		sy += y * w;
+function blockMean(data, w, h, x0, y0, bs) {
+	let s = 0;
+	let n = 0;
+	const x1 = Math.min(w, x0 + bs);
+	const y1 = Math.min(h, y0 + bs);
+	for (let y = Math.max(0, y0); y < y1; y += 1) {
+		let i = (y * w + Math.max(0, x0)) * 4 + 3;
+		for (let x = Math.max(0, x0); x < x1; x += 1) {
+			s += data[i];
+			n += 1;
+			i += 4;
+		}
 	}
-	if (mass < 12) return null;
-	return {
-		x: sx / mass,
-		y: sy / mass,
-		mass
+	return n ? s / n : 0;
+}
+function blockSad(a, b, w, h, ax, ay, bx, by, bs) {
+	let s = 0;
+	for (let y = 0; y < bs; y += 2) {
+		const ya = ay + y;
+		const yb = by + y;
+		if (ya < 0 || yb < 0 || ya >= h || yb >= h) {
+			s += 80 * bs;
+			continue;
+		}
+		let ia = (ya * w + ax) * 4 + 3;
+		let ib = (yb * w + bx) * 4 + 3;
+		for (let x = 0; x < bs; x += 2) {
+			const xa = ax + x;
+			const xb = bx + x;
+			if (xa < 0 || xb < 0 || xa >= w || xb >= w) {
+				s += 80;
+				ia += 8;
+				ib += 8;
+				continue;
+			}
+			s += Math.abs(a[ia] - b[ib]);
+			ia += 8;
+			ib += 8;
+		}
+	}
+	return s;
+}
+function measureFlow(prev, next, dtH, steerUx, steerUy, capPx) {
+	const pctx = prev.getContext("2d", { willReadFrequently: true });
+	const nctx = next.getContext("2d", { willReadFrequently: true });
+	if (!pctx || !nctx) return null;
+	const w = prev.width;
+	const h = prev.height;
+	if (w < 24 || h < 24) return null;
+	const a = pctx.getImageData(0, 0, w, h).data;
+	const b = nctx.getImageData(0, 0, w, h).data;
+	const bs = 12;
+	const cols = Math.ceil(w / bs);
+	const rows = Math.ceil(h / bs);
+	const grid = {
+		bs,
+		cols,
+		rows,
+		vx: new Float32Array(cols * rows),
+		vy: new Float32Array(cols * rows),
+		g: new Float32Array(cols * rows),
+		ok: new Uint8Array(cols * rows)
 	};
+	const expX = Math.round(steerUx * Math.min(capPx, 90) * dtH);
+	const expY = Math.round(steerUy * Math.min(capPx, 90) * dtH);
+	const search = 12;
+	let hits = 0;
+	for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) {
+		const x0 = c * bs;
+		const y0 = r * bs;
+		const i0 = blockMean(a, w, h, x0, y0, bs);
+		if (i0 < 10) continue;
+		let best = Infinity;
+		let bestDx = expX;
+		let bestDy = expY;
+		for (let dy = expY - search; dy <= expY + search; dy += 2) for (let dx = expX - search; dx <= expX + search; dx += 2) {
+			const sad = blockSad(a, b, w, h, x0, y0, x0 + dx, y0 + dy, bs);
+			if (sad < best) {
+				best = sad;
+				bestDx = dx;
+				bestDy = dy;
+			}
+		}
+		let vx = bestDx / dtH;
+		let vy = bestDy / dtH;
+		if (vx * steerUx + vy * steerUy < 0) {
+			vx = -vx;
+			vy = -vy;
+		}
+		const sp = Math.hypot(vx, vy);
+		if (sp > capPx) {
+			vx = vx / sp * capPx;
+			vy = vy / sp * capPx;
+		}
+		const i1 = blockMean(b, w, h, x0 + bestDx, y0 + bestDy, bs);
+		const g = Math.max(-.7, Math.min(1.05, (i1 - i0) / (i0 + 12) / dtH));
+		const idx = r * cols + c;
+		grid.vx[idx] = vx;
+		grid.vy[idx] = vy;
+		grid.g[idx] = g;
+		grid.ok[idx] = 1;
+		hits += 1;
+	}
+	if (hits < 3) return null;
+	for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) {
+		const idx = r * cols + c;
+		if (grid.ok[idx]) continue;
+		let svx = 0;
+		let svy = 0;
+		let sg = 0;
+		let n = 0;
+		for (let rr = r - 1; rr <= r + 1; rr += 1) for (let cc = c - 1; cc <= c + 1; cc += 1) {
+			if (rr < 0 || cc < 0 || rr >= rows || cc >= cols) continue;
+			const j = rr * cols + cc;
+			if (!grid.ok[j]) continue;
+			svx += grid.vx[j];
+			svy += grid.vy[j];
+			sg += grid.g[j];
+			n += 1;
+		}
+		if (n) {
+			grid.vx[idx] = svx / n;
+			grid.vy[idx] = svy / n;
+			grid.g[idx] = sg / n;
+		} else {
+			grid.vx[idx] = steerUx * capPx * .45;
+			grid.vy[idx] = steerUy * capPx * .45;
+		}
+	}
+	return grid;
+}
+function lookupFlow(grid, x, y) {
+	const c = Math.max(0, Math.min(grid.cols - 1, Math.floor(x / grid.bs)));
+	const i = Math.max(0, Math.min(grid.rows - 1, Math.floor(y / grid.bs))) * grid.cols + c;
+	return {
+		vx: grid.vx[i],
+		vy: grid.vy[i],
+		g: grid.g[i]
+	};
+}
+function splat(data, w, h, x, y, r, g, b, a) {
+	const x0 = Math.floor(x);
+	const y0 = Math.floor(y);
+	const fx = x - x0;
+	const fy = y - y0;
+	const wts = [
+		[
+			x0,
+			y0,
+			(1 - fx) * (1 - fy)
+		],
+		[
+			x0 + 1,
+			y0,
+			fx * (1 - fy)
+		],
+		[
+			x0,
+			y0 + 1,
+			(1 - fx) * fy
+		],
+		[
+			x0 + 1,
+			y0 + 1,
+			fx * fy
+		]
+	];
+	for (const [px, py, wt] of wts) {
+		if (px < 0 || py < 0 || px >= w || py >= h || wt < .02) continue;
+		const i = (py * w + px) * 4;
+		const aa = a * wt;
+		const outA = Math.min(255, data[i + 3] + aa);
+		const u = outA > 0 ? aa / outA : 0;
+		data[i] = data[i] * (1 - u) + r * u;
+		data[i + 1] = data[i + 1] * (1 - u) + g * u;
+		data[i + 2] = data[i + 2] * (1 - u) + b * u;
+		data[i + 3] = outA;
+	}
+}
+function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
+	const out = document.createElement("canvas");
+	out.width = source.width;
+	out.height = source.height;
+	const sctx = source.getContext("2d", { willReadFrequently: true });
+	const octx = out.getContext("2d");
+	if (!sctx || !octx) return source;
+	const src = sctx.getImageData(0, 0, source.width, source.height);
+	const dst = octx.createImageData(source.width, source.height);
+	const w = source.width;
+	const h = source.height;
+	const sd = src.data;
+	const dd = dst.data;
+	const step = 2;
+	for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) {
+		const i = (y * w + x) * 4;
+		const a0 = sd[i + 3];
+		if (a0 < 16) continue;
+		const f = lookupFlow(grid, x, y);
+		let vx = f.vx;
+		let vy = f.vy;
+		const turn = Math.min(.32, .08 + hours * .05);
+		vx = vx * (1 - turn) + steerUx * steerPx * turn;
+		vy = vy * (1 - turn) + steerUy * steerPx * turn;
+		const jx = (fbm(x * .07, y * .07) - .5) * hours * 10;
+		const jy = (fbm(x * .07 + 4, y * .07) - .5) * hours * 10;
+		const dx = vx * hours + jx;
+		const dy = vy * hours + jy;
+		const grow = Math.max(.22, Math.min(1.9, 1 + f.g * hours * .9));
+		const aa = Math.min(255, a0 * grow);
+		splat(dd, w, h, x + dx, y + dy, sd[i], sd[i + 1], sd[i + 2], aa);
+		if (f.g > .12 && hours > .15) {
+			const lead = Math.min(28, (6 + f.g * 18) * hours);
+			splat(dd, w, h, x + dx + steerUx * lead, y + dy + steerUy * lead, sd[i], sd[i + 1], sd[i + 2], aa * Math.min(.55, .22 + f.g * .35));
+		}
+	}
+	octx.putImageData(dst, 0, 0);
+	return out;
 }
 function integrateShift(args) {
 	const step = .25;
@@ -1691,7 +1885,7 @@ function drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale
 	ctx.restore();
 }
 function composeRadar(args) {
-	const { cssW, cssH, dpr, tiles, originX, originY, tile, scale, windDir, z, x0, y0, hoursAhead, shiftX, shiftY, cells, advectRain } = args;
+	const { cssW, cssH, dpr, tiles, originX, originY, tile, scale, windDir, z, x0, y0, hoursAhead, shiftX, shiftY, cells, advectRain, evolvedRain } = args;
 	const off = document.createElement("canvas");
 	off.width = Math.round(cssW * dpr);
 	off.height = Math.round(cssH * dpr);
@@ -1708,9 +1902,14 @@ function composeRadar(args) {
 		if (!t.base) continue;
 		ctx.drawImage(t.base, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
 	}
-	const radarAlpha = hoursAhead <= 0 ? .9 : Math.max(0, .88 - hoursAhead * .11);
-	const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(.8, .12 + hoursAhead * .12);
-	if (advectRain?.length && radarAlpha > .04) {
+	const radarAlpha = hoursAhead <= 0 ? .9 : Math.max(0, .9 - hoursAhead * .1);
+	const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(.72, .08 + hoursAhead * .11);
+	if (evolvedRain && radarAlpha > .04) {
+		ctx.save();
+		ctx.globalAlpha = radarAlpha;
+		ctx.drawImage(evolvedRain, 0, 0, cssW, cssH);
+		ctx.restore();
+	} else if (advectRain?.length && radarAlpha > .04) {
 		ctx.save();
 		ctx.globalAlpha = radarAlpha;
 		for (const t of advectRain) {
@@ -1726,7 +1925,7 @@ function composeRadar(args) {
 		}
 		ctx.globalAlpha = 1;
 	}
-	if (cells?.length && (hoursAhead > .05 || !advectRain?.some((t) => t.rain))) drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale, z, x0, y0, windDir, Boolean(advectRain?.some((t) => t.rain)) ? modelAlpha : Math.max(modelAlpha, .62));
+	if (cells?.length && (hoursAhead > .05 || !evolvedRain)) drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale, z, x0, y0, windDir, Boolean(evolvedRain || advectRain?.some((t) => t.rain)) ? modelAlpha : Math.max(modelAlpha, .62));
 	ctx.globalAlpha = 1;
 	const px = cssW / 2;
 	const py = cssH / 2;
@@ -1945,39 +2144,45 @@ function RadarMap({ forecast, units }) {
 			const { ux, uy } = windAxes(current.windDir);
 			const mpp = metersPerPixel(place.latitude, z) / Math.max(scale, .2);
 			const steerPx = Math.max(current.windSpeedKmh * 1.85, 18) * 1e3 / mpp;
+			const cap = 14e4 / mpp;
 			let vx = ux * steerPx;
 			let vy = uy * steerPx;
-			if (trackARain && trackBRain && trackA && trackB) {
+			let evolvedRain = null;
+			if (trackARain && trackBRain && trackA && trackB && advectRain) {
 				const dtH = Math.max(.25, (trackB.time - trackA.time) / 3600);
-				const earlier = rainCentroid(paintRainLayer(trackARain, originX, originY, tile, scale, cssW, cssH));
-				const later = rainCentroid(paintRainLayer(trackBRain, originX, originY, tile, scale, cssW, cssH));
-				if (earlier && later) {
-					let mx = (later.x - earlier.x) / dtH;
-					let my = (later.y - earlier.y) / dtH;
-					if (mx * ux + my * uy < 0) {
-						mx = -mx;
-						my = -my;
+				const earlierC = paintRainLayer(trackARain, originX, originY, tile, scale, cssW, cssH);
+				const laterC = paintRainLayer(trackBRain, originX, originY, tile, scale, cssW, cssH);
+				const sourceC = paintRainLayer(advectRain, originX, originY, tile, scale, cssW, cssH);
+				const flow = measureFlow(earlierC, laterC, dtH, ux, uy, cap);
+				if (flow) {
+					evolvedRain = evolveRain(sourceC, flow, hoursAhead, ux, uy, steerPx);
+					let svx = 0;
+					let svy = 0;
+					let n = 0;
+					for (let i = 0; i < flow.ok.length; i += 1) {
+						if (!flow.ok[i]) continue;
+						svx += flow.vx[i];
+						svy += flow.vy[i];
+						n += 1;
 					}
-					const mag = Math.hypot(mx, my);
-					const cap = 14e4 / mpp;
-					const speed = Math.min(cap, Math.max(steerPx * .75, mag || steerPx));
-					if ((mag > .4 ? (mx * ux + my * uy) / mag : 1) > .35) {
-						vx = mx / mag * speed;
-						vy = my / mag * speed;
-					} else {
-						vx = ux * speed;
-						vy = uy * speed;
+					if (n) {
+						vx = svx / n;
+						vy = svy / n;
 					}
 				}
 			}
-			const drift = integrateShift({
-				hours: hoursAhead,
-				vx,
-				vy,
-				steerUx: ux,
-				steerUy: uy,
-				steerPxPerHour: steerPx
-			});
+			if (!evolvedRain) {
+				const drift = integrateShift({
+					hours: hoursAhead,
+					vx,
+					vy,
+					steerUx: ux,
+					steerUy: uy,
+					steerPxPerHour: steerPx
+				});
+				vx = drift.x;
+				vy = drift.y;
+			}
 			const next = composeRadar({
 				cssW,
 				cssH,
@@ -1992,10 +2197,11 @@ function RadarMap({ forecast, units }) {
 				x0,
 				y0,
 				hoursAhead,
-				shiftX: drift.x,
-				shiftY: drift.y,
+				shiftX: evolvedRain ? 0 : vx,
+				shiftY: evolvedRain ? 0 : vy,
 				cells: isFc ? active.cells : void 0,
-				advectRain
+				advectRain,
+				evolvedRain
 			});
 			const prev = lastBitmap.current;
 			lastBitmap.current = next;
