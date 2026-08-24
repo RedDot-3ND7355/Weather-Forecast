@@ -675,20 +675,29 @@ export function RadarMap({
       let vy = uy * steerPx;
       if (trackARain && trackBRain && trackA && trackB) {
         const dtH = Math.max(0.25, (trackB.time - trackA.time) / 3600);
-        const a = rainCentroid(
+        const earlier = rainCentroid(
           paintRainLayer(trackARain, originX, originY, tile, scale, cssW, cssH),
         );
-        const b = rainCentroid(
+        const later = rainCentroid(
           paintRainLayer(trackBRain, originX, originY, tile, scale, cssW, cssH),
         );
-        if (a && b) {
-          vx = (b.x - a.x) / dtH;
-          vy = (b.y - a.y) / dtH;
+        if (earlier && later) {
+          let mx = (later.x - earlier.x) / dtH;
+          let my = (later.y - earlier.y) / dtH;
+          if (mx * ux + my * uy < 0) {
+            mx = -mx;
+            my = -my;
+          }
+          const mag = Math.hypot(mx, my);
           const cap = (140 * 1000) / mpp;
-          const sp = Math.hypot(vx, vy);
-          if (sp > cap) {
-            vx = (vx / sp) * cap;
-            vy = (vy / sp) * cap;
+          const speed = Math.min(cap, Math.max(steerPx * 0.75, mag || steerPx));
+          const headingDot = mag > 0.4 ? (mx * ux + my * uy) / mag : 1;
+          if (headingDot > 0.35) {
+            vx = (mx / mag) * speed;
+            vy = (my / mag) * speed;
+          } else {
+            vx = ux * speed;
+            vy = uy * speed;
           }
         }
       }

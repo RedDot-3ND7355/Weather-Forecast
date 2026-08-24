@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CPLzigGE.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CXW8hfDC.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BuvkW78U.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-SsGOntAi.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1949,16 +1949,24 @@ function RadarMap({ forecast, units }) {
 			let vy = uy * steerPx;
 			if (trackARain && trackBRain && trackA && trackB) {
 				const dtH = Math.max(.25, (trackB.time - trackA.time) / 3600);
-				const a = rainCentroid(paintRainLayer(trackARain, originX, originY, tile, scale, cssW, cssH));
-				const b = rainCentroid(paintRainLayer(trackBRain, originX, originY, tile, scale, cssW, cssH));
-				if (a && b) {
-					vx = (b.x - a.x) / dtH;
-					vy = (b.y - a.y) / dtH;
+				const earlier = rainCentroid(paintRainLayer(trackARain, originX, originY, tile, scale, cssW, cssH));
+				const later = rainCentroid(paintRainLayer(trackBRain, originX, originY, tile, scale, cssW, cssH));
+				if (earlier && later) {
+					let mx = (later.x - earlier.x) / dtH;
+					let my = (later.y - earlier.y) / dtH;
+					if (mx * ux + my * uy < 0) {
+						mx = -mx;
+						my = -my;
+					}
+					const mag = Math.hypot(mx, my);
 					const cap = 14e4 / mpp;
-					const sp = Math.hypot(vx, vy);
-					if (sp > cap) {
-						vx = vx / sp * cap;
-						vy = vy / sp * cap;
+					const speed = Math.min(cap, Math.max(steerPx * .75, mag || steerPx));
+					if ((mag > .4 ? (mx * ux + my * uy) / mag : 1) > .35) {
+						vx = mx / mag * speed;
+						vy = my / mag * speed;
+					} else {
+						vx = ux * speed;
+						vy = uy * speed;
 					}
 				}
 			}
