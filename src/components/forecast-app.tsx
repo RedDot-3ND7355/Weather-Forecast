@@ -10,6 +10,7 @@ import { Compass } from "@/components/compass";
 import { CurrentPanel } from "@/components/current-panel";
 import { DailyList } from "@/components/daily-list";
 import { HourlyStrip } from "@/components/hourly-strip";
+import { LivePresenceFooter } from "@/components/live-presence";
 import { PlaceSearch } from "@/components/place-search";
 import { RadarMap } from "@/components/radar-map";
 import { RainBrief } from "@/components/rain-brief";
@@ -231,7 +232,7 @@ export function ForecastApp() {
         onSaved={() => void savedQuery.refetch()}
         onShare={place ? onShare : undefined}
       />
-      <main className="mx-auto min-w-0 max-w-6xl overflow-x-clip px-3 py-4 sm:px-6 sm:py-8">
+      <main className="mx-auto min-w-0 max-w-6xl overflow-x-clip px-3 py-4 pb-20 sm:px-6 sm:py-8 sm:pb-24">
         {incoming ? (
           <IncomingBanner key={`${incoming.kind}-${incoming.source}`} incoming={incoming} />
         ) : null}
@@ -293,6 +294,7 @@ export function ForecastApp() {
           </div>
         ) : null}
       </main>
+      <LivePresenceFooter />
     </div>
   );
 }
