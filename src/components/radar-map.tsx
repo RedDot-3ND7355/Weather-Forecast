@@ -6,10 +6,11 @@ import { HScroll } from "@/components/h-scroll";
 import { Button } from "@/components/ui/button";
 import { WindArrow } from "@/components/wind-arrow";
 import {
+  buildRadarTimeline,
   fetchPrecipGrid,
   fetchRadarCatalog,
   fetchRadarNowcast,
-  pickHalfHourFrames,
+  nowFrameIndex,
   type PrecipCell,
   type RadarFrame,
 } from "@/lib/weather/radar";
@@ -290,14 +291,15 @@ export function RadarMap({
     staleTime: 8 * 60 * 1000,
   });
 
-  const frames = useMemo(() => {
-    const past = pickHalfHourFrames(catalogQuery.data?.frames ?? []);
-    const lastPast = past.at(-1)?.time ?? Math.floor(Date.now() / 1000);
-    const future = (gridQuery.data ?? [])
-      .filter((f) => f.time > lastPast + 600)
-      .sort((a, b) => a.time - b.time);
-    return [...past, ...future];
-  }, [catalogQuery.data?.frames, gridQuery.data]);
+  const frames = useMemo(
+    () =>
+      buildRadarTimeline({
+        catalog: catalogQuery.data?.frames ?? [],
+        grid: gridQuery.data ?? [],
+      }),
+    [catalogQuery.data?.frames, gridQuery.data],
+  );
+  const nowIdx = useMemo(() => nowFrameIndex(frames), [frames]);
 
   const nowcast = nowcastQuery.data;
   const hours =
@@ -331,9 +333,8 @@ export function RadarMap({
 
   useEffect(() => {
     if (!frames.length) return;
-    const nowIdx = frames.findIndex((f) => f.kind === "forecast");
-    setFrame(nowIdx > 0 ? nowIdx - 1 : frames.length - 1);
-  }, [frames.length]);
+    setFrame(nowIdx);
+  }, [frames, nowIdx]);
 
   useEffect(() => {
     if (!playing || frames.length < 2) return;
@@ -682,23 +683,41 @@ export function RadarMap({
           {playing ? "Pause" : "Play"}
         </Button>
         <div className="min-w-0 flex-1">
-          <input
-            type="range"
-            min={0}
-            max={Math.max(0, frames.length - 1)}
-            step={1}
-            value={Math.min(frame, Math.max(0, frames.length - 1))}
-            onChange={(e) => {
-              setPlaying(false);
-              setFrame(Number(e.target.value));
-            }}
-            className="h-2 w-full accent-rain"
-            aria-label="Radar time, 30 minute steps"
-          />
-          <div className="mt-1 flex justify-between text-[11px] text-faint">
-            <span>2 hours ago</span>
-            <span>Now</span>
-            {hasForecast ? <span>+6 hours</span> : null}
+          <div className="relative">
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, frames.length - 1)}
+              step={1}
+              value={Math.min(frame, Math.max(0, frames.length - 1))}
+              onChange={(e) => {
+                setPlaying(false);
+                setFrame(Number(e.target.value));
+              }}
+              className="h-2 w-full accent-rain"
+              aria-label="Radar time, 30 minute steps"
+            />
+            {frames.length > 1 ? (
+              <span
+                className="pointer-events-none absolute top-0 h-2 w-px bg-fg/70"
+                style={{
+                  left: `${(nowIdx / Math.max(1, frames.length - 1)) * 100}%`,
+                }}
+                aria-hidden
+              />
+            ) : null}
+          </div>
+          <div className="relative mt-1 h-4 text-[11px] text-faint">
+            <span className="absolute left-0">-2h</span>
+            <span
+              className="absolute -translate-x-1/2 text-muted"
+              style={{
+                left: `${frames.length > 1 ? (nowIdx / (frames.length - 1)) * 100 : 50}%`,
+              }}
+            >
+              Now
+            </span>
+            {hasForecast ? <span className="absolute right-0">+6h</span> : null}
           </div>
         </div>
       </div>

@@ -11,10 +11,10 @@ import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-C2s5Q3rQ.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BN-xiRnA.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BmaD0fNT.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-EfDHwLoe.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1349,31 +1349,51 @@ function HourlyStrip({ hours, units }) {
 		})]
 	});
 }
-function pickHalfHourFrames(frames, spanSec = 7200, stepSec = 1800) {
-	if (!frames.length) return [];
-	const sorted = [...frames].sort((a, b) => a.time - b.time);
-	const latest = sorted[sorted.length - 1].time;
-	const oldest = sorted[0].time;
-	const start = Math.max(oldest, latest - spanSec);
-	const picked = [];
-	for (let t = start; t <= latest + 1; t += stepSec) {
-		let best = sorted[0];
-		let bestD = Math.abs(sorted[0].time - t);
-		for (const f of sorted) {
-			const d = Math.abs(f.time - t);
-			if (d < bestD) {
-				best = f;
-				bestD = d;
-			}
+function nearestFrame(frames, t, maxDelta) {
+	let best;
+	let bestD = Infinity;
+	for (const f of frames) {
+		const d = Math.abs(f.time - t);
+		if (d < bestD) {
+			best = f;
+			bestD = d;
 		}
-		if (bestD <= stepSec / 2 && picked[picked.length - 1]?.time !== best.time) picked.push(best);
 	}
-	if (picked[picked.length - 1]?.time !== latest) {
-		const last = sorted[sorted.length - 1];
-		if (!picked.length || last.time - picked[picked.length - 1].time >= stepSec / 2) picked.push(last);
-		else picked[picked.length - 1] = last;
+	return best && bestD <= maxDelta ? best : void 0;
+}
+/** Last slice that is not in the future — the proper "now" radar frame. */
+function nowFrameIndex(frames, now = Date.now() / 1e3) {
+	let idx = 0;
+	for (let i = 0; i < frames.length; i += 1) if (frames[i].time <= now + 90) idx = i;
+	return idx;
+}
+function buildRadarTimeline(args) {
+	const now = args.now ?? Date.now() / 1e3;
+	const step = args.stepSec ?? 1800;
+	const nowTick = Math.floor(now / step) * step;
+	const start = nowTick - (args.pastHours ?? 2) * 3600;
+	const end = nowTick + (args.futureHours ?? 6) * 3600;
+	const out = [];
+	for (let t = start; t <= end + 1; t += step) {
+		const rv = nearestFrame(args.catalog, t, 720);
+		if (rv) {
+			out.push({
+				...rv,
+				time: t
+			});
+			continue;
+		}
+		const model = nearestFrame(args.grid, t, 1500);
+		out.push(model ? {
+			...model,
+			time: t
+		} : {
+			time: t,
+			kind: "forecast",
+			cells: []
+		});
 	}
-	return picked;
+	return out;
 }
 var fetchRadarCatalog = createServerFn({ method: "GET" }).handler(createSsrRpc("863a609e34c3563b807d29e784e5f4e9472c3185c8b5b5cffc6ffdc4f3f304e9"));
 var fetchPrecipGrid = createServerFn({ method: "GET" }).validator(object({
@@ -1573,12 +1593,11 @@ function RadarMap({ forecast, units }) {
 		} }),
 		staleTime: 48e4
 	});
-	const frames = (0, import_react.useMemo)(() => {
-		const past = pickHalfHourFrames(catalogQuery.data?.frames ?? []);
-		const lastPast = past.at(-1)?.time ?? Math.floor(Date.now() / 1e3);
-		const future = (gridQuery.data ?? []).filter((f) => f.time > lastPast + 600).sort((a, b) => a.time - b.time);
-		return [...past, ...future];
-	}, [catalogQuery.data?.frames, gridQuery.data]);
+	const frames = (0, import_react.useMemo)(() => buildRadarTimeline({
+		catalog: catalogQuery.data?.frames ?? [],
+		grid: gridQuery.data ?? []
+	}), [catalogQuery.data?.frames, gridQuery.data]);
+	const nowIdx = (0, import_react.useMemo)(() => nowFrameIndex(frames), [frames]);
 	const nowcast = nowcastQuery.data;
 	const hours = nowcast?.hours?.length ? nowcast.hours : forecast.hourly.slice(0, 6).map((h, i) => ({
 		time: h.time,
@@ -1605,9 +1624,8 @@ function RadarMap({ forecast, units }) {
 	}, [mode]);
 	(0, import_react.useEffect)(() => {
 		if (!frames.length) return;
-		const nowIdx = frames.findIndex((f) => f.kind === "forecast");
-		setFrame(nowIdx > 0 ? nowIdx - 1 : frames.length - 1);
-	}, [frames.length]);
+		setFrame(nowIdx);
+	}, [frames, nowIdx]);
 	(0, import_react.useEffect)(() => {
 		if (!playing || frames.length < 2) return;
 		const id = window.setInterval(() => {
@@ -1908,24 +1926,41 @@ function RadarMap({ forecast, units }) {
 					children: [playing ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pause, { className: "size-4" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Play, { className: "size-4" }), playing ? "Pause" : "Play"]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "min-w-0 flex-1",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-						type: "range",
-						min: 0,
-						max: Math.max(0, frames.length - 1),
-						step: 1,
-						value: Math.min(frame, Math.max(0, frames.length - 1)),
-						onChange: (e) => {
-							setPlaying(false);
-							setFrame(Number(e.target.value));
-						},
-						className: "h-2 w-full accent-rain",
-						"aria-label": "Radar time, 30 minute steps"
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "relative",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+							type: "range",
+							min: 0,
+							max: Math.max(0, frames.length - 1),
+							step: 1,
+							value: Math.min(frame, Math.max(0, frames.length - 1)),
+							onChange: (e) => {
+								setPlaying(false);
+								setFrame(Number(e.target.value));
+							},
+							className: "h-2 w-full accent-rain",
+							"aria-label": "Radar time, 30 minute steps"
+						}), frames.length > 1 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "pointer-events-none absolute top-0 h-2 w-px bg-fg/70",
+							style: { left: `${nowIdx / Math.max(1, frames.length - 1) * 100}%` },
+							"aria-hidden": true
+						}) : null]
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "mt-1 flex justify-between text-[11px] text-faint",
+						className: "relative mt-1 h-4 text-[11px] text-faint",
 						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "2 hours ago" }),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Now" }),
-							hasForecast ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "+6 hours" }) : null
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "absolute left-0",
+								children: "-2h"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "absolute -translate-x-1/2 text-muted",
+								style: { left: `${frames.length > 1 ? nowIdx / (frames.length - 1) * 100 : 50}%` },
+								children: "Now"
+							}),
+							hasForecast ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "absolute right-0",
+								children: "+6h"
+							}) : null
 						]
 					})]
 				})]

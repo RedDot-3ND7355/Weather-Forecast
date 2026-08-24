@@ -26,40 +26,56 @@ export type RadarFrame = {
   cells?: PrecipCell[];
 };
 
-export function pickHalfHourFrames(
+export function nearestFrame(
   frames: RadarFrame[],
-  spanSec = 2 * 3600,
-  stepSec = 30 * 60,
-): RadarFrame[] {
-  if (!frames.length) return [];
-  const sorted = [...frames].sort((a, b) => a.time - b.time);
-  const latest = sorted[sorted.length - 1].time;
-  const oldest = sorted[0].time;
-  const start = Math.max(oldest, latest - spanSec);
-  const picked: RadarFrame[] = [];
-  for (let t = start; t <= latest + 1; t += stepSec) {
-    let best = sorted[0];
-    let bestD = Math.abs(sorted[0].time - t);
-    for (const f of sorted) {
-      const d = Math.abs(f.time - t);
-      if (d < bestD) {
-        best = f;
-        bestD = d;
-      }
-    }
-    if (bestD <= stepSec / 2 && picked[picked.length - 1]?.time !== best.time) {
-      picked.push(best);
+  t: number,
+  maxDelta: number,
+): RadarFrame | undefined {
+  let best: RadarFrame | undefined;
+  let bestD = Infinity;
+  for (const f of frames) {
+    const d = Math.abs(f.time - t);
+    if (d < bestD) {
+      best = f;
+      bestD = d;
     }
   }
-  if (picked[picked.length - 1]?.time !== latest) {
-    const last = sorted[sorted.length - 1];
-    if (!picked.length || last.time - picked[picked.length - 1].time >= stepSec / 2) {
-      picked.push(last);
-    } else {
-      picked[picked.length - 1] = last;
-    }
+  return best && bestD <= maxDelta ? best : undefined;
+}
+
+/** Last slice that is not in the future — the proper "now" radar frame. */
+export function nowFrameIndex(frames: RadarFrame[], now = Date.now() / 1000): number {
+  let idx = 0;
+  for (let i = 0; i < frames.length; i += 1) {
+    if (frames[i].time <= now + 90) idx = i;
   }
-  return picked;
+  return idx;
+}
+
+export function buildRadarTimeline(args: {
+  catalog: RadarFrame[];
+  grid: RadarFrame[];
+  now?: number;
+  pastHours?: number;
+  futureHours?: number;
+  stepSec?: number;
+}): RadarFrame[] {
+  const now = args.now ?? Date.now() / 1000;
+  const step = args.stepSec ?? 30 * 60;
+  const nowTick = Math.floor(now / step) * step;
+  const start = nowTick - (args.pastHours ?? 2) * 3600;
+  const end = nowTick + (args.futureHours ?? 6) * 3600;
+  const out: RadarFrame[] = [];
+  for (let t = start; t <= end + 1; t += step) {
+    const rv = nearestFrame(args.catalog, t, 12 * 60);
+    if (rv) {
+      out.push({ ...rv, time: t });
+      continue;
+    }
+    const model = nearestFrame(args.grid, t, 25 * 60);
+    out.push(model ? { ...model, time: t } : { time: t, kind: "forecast", cells: [] });
+  }
+  return out;
 }
 
 export function buildAdvectionFrames(args: {
