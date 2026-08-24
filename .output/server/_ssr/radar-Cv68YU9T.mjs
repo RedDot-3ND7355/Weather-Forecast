@@ -3,7 +3,7 @@ import { t as createServerRpc } from "./createServerRpc-CcvdN_gc.mjs";
 import { i as windLong } from "./compass-BtdnyLVS.mjs";
 import { r as estimateRain } from "./rain-CGpVhUJn.mjs";
 import { mn as object, pn as number } from "../_libs/@better-auth/core+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/radar-DgMx_T-V.js
+//#region node_modules/.nitro/vite/services/ssr/assets/radar-Cv68YU9T.js
 var EARTH_KM = 6371;
 var FETCH_KM = [
 	0,
@@ -75,12 +75,100 @@ var fetchRadarCatalog = createServerFn({ method: "GET" }).handler(fetchRadarCata
 		host,
 		frames: [...json.radar.past ?? [], ...json.radar.nowcast ?? []].map((f) => ({
 			time: f.time,
+			kind: "observed",
 			tileUrl: `${host}${f.path}/256/{z}/{x}/{y}/6/1_1.png`
 		}))
 	};
 	catalogCache.at = Date.now();
 	catalogCache.value = value;
 	return value;
+});
+var gridCache = /* @__PURE__ */ new Map();
+function makeGrid(lat, lon, n = 5) {
+	const dLat = 1.35;
+	const dLon = 1.35 / Math.max(.35, Math.cos(lat * Math.PI / 180));
+	const pts = [];
+	for (let i = 0; i < n; i += 1) for (let j = 0; j < n; j += 1) pts.push({
+		latitude: lat - dLat + 2 * dLat * i / (n - 1),
+		longitude: lon - dLon + 2 * dLon * j / (n - 1)
+	});
+	return pts;
+}
+var fetchPrecipGrid_createServerFn_handler = createServerRpc({
+	id: "a18c3671cbbca41ac752d67ab55ebc45fcd3d2935dffba314e0c7217c41206c5",
+	name: "fetchPrecipGrid",
+	filename: "src/lib/weather/radar.ts"
+}, (opts) => fetchPrecipGrid.__executeServer(opts));
+var fetchPrecipGrid = createServerFn({ method: "GET" }).validator(object({
+	latitude: number().min(-90).max(90),
+	longitude: number().min(-180).max(180)
+})).handler(fetchPrecipGrid_createServerFn_handler, async ({ data }) => {
+	const key = `${data.latitude.toFixed(2)},${data.longitude.toFixed(2)}`;
+	const hit = gridCache.get(key);
+	if (hit && Date.now() - hit.at < 48e4) return hit.value;
+	const points = makeGrid(data.latitude, data.longitude);
+	const params = new URLSearchParams({
+		latitude: points.map((p) => p.latitude.toFixed(4)).join(","),
+		longitude: points.map((p) => p.longitude.toFixed(4)).join(","),
+		timezone: "GMT",
+		forecast_days: "1",
+		forecast_minutely_15: "24",
+		minutely_15: "precipitation"
+	});
+	let raw;
+	try {
+		raw = await getJson(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+	} catch {
+		gridCache.set(key, {
+			at: Date.now(),
+			value: []
+		});
+		return [];
+	}
+	if (raw && typeof raw === "object" && !Array.isArray(raw) && "error" in raw) {
+		gridCache.set(key, {
+			at: Date.now(),
+			value: []
+		});
+		return [];
+	}
+	const locs = Array.isArray(raw) ? raw : [raw];
+	const buckets = /* @__PURE__ */ new Map();
+	locs.forEach((loc, i) => {
+		const pt = points[i];
+		if (!pt) return;
+		const times = loc.minutely_15?.time ?? [];
+		const precip = loc.minutely_15?.precipitation ?? [];
+		times.forEach((iso, t) => {
+			const unix = Math.floor(new Date(iso).getTime() / 1e3);
+			if (!Number.isFinite(unix)) return;
+			const bucket = Math.round(unix / 1800) * 1800;
+			let grid = buckets.get(bucket);
+			if (!grid) {
+				grid = /* @__PURE__ */ new Map();
+				buckets.set(bucket, grid);
+			}
+			const id = `${pt.latitude.toFixed(3)},${pt.longitude.toFixed(3)}`;
+			const mm = num(precip[t]);
+			const prev = grid.get(id);
+			grid.set(id, {
+				latitude: pt.latitude,
+				longitude: pt.longitude,
+				precipMm: Math.max(prev?.precipMm ?? 0, mm)
+			});
+		});
+	});
+	const now = Math.floor(Date.now() / 1e3);
+	const frames = [...buckets.entries()].sort((a, b) => a[0] - b[0]).filter(([time]) => time > now + 480 && time <= now + 21600 + 60).map(([time, grid]) => ({
+		time,
+		kind: "forecast",
+		cells: [...grid.values()]
+	}));
+	gridCache.set(key, {
+		at: Date.now(),
+		value: frames
+	});
+	return frames;
 });
 var fetchRadarNowcast_createServerFn_handler = createServerRpc({
 	id: "15e2b9a1b9e19d4fce08228a67e0ab8734cdef8facc9972da8cad05b3efcba82",
@@ -255,4 +343,4 @@ function num(v, fallback = 0) {
 	return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
 //#endregion
-export { fetchRadarCatalog_createServerFn_handler, fetchRadarNowcast_createServerFn_handler };
+export { fetchPrecipGrid_createServerFn_handler, fetchRadarCatalog_createServerFn_handler, fetchRadarNowcast_createServerFn_handler };

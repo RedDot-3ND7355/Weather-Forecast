@@ -289,6 +289,46 @@ var Droplets = createLucideIcon("droplets", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Expand = createLucideIcon("expand", [
+	["path", {
+		d: "m15 15 6 6",
+		key: "1s409w"
+	}],
+	["path", {
+		d: "m15 9 6-6",
+		key: "ko1vev"
+	}],
+	["path", {
+		d: "M21 16v5h-5",
+		key: "1ck2sf"
+	}],
+	["path", {
+		d: "M21 8V3h-5",
+		key: "1qoq8a"
+	}],
+	["path", {
+		d: "M3 16v5h5",
+		key: "1t08am"
+	}],
+	["path", {
+		d: "m3 21 6-6",
+		key: "wwnumi"
+	}],
+	["path", {
+		d: "M3 8V3h5",
+		key: "1ln10m"
+	}],
+	["path", {
+		d: "M9 9 3 3",
+		key: "v551iv"
+	}]
+]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Eye = createLucideIcon("eye", [["path", {
 	d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
 	key: "1nclc0"
@@ -446,6 +486,36 @@ var MapPin = createLucideIcon("map-pin", [["path", {
 	r: "3",
 	key: "ilqhr7"
 }]]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var Maximize2 = createLucideIcon("maximize-2", [
+	["polyline", {
+		points: "15 3 21 3 21 9",
+		key: "mznyad"
+	}],
+	["polyline", {
+		points: "9 21 3 21 3 15",
+		key: "1avn1i"
+	}],
+	["line", {
+		x1: "21",
+		x2: "14",
+		y1: "3",
+		y2: "10",
+		key: "ota7mn"
+	}],
+	["line", {
+		x1: "3",
+		x2: "10",
+		y1: "21",
+		y2: "14",
+		key: "1atl0r"
+	}]
+]);
 /**
 * @license lucide-react v0.510.0 - ISC
 *
@@ -677,4 +747,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { BookmarkCheck as A, CloudSun as C, CloudFog as D, CloudLightning as E, CloudDrizzle as O, Cloud as S, CloudRain as T, LoaderCircle as _, Sun as a, Eye as b, Plus as c, Moon as d, Minus as f, Locate as g, LogIn as h, Thermometer as i, Bookmark as k, Play as l, LogOut as m, Wind as n, Search as o, MapPin as p, TriangleAlert as r, Radar as s, X as t, Pause as u, Info as v, CloudSnow as w, Droplets as x, Gauge as y };
+export { CloudDrizzle as A, Droplets as C, CloudRain as D, CloudSnow as E, BookmarkCheck as M, CloudLightning as O, Expand as S, CloudSun as T, Locate as _, Sun as a, Gauge as b, Plus as c, Moon as d, Minus as f, LogIn as g, LogOut as h, Thermometer as i, Bookmark as j, CloudFog as k, Play as l, MapPin as m, Wind as n, Search as o, Maximize2 as p, TriangleAlert as r, Radar as s, X as t, Pause as u, LoaderCircle as v, Cloud as w, Eye as x, Info as y };

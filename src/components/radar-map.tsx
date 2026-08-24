@@ -1,9 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { Minus, Pause, Play, Plus, Radar } from "lucide-react";
+import { Expand, Maximize2, Minus, Pause, Play, Plus, Radar, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { WindArrow } from "@/components/wind-arrow";
-import { fetchRadarCatalog, fetchRadarNowcast, pickHalfHourFrames } from "@/lib/weather/radar";
+import {
+  fetchPrecipGrid,
+  fetchRadarCatalog,
+  fetchRadarNowcast,
+  pickHalfHourFrames,
+  type PrecipCell,
+  type RadarFrame,
+} from "@/lib/weather/radar";
 import { formatHour, formatSpeed } from "@/lib/weather/format";
 import { windLong } from "@/lib/weather/compass";
 import type { Forecast, Units } from "@/lib/weather/types";
@@ -36,6 +44,14 @@ function loadImg(src: string): Promise<HTMLImageElement | null> {
   return pending;
 }
 
+function hexToRgb(hex: string): string {
+  const h = hex.replace("#", "").trim();
+  if (h.length >= 6) {
+    return `${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)}`;
+  }
+  return "126, 180, 198";
+}
+
 function hourStatus(h: {
   hereMm: number;
   fetchMm: number;
@@ -63,17 +79,37 @@ function composeRadar(args: {
   tile: number;
   scale: number;
   windDir: number;
+  z: number;
+  x0: number;
+  y0: number;
+  cells?: PrecipCell[];
 }): HTMLCanvasElement {
-  const { cssW, cssH, dpr, tiles, originX, originY, tile, scale, windDir } = args;
+  const {
+    cssW,
+    cssH,
+    dpr,
+    tiles,
+    originX,
+    originY,
+    tile,
+    scale,
+    windDir,
+    z,
+    x0,
+    y0,
+    cells,
+  } = args;
   const off = document.createElement("canvas");
   off.width = Math.round(cssW * dpr);
   off.height = Math.round(cssH * dpr);
   const ctx = off.getContext("2d");
   if (!ctx) return off;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const raised =
-    getComputedStyle(document.documentElement).getPropertyValue("--color-raised").trim() ||
-    "#131a21";
+  const root = getComputedStyle(document.documentElement);
+  const raised = root.getPropertyValue("--color-raised").trim() || "#131a21";
+  const rain = root.getPropertyValue("--color-rain").trim() || "#7eb4c6";
+  const fg = root.getPropertyValue("--color-fg").trim() || "#e7eef4";
+  const rainRgb = hexToRgb(rain);
   ctx.fillStyle = raised;
   ctx.fillRect(0, 0, cssW, cssH);
   for (const t of tiles) {
@@ -98,9 +134,25 @@ function composeRadar(args: {
     );
   }
   ctx.globalAlpha = 1;
-  const root = getComputedStyle(document.documentElement);
-  const rain = root.getPropertyValue("--color-rain").trim() || "#7eb4c6";
-  const fg = root.getPropertyValue("--color-fg").trim() || "#e7eef4";
+  if (cells?.length) {
+    const radius = Math.max(36, tile * scale * 0.38);
+    for (const cell of cells) {
+      if (cell.precipMm < 0.08) continue;
+      const x = originX + (lon2tile(cell.longitude, z) - x0) * tile * scale;
+      const y = originY + (lat2tile(cell.latitude, z) - y0) * tile * scale;
+      const a = Math.min(0.82, 0.18 + cell.precipMm * 0.28);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      g.addColorStop(0, `rgba(${rainRgb}, ${a})`);
+      g.addColorStop(0.55, `rgba(${rainRgb}, ${a * 0.45})`);
+      g.addColorStop(1, `rgba(${rainRgb}, 0)`);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
   const px = cssW / 2;
   const py = cssH / 2;
   const rad = ((windDir - 90) * Math.PI) / 180;
@@ -126,6 +178,8 @@ function composeRadar(args: {
   return off;
 }
 
+type ViewMode = "inline" | "page" | "os";
+
 export function RadarMap({
   forecast,
   units,
@@ -136,11 +190,13 @@ export function RadarMap({
   const { place, current } = forecast;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(6);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [mode, setMode] = useState<ViewMode>("inline");
   const lastBitmap = useRef<HTMLCanvasElement | null>(null);
   const fadeRaf = useRef(0);
   const readyRef = useRef(false);
@@ -168,11 +224,41 @@ export function RadarMap({
       }),
     staleTime: 8 * 60 * 1000,
   });
+  const gridQuery = useQuery({
+    queryKey: ["precip-grid", place.latitude.toFixed(2), place.longitude.toFixed(2)],
+    queryFn: () =>
+      fetchPrecipGrid({
+        data: { latitude: place.latitude, longitude: place.longitude },
+      }),
+    staleTime: 8 * 60 * 1000,
+  });
 
-  const frames = useMemo(
-    () => pickHalfHourFrames(catalogQuery.data?.frames ?? []),
-    [catalogQuery.data?.frames],
-  );
+  const frames = useMemo(() => {
+    const past = pickHalfHourFrames(catalogQuery.data?.frames ?? []);
+    const lastPast = past.at(-1)?.time ?? Math.floor(Date.now() / 1000);
+    let future = (gridQuery.data ?? []).filter((f) => f.time > lastPast + 600);
+    if (!future.length) {
+      future = forecast.hourly.slice(1, 7).map((h) => ({
+        time: Math.floor(new Date(h.time).getTime() / 1000),
+        kind: "forecast" as const,
+        cells: [
+          {
+            latitude: place.latitude,
+            longitude: place.longitude,
+            precipMm: h.precipMm,
+          },
+        ],
+      }));
+    }
+    return [...past, ...future.filter((f) => f.time > lastPast + 600)];
+  }, [
+    catalogQuery.data?.frames,
+    gridQuery.data,
+    forecast.hourly,
+    place.latitude,
+    place.longitude,
+  ]);
+
   const nowcast = nowcastQuery.data;
   const hours =
     nowcast?.hours?.length
@@ -188,11 +274,10 @@ export function RadarMap({
             forecast.hourly[0].precipMm < 0.15,
         }));
   const arrival = nowcast?.arrival ?? null;
-  const active = frames[Math.min(frame, Math.max(0, frames.length - 1))];
-  const spanHours =
-    frames.length >= 2
-      ? Math.max(1, Math.round((frames[frames.length - 1].time - frames[0].time) / 3600))
-      : 2;
+  const active: RadarFrame | undefined =
+    frames[Math.min(frame, Math.max(0, frames.length - 1))];
+  const hasForecast = frames.some((f) => f.kind === "forecast");
+  const isForecast = active?.kind === "forecast";
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -202,11 +287,12 @@ export function RadarMap({
     const ro = new ResizeObserver(apply);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (!frames.length) return;
-    setFrame(frames.length - 1);
+    const nowIdx = frames.findIndex((f) => f.kind === "forecast");
+    setFrame(nowIdx > 0 ? nowIdx - 1 : frames.length - 1);
   }, [frames.length]);
 
   useEffect(() => {
@@ -216,6 +302,38 @@ export function RadarMap({
     }, 1200);
     return () => window.clearInterval(id);
   }, [playing, frames.length]);
+
+  useEffect(() => {
+    if (mode === "inline") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        void document.exitFullscreen?.();
+        setMode("inline");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "os") return;
+    const el = overlayRef.current as
+      | (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> })
+      | null;
+    if (!el) return;
+    const req = el.requestFullscreen ?? el.webkitRequestFullscreen;
+    void Promise.resolve(req?.call(el)).catch(() => setMode("page"));
+    const onFs = () => {
+      if (!document.fullscreenElement) setMode((m) => (m === "os" ? "page" : m));
+    };
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, [mode]);
 
   const tilePlan = useMemo(() => {
     const z = zoom;
@@ -251,7 +369,7 @@ export function RadarMap({
     const x0 = Math.floor(cx - 1);
     const y0 = Math.floor(cy - 1);
 
-    const loadTiles = (frameUrl: string) => {
+    const loadTiles = (f: RadarFrame) => {
       const jobs: Promise<{
         dx: number;
         dy: number;
@@ -265,15 +383,16 @@ export function RadarMap({
           const max = 2 ** z;
           if (ty < 0 || ty >= max) continue;
           const wx = ((tx % max) + max) % max;
+          const rainUrl = f.tileUrl
+            ? f.tileUrl
+                .replace("{z}", String(z))
+                .replace("{x}", String(wx))
+                .replace("{y}", String(ty))
+            : "";
           jobs.push(
             Promise.all([
               loadImg(`${BASE}/${z}/${wx}/${ty}@2x.png`),
-              loadImg(
-                frameUrl
-                  .replace("{z}", String(z))
-                  .replace("{x}", String(wx))
-                  .replace("{y}", String(ty)),
-              ),
+              rainUrl ? loadImg(rainUrl) : Promise.resolve(null),
             ]).then(([base, rain]) => ({ dx, dy, base, rain })),
           );
         }
@@ -282,7 +401,7 @@ export function RadarMap({
     };
 
     void (async () => {
-      const tiles = await loadTiles(active.tileUrl);
+      const tiles = await loadTiles(active);
       if (cancelled) return;
       const next = composeRadar({
         cssW,
@@ -294,6 +413,10 @@ export function RadarMap({
         tile,
         scale,
         windDir: current.windDir,
+        z,
+        x0,
+        y0,
+        cells: active.kind === "forecast" ? active.cells : undefined,
       });
       const prev = lastBitmap.current;
       lastBitmap.current = next;
@@ -324,7 +447,7 @@ export function RadarMap({
     })();
 
     for (const f of frames) {
-      if (f !== active) void loadTiles(f.tileUrl);
+      if (f.kind === "observed" && f !== active) void loadTiles(f);
     }
 
     return () => {
@@ -339,7 +462,6 @@ export function RadarMap({
         minute: "2-digit",
       }).format(new Date(active.time * 1000))
     : "—";
-  const isLatest = frames.length > 0 && frame >= frames.length - 1;
   const from = windLong(current.windDir);
   const headline = arrival
     ? arrival.minutes === 0
@@ -350,10 +472,22 @@ export function RadarMap({
       : `Watch the ${from}`;
   const copy =
     arrival?.copy ??
-    `Wind is from the ${from}. Rain would arrive from that direction. Radar is shown every 30 minutes.`;
+    `Wind is from the ${from}. Past 2 hours is live radar; the next 6 hours is a model forecast on the same map.`;
 
-  return (
-    <section className="min-w-0 overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-border)] lg:col-span-2">
+  function closeView() {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    setMode("inline");
+  }
+
+  const panel = (
+    <section
+      className={cn(
+        "min-w-0 overflow-hidden bg-surface",
+        mode === "inline"
+          ? "rounded-2xl shadow-[var(--shadow-border)] lg:col-span-2"
+          : "flex h-full min-h-0 flex-col rounded-none",
+      )}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
@@ -365,23 +499,80 @@ export function RadarMap({
           </h2>
           <p className="mt-1 max-w-prose text-sm text-muted">{copy}</p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-raised px-3 py-2">
-          <WindArrow
-            deg={current.windDir}
-            wet={(arrival?.precipMm ?? current.rain.chance) > 40}
-          />
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-fg">From the {from}</p>
-            <p className="text-[11px] text-muted">
-              {formatSpeed(current.windSpeedKmh, units)}
-            </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-xl bg-raised px-3 py-2">
+            <WindArrow
+              deg={current.windDir}
+              wet={(arrival?.precipMm ?? current.rain.chance) > 40}
+            />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-fg">From the {from}</p>
+              <p className="text-[11px] text-muted">
+                {formatSpeed(current.windSpeedKmh, units)}
+              </p>
+            </div>
           </div>
+          {mode === "inline" ? (
+            <>
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="size-9"
+                onClick={() => setMode("page")}
+                aria-label="Fill page"
+                title="Fill page"
+              >
+                <Maximize2 className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="size-9"
+                onClick={() => setMode("os")}
+                aria-label="Fullscreen"
+                title="Fullscreen"
+              >
+                <Expand className="size-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              {mode === "page" ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="size-9"
+                  onClick={() => setMode("os")}
+                  aria-label="Fullscreen"
+                  title="Fullscreen"
+                >
+                  <Expand className="size-4" />
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="size-9"
+                onClick={closeView}
+                aria-label="Close"
+              >
+                <X className="size-4" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       <div
         ref={wrapRef}
-        className="relative mt-3 h-[240px] w-full overflow-hidden bg-raised sm:h-[300px]"
+        className={cn(
+          "relative mt-3 w-full overflow-hidden bg-raised",
+          mode === "inline" ? "h-[240px] sm:h-[300px]" : "min-h-0 flex-1",
+        )}
       >
         <canvas
           ref={canvasRef}
@@ -391,14 +582,24 @@ export function RadarMap({
         {!ready && !catalogQuery.isError ? (
           <div className="absolute inset-0 animate-pulse bg-raised" />
         ) : null}
-        {catalogQuery.isError ? (
+        {catalogQuery.isError && !frames.length ? (
           <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted">
             Radar is unavailable right now. The hourly estimate below still uses
             wind and the forecast model.
           </p>
         ) : null}
-        <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-bg/75 px-2 py-1 text-[11px] text-fg backdrop-blur-sm">
-          {place.name}
+        <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-1">
+          <p className="rounded-md bg-bg/75 px-2 py-1 text-[11px] text-fg backdrop-blur-sm">
+            {place.name}
+          </p>
+          <p
+            className={cn(
+              "rounded-md px-2 py-1 text-[11px] font-medium backdrop-blur-sm",
+              isForecast ? "bg-accent text-accent-fg" : "bg-bg/75 text-muted",
+            )}
+          >
+            {isForecast ? `Forecast · ${stamp}` : stamp}
+          </p>
         </div>
         <div className="absolute right-3 top-3 flex gap-1">
           <Button
@@ -424,14 +625,9 @@ export function RadarMap({
             <Plus className="size-4" />
           </Button>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
-          <p className="rounded-md bg-bg/75 px-2 py-1 text-[11px] tabular-nums text-muted backdrop-blur-sm">
-            {isLatest ? "Now" : stamp}
-          </p>
-          <p className="rounded-md bg-bg/75 px-2 py-1 text-[11px] text-muted backdrop-blur-sm">
-            You are here · dashed line is wind
-          </p>
-        </div>
+        <p className="pointer-events-none absolute bottom-3 right-3 rounded-md bg-bg/75 px-2 py-1 text-[11px] text-muted backdrop-blur-sm">
+          You are here · dashed line is wind
+        </p>
       </div>
 
       <div className="flex items-center gap-3 px-4 py-3 sm:px-5">
@@ -459,15 +655,14 @@ export function RadarMap({
             aria-label="Radar time, 30 minute steps"
           />
           <div className="mt-1 flex justify-between text-[11px] text-faint">
-            <span>
-              {spanHours} hour{spanHours === 1 ? "" : "s"} ago · 30 min
-            </span>
+            <span>2 hours ago</span>
             <span>Now</span>
+            {hasForecast ? <span>+6 hours</span> : null}
           </div>
         </div>
       </div>
 
-      {hours.length ? (
+      {hours.length && mode === "inline" ? (
         <div className="border-t border-border px-4 py-3 sm:px-5">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
             Next 6 hours
@@ -505,5 +700,13 @@ export function RadarMap({
         </div>
       ) : null}
     </section>
+  );
+
+  if (mode === "inline") return panel;
+  return createPortal(
+    <div ref={overlayRef} className="fixed inset-0 z-50 bg-bg">
+      {panel}
+    </div>,
+    document.body,
   );
 }

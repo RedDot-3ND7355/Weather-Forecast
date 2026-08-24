@@ -11,14 +11,22 @@ import { estimateRain } from "./rain";
 
 const UA = "Vane/1.0 (wind-aware weather forecast)";
 
+export type PrecipCell = {
+  latitude: number;
+  longitude: number;
+  precipMm: number;
+};
+
 export type RadarFrame = {
   time: number;
-  tileUrl: string;
+  kind: "observed" | "forecast";
+  tileUrl?: string;
+  cells?: PrecipCell[];
 };
 
 export function pickHalfHourFrames(
   frames: RadarFrame[],
-  spanSec = 5 * 3600,
+  spanSec = 2 * 3600,
   stepSec = 30 * 60,
 ): RadarFrame[] {
   if (!frames.length) return [];
@@ -127,6 +135,7 @@ export const fetchRadarCatalog = createServerFn({ method: "GET" }).handler(
     const times = [...(json.radar.past ?? []), ...(json.radar.nowcast ?? [])];
     const frames: RadarFrame[] = times.map((f) => ({
       time: f.time,
+      kind: "observed" as const,
       tileUrl: `${host}${f.path}/256/{z}/{x}/{y}/6/1_1.png`,
     }));
     const value = { host, frames };
@@ -135,6 +144,96 @@ export const fetchRadarCatalog = createServerFn({ method: "GET" }).handler(
     return value;
   },
 );
+
+const gridCache = new Map<string, { at: number; value: RadarFrame[] }>();
+
+function makeGrid(lat: number, lon: number, n = 5): { latitude: number; longitude: number }[] {
+  const dLat = 1.35;
+  const dLon = 1.35 / Math.max(0.35, Math.cos((lat * Math.PI) / 180));
+  const pts: { latitude: number; longitude: number }[] = [];
+  for (let i = 0; i < n; i += 1) {
+    for (let j = 0; j < n; j += 1) {
+      pts.push({
+        latitude: lat - dLat + ((2 * dLat) * i) / (n - 1),
+        longitude: lon - dLon + ((2 * dLon) * j) / (n - 1),
+      });
+    }
+  }
+  return pts;
+}
+
+export const fetchPrecipGrid = createServerFn({ method: "GET" })
+  .validator(
+    z.object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+    }),
+  )
+  .handler(async ({ data }): Promise<RadarFrame[]> => {
+    const key = `${data.latitude.toFixed(2)},${data.longitude.toFixed(2)}`;
+    const hit = gridCache.get(key);
+    if (hit && Date.now() - hit.at < 8 * 60 * 1000) return hit.value;
+
+    const points = makeGrid(data.latitude, data.longitude);
+    const params = new URLSearchParams({
+      latitude: points.map((p) => p.latitude.toFixed(4)).join(","),
+      longitude: points.map((p) => p.longitude.toFixed(4)).join(","),
+      timezone: "GMT",
+      forecast_days: "1",
+      forecast_minutely_15: "24",
+      minutely_15: "precipitation",
+    });
+    let raw: MinuteLoc | MinuteLoc[];
+    try {
+      raw = await getJson<MinuteLoc | MinuteLoc[]>(
+        `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
+      );
+    } catch {
+      gridCache.set(key, { at: Date.now(), value: [] });
+      return [];
+    }
+    if (raw && typeof raw === "object" && !Array.isArray(raw) && "error" in raw) {
+      gridCache.set(key, { at: Date.now(), value: [] });
+      return [];
+    }
+    const locs = Array.isArray(raw) ? raw : [raw];
+    const buckets = new Map<number, Map<string, PrecipCell>>();
+    locs.forEach((loc, i) => {
+      const pt = points[i];
+      if (!pt) return;
+      const times = loc.minutely_15?.time ?? [];
+      const precip = loc.minutely_15?.precipitation ?? [];
+      times.forEach((iso, t) => {
+        const unix = Math.floor(new Date(iso).getTime() / 1000);
+        if (!Number.isFinite(unix)) return;
+        const bucket = Math.round(unix / 1800) * 1800;
+        let grid = buckets.get(bucket);
+        if (!grid) {
+          grid = new Map();
+          buckets.set(bucket, grid);
+        }
+        const id = `${pt.latitude.toFixed(3)},${pt.longitude.toFixed(3)}`;
+        const mm = num(precip[t]);
+        const prev = grid.get(id);
+        grid.set(id, {
+          latitude: pt.latitude,
+          longitude: pt.longitude,
+          precipMm: Math.max(prev?.precipMm ?? 0, mm),
+        });
+      });
+    });
+    const now = Math.floor(Date.now() / 1000);
+    const frames: RadarFrame[] = [...buckets.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .filter(([time]) => time > now + 8 * 60 && time <= now + 6 * 3600 + 60)
+      .map(([time, grid]) => ({
+        time,
+        kind: "forecast" as const,
+        cells: [...grid.values()],
+      }));
+    gridCache.set(key, { at: Date.now(), value: frames });
+    return frames;
+  });
 
 export const fetchRadarNowcast = createServerFn({ method: "GET" })
   .validator(
