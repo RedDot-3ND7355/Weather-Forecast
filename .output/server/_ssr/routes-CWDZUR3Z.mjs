@@ -3,19 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-B-eGWbYz.mjs";
-import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BuzFLAAb.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-Dr3eFf-n.mjs";
+import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BQUFD3CQ.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { n as arrivalCopy, r as formatEta } from "./advection-CHvhfvGU.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-CPgkiWww.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-DrXJ02xb.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CrMHpjJN.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BxM1FHoG.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CWDZUR3Z.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1467,7 +1467,7 @@ function buildRadarTimeline(args) {
 	const now = args.now ?? Date.now() / 1e3;
 	const step = args.stepSec ?? 600;
 	const nowTick = Math.floor(now / step) * step;
-	const end = nowTick + (args.futureHours ?? 5) * 3600;
+	const end = nowTick + (args.futureHours ?? 2) * 3600;
 	const out = [];
 	const seen = /* @__PURE__ */ new Set();
 	const push = (f) => {
@@ -2267,7 +2267,7 @@ function RadarMap({ forecast, units }) {
 		grid: gridQuery.data ?? [],
 		msc: inMscDomain(place.latitude, place.longitude) ? mscQuery.data : null,
 		stepSec: 600,
-		futureHours: 5
+		futureHours: 2
 	}), [
 		catalogQuery.data?.frames,
 		gridQuery.data,
@@ -2805,7 +2805,7 @@ function RadarMap({ forecast, units }) {
 							}),
 							hasForecast ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute right-0",
-								children: "+5h"
+								children: "+2h"
 							}) : null
 						]
 					})]

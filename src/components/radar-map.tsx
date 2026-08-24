@@ -1013,7 +1013,7 @@ export function RadarMap({
           ? mscQuery.data
           : null,
         stepSec: 10 * 60,
-        futureHours: 5,
+        futureHours: 2,
       }),
     [
       catalogQuery.data?.frames,
@@ -1669,7 +1669,7 @@ export function RadarMap({
             >
               {t("now")}
             </span>
-            {hasForecast ? <span className="absolute right-0">+5h</span> : null}
+            {hasForecast ? <span className="absolute right-0">+2h</span> : null}
           </div>
         </div>
       </div>

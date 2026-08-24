@@ -212,7 +212,7 @@ export function buildRadarTimeline(args: {
   const now = args.now ?? Date.now() / 1000;
   const step = args.stepSec ?? 10 * 60;
   const nowTick = Math.floor(now / step) * step;
-  const end = nowTick + (args.futureHours ?? 5) * 3600;
+  const end = nowTick + (args.futureHours ?? 2) * 3600;
   const out: RadarFrame[] = [];
   const seen = new Set<number>();
   const push = (f: RadarFrame) => {
