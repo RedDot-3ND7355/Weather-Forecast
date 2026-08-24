@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
+import { cn } from "@/lib/utils";
 
 type Scene =
   | "clear"
@@ -11,6 +12,8 @@ type Scene =
   | "snow"
   | "snowshower"
   | "thunder";
+
+type Density = "full" | "compact";
 
 function sceneFor(code: number): Scene {
   if (code === 0 || code === 1) return "clear";
@@ -37,24 +40,29 @@ function unit(i: number, salt: number): number {
   return x - Math.floor(x);
 }
 
-/**
- * Renders weather as an SVG group inside the compass viewBox (0 0 240 240).
- * Must share the same SVG as the rose so the disc is perfectly centered.
- */
+type SceneProps = {
+  code: number;
+  isDay: boolean;
+  windKmh: number;
+  idPrefix?: string;
+  density?: Density;
+  shape?: "circle" | "rect";
+};
+
 export function WeatherSceneGroup({
   code,
   isDay,
   windKmh,
-}: {
-  code: number;
-  isDay: boolean;
-  windKmh: number;
-}) {
+  idPrefix = "wx",
+  density = "full",
+  shape = "circle",
+}: SceneProps) {
   const scene = sceneFor(code);
   const level = intensity(code);
   const wind = Math.max(0, windKmh);
   const lean = Math.min(22, wind * 0.42);
   const gust = Math.min(1, wind / 48);
+  const compact = density === "compact";
   const precip =
     scene === "drizzle" ||
     scene === "rain" ||
@@ -75,13 +83,25 @@ export function WeatherSceneGroup({
       ? ["#0c1014", "#07090c"]
       : ["#101820", "#080b0e"];
 
-  const drops = precip ? 8 + level * 8 : 0;
-  const flakes = snow ? 7 + level * 6 : 0;
-  const clouds = cloudy ? (scene === "partly" ? 2 : scene === "fog" ? 4 : 3) : 0;
-  const stars = !isDay && scene === "clear" ? 14 : !isDay ? 7 : 0;
-  const streaks = wind >= 14 ? 4 + Math.round(gust * 5) : 0;
+  const drops = precip ? (compact ? 4 + level * 2 : 8 + level * 8) : 0;
+  const flakes = snow ? (compact ? 4 + level * 2 : 7 + level * 6) : 0;
+  const clouds = cloudy
+    ? compact
+      ? scene === "partly"
+        ? 1
+        : 2
+      : scene === "partly"
+        ? 2
+        : scene === "fog"
+          ? 4
+          : 3
+    : 0;
+  const stars = !isDay && scene === "clear" ? (compact ? 6 : 14) : !isDay ? (compact ? 3 : 7) : 0;
+  const streaks = !compact && wind >= 14 ? 4 + Math.round(gust * 5) : 0;
 
-  // Match the compass outer ring (r≈108–112)
+  const clipId = `${idPrefix}-clip`;
+  const skyId = `${idPrefix}-sky`;
+  const scrimId = `${idPrefix}-scrim`;
   const R = 110;
 
   return (
@@ -96,22 +116,30 @@ export function WeatherSceneGroup({
       aria-hidden
     >
       <defs>
-        <clipPath id="wx-clip">
-          <circle cx="120" cy="120" r={R} />
+        <clipPath id={clipId}>
+          {shape === "circle" ? (
+            <circle cx="120" cy="120" r={R} />
+          ) : (
+            <rect x="0" y="0" width="240" height="240" rx="28" ry="28" />
+          )}
         </clipPath>
-        <radialGradient id="wx-sky" cx="50%" cy="42%" r="68%">
+        <radialGradient id={skyId} cx="50%" cy="42%" r="68%">
           <stop offset="0%" stopColor={sky[0]} />
           <stop offset="100%" stopColor={sky[1]} />
         </radialGradient>
-        <radialGradient id="wx-scrim" cx="50%" cy="50%" r="46%">
-          <stop offset="0%" stopColor="#0b1014" stopOpacity="0.5" />
+        <radialGradient id={scrimId} cx="50%" cy="50%" r="46%">
+          <stop offset="0%" stopColor="#0b1014" stopOpacity={compact ? 0.35 : 0.5} />
           <stop offset="70%" stopColor="#0b1014" stopOpacity="0.12" />
           <stop offset="100%" stopColor="#0b1014" stopOpacity="0" />
         </radialGradient>
       </defs>
 
-      <g clipPath="url(#wx-clip)">
-        <circle cx="120" cy="120" r={R} fill="url(#wx-sky)" />
+      <g clipPath={`url(#${clipId})`}>
+        {shape === "circle" ? (
+          <circle cx="120" cy="120" r={R} fill={`url(#${skyId})`} />
+        ) : (
+          <rect x="0" y="0" width="240" height="240" fill={`url(#${skyId})`} />
+        )}
 
         {stars
           ? Array.from({ length: stars }, (_, i) => {
@@ -138,15 +166,15 @@ export function WeatherSceneGroup({
           : null}
 
         {isDay && (scene === "clear" || scene === "partly") ? (
-          <g className="vane-wx-sun" transform="translate(120 88)">
+          <g className="vane-wx-sun" transform={`translate(120 ${compact ? 70 : 88})`}>
             <g className="vane-wx-rays">
               {Array.from({ length: 8 }, (_, i) => (
                 <line
                   key={i}
                   x1="0"
-                  y1="-18"
+                  y1={compact ? -12 : -18}
                   x2="0"
-                  y2="-26"
+                  y2={compact ? -18 : -26}
                   stroke="#f5d76e"
                   strokeWidth="1.6"
                   strokeLinecap="round"
@@ -155,15 +183,22 @@ export function WeatherSceneGroup({
                 />
               ))}
             </g>
-            <circle cx="0" cy="0" r="14" fill="#f5d76e" opacity="0.95" />
-            <circle cx="0" cy="0" r="20" fill="#f5d76e" opacity="0.16" className="vane-wx-glow" />
+            <circle cx="0" cy="0" r={compact ? 10 : 14} fill="#f5d76e" opacity="0.95" />
+            <circle
+              cx="0"
+              cy="0"
+              r={compact ? 14 : 20}
+              fill="#f5d76e"
+              opacity="0.16"
+              className="vane-wx-glow"
+            />
           </g>
         ) : null}
 
         {!isDay && (scene === "clear" || scene === "partly") ? (
-          <g transform="translate(120 88)">
-            <circle cx="0" cy="0" r="13" fill="#d5dde4" opacity="0.92" />
-            <circle cx="6" cy="-3" r="11" fill={sky[0]} />
+          <g transform={`translate(120 ${compact ? 70 : 88})`}>
+            <circle cx="0" cy="0" r={compact ? 10 : 13} fill="#d5dde4" opacity="0.92" />
+            <circle cx={compact ? 5 : 6} cy={compact ? -2 : -3} r={compact ? 8 : 11} fill={sky[0]} />
           </g>
         ) : null}
 
@@ -171,7 +206,7 @@ export function WeatherSceneGroup({
           ? Array.from({ length: clouds }, (_, i) => {
               const x = 40 + unit(i, 6) * 120;
               const y = 55 + unit(i, 7) * 50;
-              const s = 0.65 + unit(i, 8) * 0.5;
+              const s = (compact ? 0.45 : 0.65) + unit(i, 8) * 0.5;
               const dur = 18 + unit(i, 9) * 16 - gust * 8;
               return (
                 <g key={`c${i}`} transform={`translate(${x} ${y}) scale(${s})`}>
@@ -193,7 +228,7 @@ export function WeatherSceneGroup({
             })
           : null}
 
-        {scene === "fog"
+        {scene === "fog" && !compact
           ? [0, 1, 2].map((i) => (
               <ellipse
                 key={`f${i}`}
@@ -288,7 +323,7 @@ export function WeatherSceneGroup({
             })
           : null}
 
-        {scene === "thunder" ? (
+        {scene === "thunder" && !compact ? (
           <g>
             <rect x="10" y="10" width="220" height="220" fill="#e7eef4" className="vane-wx-flash" />
             <path
@@ -299,8 +334,47 @@ export function WeatherSceneGroup({
           </g>
         ) : null}
 
-        <circle cx="120" cy="120" r={R} fill="url(#wx-scrim)" />
+        {shape === "circle" ? (
+          <circle cx="120" cy="120" r={R} fill={`url(#${scrimId})`} />
+        ) : (
+          <rect x="0" y="0" width="240" height="240" fill={`url(#${scrimId})`} />
+        )}
       </g>
     </g>
+  );
+}
+
+export function WeatherBackdrop({
+  code,
+  isDay,
+  windKmh,
+  density = "full",
+  className,
+}: {
+  code: number;
+  isDay: boolean;
+  windKmh: number;
+  density?: Density;
+  className?: string;
+}) {
+  const raw = useId().replace(/:/g, "");
+  const idPrefix = `bd${raw}`;
+
+  return (
+    <div
+      className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}
+      aria-hidden
+    >
+      <svg viewBox="0 0 240 240" className="size-full" preserveAspectRatio="xMidYMid slice">
+        <WeatherSceneGroup
+          code={code}
+          isDay={isDay}
+          windKmh={windKmh}
+          idPrefix={idPrefix}
+          density={density}
+          shape="rect"
+        />
+      </svg>
+    </div>
   );
 }
