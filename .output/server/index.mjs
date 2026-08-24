@@ -14,128 +14,128 @@ var public_assets_data_default = {
 	"/favicon.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"1b0-eHuOw216fMR7/WJ+ghpCK8D56dM\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 432,
 		"path": "../public/favicon.svg"
+	},
+	"/og.jpg": {
+		"type": "image/jpeg",
+		"etag": "\"dd78-tS/M2+/U2KAZ9Gsp7T0dONcFL3Y\"",
+		"mtime": "2026-08-24T02:19:35.253Z",
+		"size": 56696,
+		"path": "../public/og.jpg"
 	},
 	"/__grok/icon-180.png": {
 		"type": "image/png",
 		"etag": "\"834-Xk8vfS0DTFn7ggtkfEduWTcNWGE\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 2100,
 		"path": "../public/__grok/icon-180.png"
 	},
 	"/assets/client-C6Z4iW4I.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"7cbd-6zm1jyk5Cr1li5dyPTGan6qk0eY\"",
-		"mtime": "2026-08-24T02:14:44.457Z",
+		"mtime": "2026-08-24T02:19:34.285Z",
 		"size": 31933,
 		"path": "../public/assets/client-C6Z4iW4I.js"
 	},
 	"/assets/dist-CP3jarzo.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"e623-mbC738//PVw4VXrzbDmVftwbUjo\"",
-		"mtime": "2026-08-24T02:14:44.457Z",
+		"mtime": "2026-08-24T02:19:34.285Z",
 		"size": 58915,
 		"path": "../public/assets/dist-CP3jarzo.js"
 	},
-	"/assets/index-CMt1HCJS.js": {
+	"/assets/index-BbVAJ4xe.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"5e9aa-zmI0OM4lAJsn/uORKFtA3Oeep+A\"",
-		"mtime": "2026-08-24T02:14:44.457Z",
-		"size": 387498,
-		"path": "../public/assets/index-CMt1HCJS.js"
+		"etag": "\"5ea9f-o8YDPLhpJDL8Stby8ufbqdcAq+g\"",
+		"mtime": "2026-08-24T02:19:34.285Z",
+		"size": 387743,
+		"path": "../public/assets/index-BbVAJ4xe.js"
 	},
 	"/assets/input-Yv3RKBcd.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"7dbb-nqyjPUlGLnrX9RUNUFoX6x45mGs\"",
-		"mtime": "2026-08-24T02:14:44.457Z",
+		"mtime": "2026-08-24T02:19:34.285Z",
 		"size": 32187,
 		"path": "../public/assets/input-Yv3RKBcd.js"
 	},
-	"/assets/login-DKkF61dr.js": {
+	"/assets/login-DIsOQ5zm.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"16e0-97xD7BlWHa7yeUbN1/qvjjfDYjM\"",
-		"mtime": "2026-08-24T02:14:44.457Z",
+		"etag": "\"16e0-XbwCMHV7E0JgkRJm/3L/T6ZFEH0\"",
+		"mtime": "2026-08-24T02:19:34.285Z",
 		"size": 5856,
-		"path": "../public/assets/login-DKkF61dr.js"
+		"path": "../public/assets/login-DIsOQ5zm.js"
 	},
 	"/assets/react-SIfiwpqq.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"1ff9-FGVdof4/lFGmrdRsB9EIvuwBlYc\"",
-		"mtime": "2026-08-24T02:14:44.457Z",
+		"mtime": "2026-08-24T02:19:34.285Z",
 		"size": 8185,
 		"path": "../public/assets/react-SIfiwpqq.js"
 	},
-	"/assets/routes-CY6DDabB.js": {
+	"/assets/routes-5sE_6hO6.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"6d9f8-n5+jGi63Xr0tBcDTn/fo7jQoIKk\"",
-		"mtime": "2026-08-24T02:14:44.457Z",
-		"size": 449016,
-		"path": "../public/assets/routes-CY6DDabB.js"
+		"etag": "\"6da14-msGBafYU0GHqLRvyc17sYYxFjzg\"",
+		"mtime": "2026-08-24T02:19:34.285Z",
+		"size": 449044,
+		"path": "../public/assets/routes-5sE_6hO6.js"
 	},
-	"/assets/styles-BLBBV2o7.css": {
+	"/assets/styles-veQivvw8.css": {
 		"type": "text/css; charset=utf-8",
-		"etag": "\"aa30-/Vb5facoFReGOak5u6+BFcB7F6c\"",
-		"mtime": "2026-08-24T02:14:44.457Z",
-		"size": 43568,
-		"path": "../public/assets/styles-BLBBV2o7.css"
+		"etag": "\"a8f5-JUTrJ506TYku96Mg5ChP9gBZi7Q\"",
+		"mtime": "2026-08-24T02:19:34.285Z",
+		"size": 43253,
+		"path": "../public/assets/styles-veQivvw8.css"
 	},
 	"/__grok/install/styles.css": {
 		"type": "text/css; charset=utf-8",
 		"etag": "\"1a3d-VUsWOMAheo1/P30EqU5qaIkyvIQ\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 6717,
 		"path": "../public/__grok/install/styles.css"
 	},
 	"/__grok/install/assets/homescreen/glass-puzzle.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"713-AP2wG8KChAGjse1Fn+f/+vDN+sQ\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 1811,
 		"path": "../public/__grok/install/assets/homescreen/glass-puzzle.svg"
 	},
 	"/__grok/install/assets/homescreen/glass-share.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"954-jb3ATcKjqgMOYrA/4w1v21j0Jvg\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 2388,
 		"path": "../public/__grok/install/assets/homescreen/glass-share.svg"
 	},
 	"/__grok/install/assets/homescreen/logo-grok.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"423-5mXO+yh9KW40jM3to5JlWPhxNK8\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 1059,
 		"path": "../public/__grok/install/assets/homescreen/logo-grok.svg"
 	},
 	"/__grok/install/assets/homescreen/ob-ipad.png": {
 		"type": "image/png",
 		"etag": "\"18dd3-wlRwrpmBImStuiu+4poVz7ANin4\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 101843,
 		"path": "../public/__grok/install/assets/homescreen/ob-ipad.png"
 	},
 	"/__grok/install/assets/homescreen/ob-phone.png": {
 		"type": "image/png",
 		"etag": "\"194bc-oZradWHIHO68q2glHU0Gk5ttpWA\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 103612,
 		"path": "../public/__grok/install/assets/homescreen/ob-phone.png"
 	},
 	"/__grok/install/assets/homescreen/plus.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"961-sSBPunx/13vbMNAlPxb7UeO3l3A\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
+		"mtime": "2026-08-24T02:19:35.253Z",
 		"size": 2401,
 		"path": "../public/__grok/install/assets/homescreen/plus.svg"
-	},
-	"/og.jpg": {
-		"type": "image/jpeg",
-		"etag": "\"dd78-tS/M2+/U2KAZ9Gsp7T0dONcFL3Y\"",
-		"mtime": "2026-08-24T02:14:45.229Z",
-		"size": 56696,
-		"path": "../public/og.jpg"
 	}
 };
 //#endregion

@@ -12,10 +12,10 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { i as offsetKm } from "./advection-DzL6mFo8.mjs";
 import { A as CloudDrizzle, C as Droplets, D as CloudRain, E as CloudSnow, M as ChevronLeft, N as Bookmark, O as CloudLightning, P as BookmarkCheck, S as Expand, T as CloudSun, _ as Locate, a as Sun, b as Gauge, c as Plus, d as Moon, f as Minus, g as LogIn, h as LogOut, i as Thermometer, j as ChevronRight, k as CloudFog, l as Play, m as MapPin, n as Wind, o as Search, p as Maximize2, s as Radar, t as X, u as Pause, v as LoaderCircle, w as Cloud, x as Eye, y as Info } from "../_libs/lucide-react.mjs";
-import { n as createSsrRpc } from "./router-B7HR5T1J.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-DfKFEsNe.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BaYuxqQ4.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-bHk5Jnvx.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1107,13 +1107,13 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		const tick = () => {
 			if (motion.current.dragging) return;
 			const max = Math.max(0, el.scrollWidth - el.clientWidth);
-			motion.current.vel *= .92;
+			motion.current.vel *= .935;
 			el.scrollLeft += motion.current.vel;
 			if (el.scrollLeft <= 0 || el.scrollLeft >= max) {
 				el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft));
 				motion.current.vel = 0;
 			}
-			if (Math.abs(motion.current.vel) < .35) {
+			if (Math.abs(motion.current.vel) < .28) {
 				motion.current.vel = 0;
 				settle();
 				return;
@@ -1147,11 +1147,56 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 			coast();
 		};
 		el.addEventListener("wheel", onWheel, { passive: false });
+		let pointer = -1;
+		let startX = 0;
+		let startScroll = 0;
+		let moved = false;
+		let samples = [];
+		const onDown = (e) => {
+			if (e.button !== 0) return;
+			stopCoast();
+			pointer = e.pointerId;
+			startX = e.clientX;
+			startScroll = el.scrollLeft;
+			moved = false;
+			samples = [];
+			pushFlick(samples, e.clientX);
+			motion.current.dragging = true;
+			motion.current.vel = 0;
+			el.style.scrollBehavior = "auto";
+			el.setPointerCapture(e.pointerId);
+		};
+		const onMove = (e) => {
+			if (e.pointerId !== pointer) return;
+			const dx = e.clientX - startX;
+			if (!moved && Math.abs(dx) < 4) return;
+			moved = true;
+			skipClick.current = true;
+			e.preventDefault();
+			pushFlick(samples, e.clientX);
+			el.scrollLeft = startScroll - dx;
+		};
+		const onUp = (e) => {
+			if (e.pointerId !== pointer) return;
+			pointer = -1;
+			motion.current.dragging = false;
+			motion.current.vel = flickVelocity(samples);
+			if (moved) coast();
+			else settle();
+		};
+		el.addEventListener("pointerdown", onDown);
+		el.addEventListener("pointermove", onMove, { passive: false });
+		el.addEventListener("pointerup", onUp);
+		el.addEventListener("pointercancel", onUp);
 		return () => {
 			stopCoast();
 			ro.disconnect();
 			el.removeEventListener("scroll", sync);
 			el.removeEventListener("wheel", onWheel);
+			el.removeEventListener("pointerdown", onDown);
+			el.removeEventListener("pointermove", onMove);
+			el.removeEventListener("pointerup", onUp);
+			el.removeEventListener("pointercancel", onUp);
 		};
 	}, [children]);
 	const overflow = edge.left || edge.right;
@@ -1160,48 +1205,9 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				ref: scroller,
-				className: cn("relative flex min-w-0 touch-pan-x snap-x snap-proximity gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth scroll-px-2 pb-1.5 sm:gap-2", "[&>*]:snap-start [&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
+				className: cn("relative flex min-w-0 touch-none snap-x snap-proximity gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2", "[&>*]:snap-start [&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
 				"aria-label": label,
 				"data-h-scroll": "",
-				style: { WebkitOverflowScrolling: "touch" },
-				onPointerDown: (e) => {
-					if (e.pointerType === "touch") return;
-					if (e.button !== 0) return;
-					const el = scroller.current;
-					if (!el) return;
-					stopCoast();
-					motion.current.dragging = true;
-					motion.current.vel = 0;
-					el.style.scrollBehavior = "auto";
-					const startX = e.clientX;
-					const startScroll = el.scrollLeft;
-					let lastX = e.clientX;
-					let lastT = performance.now();
-					let moved = false;
-					const move = (ev) => {
-						const dx = ev.clientX - startX;
-						if (Math.abs(dx) < 6 && !moved) return;
-						moved = true;
-						skipClick.current = true;
-						const now = performance.now();
-						const dt = Math.max(8, now - lastT);
-						motion.current.vel = (lastX - ev.clientX) / dt * 16.6;
-						lastX = ev.clientX;
-						lastT = now;
-						el.scrollLeft = startScroll - dx;
-					};
-					const up = () => {
-						motion.current.dragging = false;
-						window.removeEventListener("pointermove", move);
-						window.removeEventListener("pointerup", up);
-						window.removeEventListener("pointercancel", up);
-						if (moved) coast();
-						else settle();
-					};
-					window.addEventListener("pointermove", move);
-					window.addEventListener("pointerup", up);
-					window.addEventListener("pointercancel", up);
-				},
 				onClickCapture: (e) => {
 					if (!skipClick.current) return;
 					e.preventDefault();

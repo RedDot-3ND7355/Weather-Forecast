@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { flickVelocity, pushFlick, type FlickSample } from "@/lib/flick";
 
 const IGNORE =
   "input, textarea, select, [contenteditable], canvas, [data-h-scroll], [data-no-smooth]";
@@ -27,12 +28,12 @@ export function SmoothScroll() {
     let vel = 0;
     let raf = 0;
     let dragging = false;
+    let coasting = false;
     let axis: "x" | "y" | null = null;
     let startY = 0;
     let startX = 0;
     let startScroll = 0;
-    let lastY = 0;
-    let lastT = 0;
+    let samples: FlickSample[] = [];
     let driving = false;
 
     const stop = () => {
@@ -45,12 +46,13 @@ export function SmoothScroll() {
         raf = requestAnimationFrame(tick);
         return;
       }
-      vel *= 0.925;
+      vel *= 0.935;
       target = clamp(target + vel);
-      current += (target - current) * 0.18;
-      if (Math.abs(target - current) < 0.35 && Math.abs(vel) < 0.18) {
+      current += (target - current) * 0.22;
+      if (Math.abs(target - current) < 0.4 && Math.abs(vel) < 0.22) {
         current = target;
         vel = 0;
+        coasting = false;
         driving = true;
         window.scrollTo(0, current);
         driving = false;
@@ -72,8 +74,9 @@ export function SmoothScroll() {
       if (ignore(e.target)) return;
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       e.preventDefault();
+      coasting = true;
       target = clamp(target + e.deltaY);
-      vel += e.deltaY * 0.04;
+      vel += e.deltaY * 0.045;
       kick();
     };
 
@@ -89,15 +92,16 @@ export function SmoothScroll() {
       }
       stop();
       vel = 0;
+      coasting = false;
       axis = null;
       const t = e.touches[0];
       startY = t.clientY;
       startX = t.clientX;
-      lastY = t.clientY;
-      lastT = performance.now();
       startScroll = window.scrollY;
       current = startScroll;
       target = startScroll;
+      samples = [];
+      pushFlick(samples, t.clientY);
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -106,21 +110,17 @@ export function SmoothScroll() {
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
       if (!axis) {
-        if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) + 4) {
+        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) {
           axis = "x";
           return;
         }
-        if (Math.abs(dy) < 8) return;
+        if (Math.abs(dy) < 4) return;
         axis = "y";
         dragging = true;
       }
       if (axis !== "y") return;
       e.preventDefault();
-      const now = performance.now();
-      const dt = Math.max(8, now - lastT);
-      vel = ((lastY - t.clientY) / dt) * 16.6;
-      lastY = t.clientY;
-      lastT = now;
+      pushFlick(samples, t.clientY);
       current = clamp(startScroll - dy);
       target = current;
       driving = true;
@@ -130,8 +130,9 @@ export function SmoothScroll() {
 
     const onTouchEnd = () => {
       if (axis === "y") {
+        vel = flickVelocity(samples);
         dragging = false;
-        target = clamp(target + vel * 8);
+        coasting = true;
         kick();
       }
       axis = null;
@@ -139,7 +140,7 @@ export function SmoothScroll() {
     };
 
     const onScroll = () => {
-      if (driving || dragging) return;
+      if (driving || dragging || coasting) return;
       current = window.scrollY;
       target = current;
       vel = 0;

@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-B7HR5T1J.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DfKFEsNe.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -420,6 +420,28 @@ function PreviewHostBridge() {
 	}, [router]);
 	return null;
 }
+function pushFlick(buf, p, windowMs = 140) {
+	const t = performance.now();
+	buf.push({
+		t,
+		p
+	});
+	const cut = t - windowMs;
+	while (buf.length > 2 && buf[0].t < cut) buf.shift();
+}
+/** Pixels per frame from the strongest slice in the last ~140ms. */
+function flickVelocity(buf) {
+	if (buf.length < 2) return 0;
+	const end = buf[buf.length - 1];
+	let best = 0;
+	for (const s of buf) {
+		const dt = end.t - s.t;
+		if (dt < 20 || dt > 160) continue;
+		const v = (s.p - end.p) / dt * 16.67;
+		if (Math.abs(v) > Math.abs(best)) best = v;
+	}
+	return best;
+}
 var IGNORE = "input, textarea, select, [contenteditable], canvas, [data-h-scroll], [data-no-smooth]";
 function ignore(target) {
 	return target instanceof Element && Boolean(target.closest(IGNORE));
@@ -440,12 +462,12 @@ function SmoothScroll() {
 		let vel = 0;
 		let raf = 0;
 		let dragging = false;
+		let coasting = false;
 		let axis = null;
 		let startY = 0;
 		let startX = 0;
 		let startScroll = 0;
-		let lastY = 0;
-		let lastT = 0;
+		let samples = [];
 		let driving = false;
 		const stop = () => {
 			cancelAnimationFrame(raf);
@@ -456,12 +478,13 @@ function SmoothScroll() {
 				raf = requestAnimationFrame(tick);
 				return;
 			}
-			vel *= .925;
+			vel *= .935;
 			target = clamp(target + vel);
-			current += (target - current) * .18;
-			if (Math.abs(target - current) < .35 && Math.abs(vel) < .18) {
+			current += (target - current) * .22;
+			if (Math.abs(target - current) < .4 && Math.abs(vel) < .22) {
 				current = target;
 				vel = 0;
+				coasting = false;
 				driving = true;
 				window.scrollTo(0, current);
 				driving = false;
@@ -481,8 +504,9 @@ function SmoothScroll() {
 			if (ignore(e.target)) return;
 			if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
 			e.preventDefault();
+			coasting = true;
 			target = clamp(target + e.deltaY);
-			vel += e.deltaY * .04;
+			vel += e.deltaY * .045;
 			kick();
 		};
 		const onTouchStart = (e) => {
@@ -497,15 +521,16 @@ function SmoothScroll() {
 			}
 			stop();
 			vel = 0;
+			coasting = false;
 			axis = null;
 			const t = e.touches[0];
 			startY = t.clientY;
 			startX = t.clientX;
-			lastY = t.clientY;
-			lastT = performance.now();
 			startScroll = window.scrollY;
 			current = startScroll;
 			target = startScroll;
+			samples = [];
+			pushFlick(samples, t.clientY);
 		};
 		const onTouchMove = (e) => {
 			if (e.touches.length !== 1 || axis === "x") return;
@@ -513,21 +538,17 @@ function SmoothScroll() {
 			const dx = t.clientX - startX;
 			const dy = t.clientY - startY;
 			if (!axis) {
-				if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) + 4) {
+				if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) {
 					axis = "x";
 					return;
 				}
-				if (Math.abs(dy) < 8) return;
+				if (Math.abs(dy) < 4) return;
 				axis = "y";
 				dragging = true;
 			}
 			if (axis !== "y") return;
 			e.preventDefault();
-			const now = performance.now();
-			const dt = Math.max(8, now - lastT);
-			vel = (lastY - t.clientY) / dt * 16.6;
-			lastY = t.clientY;
-			lastT = now;
+			pushFlick(samples, t.clientY);
 			current = clamp(startScroll - dy);
 			target = current;
 			driving = true;
@@ -536,15 +557,16 @@ function SmoothScroll() {
 		};
 		const onTouchEnd = () => {
 			if (axis === "y") {
+				vel = flickVelocity(samples);
 				dragging = false;
-				target = clamp(target + vel * 8);
+				coasting = true;
 				kick();
 			}
 			axis = null;
 			dragging = false;
 		};
 		const onScroll = () => {
-			if (driving || dragging) return;
+			if (driving || dragging || coasting) return;
 			current = window.scrollY;
 			target = current;
 			vel = 0;
@@ -568,7 +590,7 @@ function SmoothScroll() {
 	}, []);
 	return null;
 }
-var styles_default = "/assets/styles-BQ771eky.css";
+var styles_default = "/assets/styles-C_fUgthr.css";
 var APP_NAME = "Vane";
 var fetchSessionUser = createServerFn({ method: "GET" }).handler(createSsrRpc("2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26"));
 var Route$3 = createRootRoute({
@@ -650,7 +672,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-BaYuxqQ4.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-bHk5Jnvx.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-yRCMsAbs.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });
@@ -684,4 +706,4 @@ function getRouter() {
 	});
 }
 //#endregion
-export { createSsrRpc as n, router_exports as t };
+export { createSsrRpc as i, flickVelocity as n, pushFlick as r, router_exports as t };
