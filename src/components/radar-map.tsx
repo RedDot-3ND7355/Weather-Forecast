@@ -29,6 +29,7 @@ const BASE = "https://basemaps.cartocdn.com/dark_all";
 const MIN_Z = 5;
 const MAX_Z = 7;
 const imgCache = new Map<string, Promise<HTMLImageElement | null>>();
+const loadGate = { active: 0, max: 4, q: [] as Array<() => void> };
 
 function lon2tile(lon: number, z: number) {
   return ((lon + 180) / 360) * 2 ** z;
@@ -42,11 +43,22 @@ function loadImg(src: string): Promise<HTMLImageElement | null> {
   const hit = imgCache.get(src);
   if (hit) return hit;
   const pending = new Promise<HTMLImageElement | null>((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = src;
+    const run = () => {
+      loadGate.active += 1;
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      const done = (value: HTMLImageElement | null) => {
+        loadGate.active = Math.max(0, loadGate.active - 1);
+        resolve(value);
+        const next = loadGate.q.shift();
+        if (next) next();
+      };
+      img.onload = () => done(img);
+      img.onerror = () => done(null);
+      img.src = src;
+    };
+    if (loadGate.active >= loadGate.max) loadGate.q.push(run);
+    else run();
   });
   imgCache.set(src, pending);
   return pending;
@@ -895,6 +907,7 @@ export function RadarMap({
   const wrapRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState(0);
+  const [drawIdx, setDrawIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(6);
@@ -977,10 +990,12 @@ export function RadarMap({
             forecast.hourly[0].precipMm < 0.15,
         }));
   const arrival = nowcast?.arrival ?? null;
-  const active: RadarFrame | undefined =
+  const sliderFrame: RadarFrame | undefined =
     frames[Math.min(frame, Math.max(0, frames.length - 1))];
+  const active: RadarFrame | undefined =
+    frames[Math.min(drawIdx, Math.max(0, frames.length - 1))];
   const hasForecast = frames.some((f) => f.kind === "forecast");
-  const isForecast = active?.kind === "forecast";
+  const isForecast = sliderFrame?.kind === "forecast";
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -995,7 +1010,17 @@ export function RadarMap({
   useEffect(() => {
     if (!frames.length) return;
     setFrame(nowIdx);
+    setDrawIdx(nowIdx);
   }, [frames, nowIdx]);
+
+  useEffect(() => {
+    if (playing) {
+      setDrawIdx(frame);
+      return;
+    }
+    const id = window.setTimeout(() => setDrawIdx(frame), 90);
+    return () => window.clearTimeout(id);
+  }, [frame, playing]);
 
   useEffect(() => {
     if (!playing || frames.length < 2) return;
@@ -1297,8 +1322,24 @@ export function RadarMap({
       fadeRaf.current = requestAnimationFrame(tick);
     })();
 
-    for (const f of frames) {
-      if (f.kind === "observed" && f !== active) void loadTiles(f);
+    const neighbors = [drawIdx - 2, drawIdx - 1, drawIdx + 1, drawIdx + 2, drawIdx + 3];
+    for (const i of neighbors) {
+      const f = frames[i];
+      if (!f?.overlay) continue;
+      const url = mscGetMapUrl({
+        layer: f.overlay === "msc-fc" ? "fc" : "obs",
+        time: f.time,
+        bbox: viewBBox3857({
+          lat: place.latitude,
+          lon: place.longitude,
+          z,
+          cssW,
+          cssH,
+        }),
+        width: cssW,
+        height: cssH,
+      });
+      void loadImg(url);
     }
 
     return () => {
@@ -1307,11 +1348,11 @@ export function RadarMap({
     };
   }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames, catalogQuery.data?.frames]);
 
-  const stamp = active
+  const stamp = sliderFrame
     ? new Intl.DateTimeFormat(localeTag(locale), {
         hour: "numeric",
         minute: "2-digit",
-      }).format(new Date(active.time * 1000))
+      }).format(new Date(sliderFrame.time * 1000))
     : "—";
   const from = fromThe(current.windDir, locale);
   const fromWord = windLong(current.windDir, locale);
