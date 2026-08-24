@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-BdUMC0XK.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-Bb4h8gYB.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -590,7 +590,7 @@ function SmoothScroll() {
 	}, []);
 	return null;
 }
-var styles_default = "/assets/styles-mfB2OatG.css";
+var styles_default = "/assets/styles-CUZGgV74.css";
 var APP_NAME = "Vane";
 var fetchSessionUser = createServerFn({ method: "GET" }).handler(createSsrRpc("2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26"));
 var Route$3 = createRootRoute({
@@ -672,7 +672,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-BLB9LGeP.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-i_FGWmwi.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-yRCMsAbs.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });

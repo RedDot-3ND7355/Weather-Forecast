@@ -4,22 +4,6 @@ import { Button } from "@/components/ui/button";
 import { flickVelocity, pushFlick, type FlickSample } from "@/lib/flick";
 import { cn } from "@/lib/utils";
 
-function snapLeft(el: HTMLElement): number {
-  const kids = [...el.children] as HTMLElement[];
-  if (!kids.length) return el.scrollLeft;
-  let best = el.scrollLeft;
-  let bestD = Infinity;
-  for (const kid of kids) {
-    const d = Math.abs(kid.offsetLeft - el.scrollLeft);
-    if (d < bestD) {
-      bestD = d;
-      best = kid.offsetLeft;
-    }
-  }
-  const max = Math.max(0, el.scrollWidth - el.clientWidth);
-  return Math.max(0, Math.min(max, best));
-}
-
 export function HScroll({
   children,
   className,
@@ -43,13 +27,6 @@ export function HScroll({
     motion.current.raf = 0;
   };
 
-  const settle = () => {
-    const el = scroller.current;
-    if (!el) return;
-    el.style.scrollBehavior = "smooth";
-    el.scrollTo({ left: snapLeft(el), behavior: "smooth" });
-  };
-
   const coast = () => {
     const el = scroller.current;
     if (!el) return;
@@ -58,7 +35,7 @@ export function HScroll({
     const tick = () => {
       if (motion.current.dragging) return;
       const max = Math.max(0, el.scrollWidth - el.clientWidth);
-      motion.current.vel *= 0.935;
+      motion.current.vel *= 0.92;
       el.scrollLeft += motion.current.vel;
       if (el.scrollLeft <= 0 || el.scrollLeft >= max) {
         el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft));
@@ -66,7 +43,6 @@ export function HScroll({
       }
       if (Math.abs(motion.current.vel) < 0.28) {
         motion.current.vel = 0;
-        settle();
         return;
       }
       motion.current.raf = requestAnimationFrame(tick);
@@ -109,6 +85,7 @@ export function HScroll({
     let samples: FlickSample[] = [];
 
     const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
       if (e.button !== 0) return;
       stopCoast();
       pointer = e.pointerId;
@@ -140,7 +117,6 @@ export function HScroll({
       motion.current.dragging = false;
       motion.current.vel = flickVelocity(samples);
       if (moved) coast();
-      else settle();
     };
 
     el.addEventListener("pointerdown", onDown);
@@ -167,8 +143,8 @@ export function HScroll({
       <div
         ref={scroller}
         className={cn(
-          "relative flex min-w-0 touch-none snap-x snap-proximity gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2",
-          "[&>*]:snap-start [&>*]:shrink-0",
+          "relative flex min-w-0 touch-pan-x gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2",
+          "[&>*]:shrink-0",
           "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]",
           "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent",
           "cursor-grab active:cursor-grabbing select-none",
@@ -176,6 +152,7 @@ export function HScroll({
         )}
         aria-label={label}
         data-h-scroll=""
+        style={{ WebkitOverflowScrolling: "touch" }}
         onClickCapture={(e) => {
           if (!skipClick.current) return;
           e.preventDefault();

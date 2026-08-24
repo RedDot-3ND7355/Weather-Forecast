@@ -12,10 +12,10 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { i as offsetKm } from "./advection-DzL6mFo8.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BdUMC0XK.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-Bb4h8gYB.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BLB9LGeP.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-i_FGWmwi.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1135,21 +1135,6 @@ function DailyList({ days, units }) {
 		})]
 	});
 }
-function snapLeft(el) {
-	const kids = [...el.children];
-	if (!kids.length) return el.scrollLeft;
-	let best = el.scrollLeft;
-	let bestD = Infinity;
-	for (const kid of kids) {
-		const d = Math.abs(kid.offsetLeft - el.scrollLeft);
-		if (d < bestD) {
-			bestD = d;
-			best = kid.offsetLeft;
-		}
-	}
-	const max = Math.max(0, el.scrollWidth - el.clientWidth);
-	return Math.max(0, Math.min(max, best));
-}
 function HScroll({ children, className, contentClassName, label = "More items", fadeFrom = "from-surface" }) {
 	const scroller = (0, import_react.useRef)(null);
 	const skipClick = (0, import_react.useRef)(false);
@@ -1166,15 +1151,6 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		cancelAnimationFrame(motion.current.raf);
 		motion.current.raf = 0;
 	};
-	const settle = () => {
-		const el = scroller.current;
-		if (!el) return;
-		el.style.scrollBehavior = "smooth";
-		el.scrollTo({
-			left: snapLeft(el),
-			behavior: "smooth"
-		});
-	};
 	const coast = () => {
 		const el = scroller.current;
 		if (!el) return;
@@ -1183,7 +1159,7 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		const tick = () => {
 			if (motion.current.dragging) return;
 			const max = Math.max(0, el.scrollWidth - el.clientWidth);
-			motion.current.vel *= .935;
+			motion.current.vel *= .92;
 			el.scrollLeft += motion.current.vel;
 			if (el.scrollLeft <= 0 || el.scrollLeft >= max) {
 				el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft));
@@ -1191,7 +1167,6 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 			}
 			if (Math.abs(motion.current.vel) < .28) {
 				motion.current.vel = 0;
-				settle();
 				return;
 			}
 			motion.current.raf = requestAnimationFrame(tick);
@@ -1229,6 +1204,7 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		let moved = false;
 		let samples = [];
 		const onDown = (e) => {
+			if (e.pointerType === "touch") return;
 			if (e.button !== 0) return;
 			stopCoast();
 			pointer = e.pointerId;
@@ -1258,7 +1234,6 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 			motion.current.dragging = false;
 			motion.current.vel = flickVelocity(samples);
 			if (moved) coast();
-			else settle();
 		};
 		el.addEventListener("pointerdown", onDown);
 		el.addEventListener("pointermove", onMove, { passive: false });
@@ -1281,9 +1256,10 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				ref: scroller,
-				className: cn("relative flex min-w-0 touch-none snap-x snap-proximity gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2", "[&>*]:snap-start [&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
+				className: cn("relative flex min-w-0 touch-pan-x gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2", "[&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
 				"aria-label": label,
 				"data-h-scroll": "",
+				style: { WebkitOverflowScrolling: "touch" },
 				onClickCapture: (e) => {
 					if (!skipClick.current) return;
 					e.preventDefault();
