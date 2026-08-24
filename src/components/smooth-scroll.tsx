@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { flickVelocity, pushFlick, type FlickSample } from "@/lib/flick";
 
 const IGNORE =
   "input, textarea, select, [contenteditable], canvas, [data-h-scroll], [data-no-smooth]";
@@ -22,24 +21,31 @@ function clamp(y: number): number {
   return Math.max(0, Math.min(maxY(), y));
 }
 
+function isDesktopPointer(): boolean {
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 export function SmoothScroll() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const html = document.documentElement;
+
+    // Phones / tablets: compositor-thread scrolling at the display rate (120 Hz+).
+    // JS scrollTo + preventDefault cannot match that.
+    if (!isDesktopPointer()) {
+      html.classList.add("vane-native-scroll");
+      return () => html.classList.remove("vane-native-scroll");
+    }
+
     html.classList.add("vane-smooth");
 
     let current = window.scrollY;
     let target = window.scrollY;
     let vel = 0;
     let raf = 0;
-    let dragging = false;
+    let last = performance.now();
     let coasting = false;
-    let axis: "x" | "y" | null = null;
-    let startY = 0;
-    let startX = 0;
-    let startScroll = 0;
-    let samples: FlickSample[] = [];
     let driving = false;
 
     const stop = () => {
@@ -47,14 +53,13 @@ export function SmoothScroll() {
       raf = 0;
     };
 
-    const tick = () => {
-      if (dragging) {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
-      vel *= 0.935;
+    const tick = (now: number) => {
+      const dt = Math.min(32, now - last) / 16.67;
+      last = now;
+      vel *= Math.pow(0.935, dt);
       target = clamp(target + vel);
-      current += (target - current) * 0.22;
+      const k = 1 - Math.pow(1 - 0.22, dt);
+      current += (target - current) * k;
       if (Math.abs(target - current) < 0.4 && Math.abs(vel) < 0.22) {
         current = target;
         vel = 0;
@@ -72,7 +77,10 @@ export function SmoothScroll() {
     };
 
     const kick = () => {
-      if (!raf) raf = requestAnimationFrame(tick);
+      if (!raf) {
+        last = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
     };
 
     const onWheel = (e: WheelEvent) => {
@@ -86,87 +94,20 @@ export function SmoothScroll() {
       kick();
     };
 
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1) {
-        axis = null;
-        dragging = false;
-        return;
-      }
-      if (ignoreExceptStrip(e.target)) {
-        axis = "x";
-        return;
-      }
-      stop();
-      vel = 0;
-      coasting = false;
-      axis = null;
-      const t = e.touches[0];
-      startY = t.clientY;
-      startX = t.clientX;
-      startScroll = window.scrollY;
-      current = startScroll;
-      target = startScroll;
-      samples = [];
-      pushFlick(samples, t.clientY);
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length !== 1 || axis === "x") return;
-      const t = e.touches[0];
-      const dx = t.clientX - startX;
-      const dy = t.clientY - startY;
-      if (!axis) {
-        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) {
-          axis = "x";
-          return;
-        }
-        if (Math.abs(dy) < 4) return;
-        axis = "y";
-        dragging = true;
-      }
-      if (axis !== "y") return;
-      e.preventDefault();
-      pushFlick(samples, t.clientY);
-      current = clamp(startScroll - dy);
-      target = current;
-      driving = true;
-      window.scrollTo(0, current);
-      driving = false;
-    };
-
-    const onTouchEnd = () => {
-      if (axis === "y") {
-        vel = flickVelocity(samples);
-        dragging = false;
-        coasting = true;
-        kick();
-      }
-      axis = null;
-      dragging = false;
-    };
-
     const onScroll = () => {
-      if (driving || dragging || coasting) return;
+      if (driving || coasting) return;
       current = window.scrollY;
       target = current;
       vel = 0;
     };
 
     window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("touchend", onTouchEnd);
-    window.addEventListener("touchcancel", onTouchEnd);
     window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
       stop();
       html.classList.remove("vane-smooth");
       window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("touchcancel", onTouchEnd);
       window.removeEventListener("scroll", onScroll);
     };
   }, []);

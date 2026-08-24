@@ -33,14 +33,18 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: clip;
     color-scheme: dark;
     background: #0b1014;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 
   html.vane-smooth {
     scroll-behavior: auto;
+  }
+
+  html.vane-native-scroll {
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   html.vane-page-fs,

@@ -131,7 +131,8 @@ export function HScroll({
       <div
         ref={scroller}
         className={cn(
-          "relative flex min-w-0 touch-[pan-x_pan-y] gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-auto scroll-px-2 pb-1.5 sm:gap-2",
+          "relative flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2",
+          "[touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch]",
           "[&>*]:shrink-0",
           "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]",
           "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent",

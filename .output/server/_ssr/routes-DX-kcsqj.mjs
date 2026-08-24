@@ -13,9 +13,9 @@ import { n as Input, r as cn, t as Button } from "./input-B7ohLyZK.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-BPL6u7FP.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-Bt8MOICo.mjs";
+import { n as createSsrRpc } from "./router-B63YxUJ3.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CU69GB_I.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DX-kcsqj.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1268,6 +1268,28 @@ function DailyList({ days, units }) {
 		})]
 	});
 }
+function pushFlick(buf, p, windowMs = 140) {
+	const t = performance.now();
+	buf.push({
+		t,
+		p
+	});
+	const cut = t - windowMs;
+	while (buf.length > 2 && buf[0].t < cut) buf.shift();
+}
+/** Pixels per frame from the strongest slice in the last ~140ms. */
+function flickVelocity(buf) {
+	if (buf.length < 2) return 0;
+	const end = buf[buf.length - 1];
+	let best = 0;
+	for (const s of buf) {
+		const dt = end.t - s.t;
+		if (dt < 20 || dt > 160) continue;
+		const v = (s.p - end.p) / dt * 16.67;
+		if (Math.abs(v) > Math.abs(best)) best = v;
+	}
+	return best;
+}
 function HScroll({ children, className, contentClassName, label = "More items", fadeFrom = "from-surface" }) {
 	const scroller = (0, import_react.useRef)(null);
 	const skipClick = (0, import_react.useRef)(false);
@@ -1378,7 +1400,7 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				ref: scroller,
-				className: cn("relative flex min-w-0 touch-[pan-x_pan-y] gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-auto scroll-px-2 pb-1.5 sm:gap-2", "[&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
+				className: cn("relative flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2", "[touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch]", "[&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
 				"aria-label": label,
 				"data-h-scroll": "",
 				style: { WebkitOverflowScrolling: "touch" },
