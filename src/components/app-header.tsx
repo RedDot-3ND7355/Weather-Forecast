@@ -126,9 +126,7 @@ export function AppHeader({
       >
         <Locate className={cn("size-4", locating && "animate-pulse")} />
       </Button>
-      <div className="hidden sm:contents">
-        <PageFullscreenButton />
-      </div>
+      <PageFullscreenButton />
       <Button
         type="button"
         variant="ghost"
