@@ -16,6 +16,42 @@ export type RadarFrame = {
   tileUrl: string;
 };
 
+export function pickHalfHourFrames(
+  frames: RadarFrame[],
+  spanSec = 5 * 3600,
+  stepSec = 30 * 60,
+): RadarFrame[] {
+  if (!frames.length) return [];
+  const sorted = [...frames].sort((a, b) => a.time - b.time);
+  const latest = sorted[sorted.length - 1].time;
+  const oldest = sorted[0].time;
+  const start = Math.max(oldest, latest - spanSec);
+  const picked: RadarFrame[] = [];
+  for (let t = start; t <= latest + 1; t += stepSec) {
+    let best = sorted[0];
+    let bestD = Math.abs(sorted[0].time - t);
+    for (const f of sorted) {
+      const d = Math.abs(f.time - t);
+      if (d < bestD) {
+        best = f;
+        bestD = d;
+      }
+    }
+    if (bestD <= stepSec / 2 && picked[picked.length - 1]?.time !== best.time) {
+      picked.push(best);
+    }
+  }
+  if (picked[picked.length - 1]?.time !== latest) {
+    const last = sorted[sorted.length - 1];
+    if (!picked.length || last.time - picked[picked.length - 1].time >= stepSec / 2) {
+      picked.push(last);
+    } else {
+      picked[picked.length - 1] = last;
+    }
+  }
+  return picked;
+}
+
 export type RadarCatalog = {
   host: string;
   frames: RadarFrame[];

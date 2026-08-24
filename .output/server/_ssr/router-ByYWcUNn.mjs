@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-Z8o3WDjs.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-ByYWcUNn.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -380,7 +380,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-Q169AjGh.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-CFoKFOS2.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-yRCMsAbs.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });
