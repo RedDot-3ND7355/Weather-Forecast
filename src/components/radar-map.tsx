@@ -90,6 +90,93 @@ function metersPerPixel(lat: number, z: number): number {
   return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / 2 ** z;
 }
 
+type RainTile = {
+  dx: number;
+  dy: number;
+  rain: HTMLImageElement | null;
+};
+
+function paintRainLayer(
+  tiles: RainTile[],
+  originX: number,
+  originY: number,
+  tile: number,
+  scale: number,
+  cssW: number,
+  cssH: number,
+): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(cssW));
+  c.height = Math.max(1, Math.round(cssH));
+  const ctx = c.getContext("2d");
+  if (!ctx) return c;
+  for (const t of tiles) {
+    if (!t.rain) continue;
+    ctx.drawImage(
+      t.rain,
+      originX + t.dx * tile * scale,
+      originY + t.dy * tile * scale,
+      tile * scale,
+      tile * scale,
+    );
+  }
+  return c;
+}
+
+function rainCentroid(canvas: HTMLCanvasElement): { x: number; y: number; mass: number } | null {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const { width, height } = canvas;
+  if (width < 4 || height < 4) return null;
+  const data = ctx.getImageData(0, 0, width, height).data;
+  let mass = 0;
+  let sx = 0;
+  let sy = 0;
+  for (let y = 0; y < height; y += 2) {
+    for (let x = 0; x < width; x += 2) {
+      const a = data[(y * width + x) * 4 + 3];
+      if (a < 28) continue;
+      const w = a / 255;
+      mass += w;
+      sx += x * w;
+      sy += y * w;
+    }
+  }
+  if (mass < 12) return null;
+  return { x: sx / mass, y: sy / mass, mass };
+}
+
+function integrateShift(args: {
+  hours: number;
+  vx: number;
+  vy: number;
+  steerUx: number;
+  steerUy: number;
+  steerPxPerHour: number;
+}): { x: number; y: number } {
+  const step = 0.25;
+  let { vx, vy } = args;
+  let x = 0;
+  let y = 0;
+  for (let t = 0; t < args.hours; ) {
+    const dt = Math.min(step, args.hours - t);
+    const sp = Math.hypot(vx, vy);
+    const ux = sp > 0.4 ? vx / sp : args.steerUx;
+    const uy = sp > 0.4 ? vy / sp : args.steerUy;
+    const turn = Math.min(0.28, 0.1 + t * 0.045);
+    const hx = ux * (1 - turn) + args.steerUx * turn;
+    const hy = uy * (1 - turn) + args.steerUy * turn;
+    const hn = Math.hypot(hx, hy) || 1;
+    const speed = sp * (1 - turn * 0.65) + args.steerPxPerHour * (turn * 0.65);
+    vx = (hx / hn) * speed;
+    vy = (hy / hn) * speed;
+    x += vx * dt;
+    y += vy * dt;
+    t += dt;
+  }
+  return { x, y };
+}
+
 function radarRgba(mm: number): [number, number, number, number] {
   const t = Math.min(1, Math.log2(1 + mm * 3.4) / 3.6);
   if (t < 0.4) {
@@ -227,18 +314,14 @@ function composeRadar(args: {
   tile: number;
   scale: number;
   windDir: number;
-  windSpeedKmh: number;
   z: number;
   x0: number;
   y0: number;
-  latitude: number;
   hoursAhead: number;
+  shiftX: number;
+  shiftY: number;
   cells?: PrecipCell[];
-  advectRain?: {
-    dx: number;
-    dy: number;
-    rain: HTMLImageElement | null;
-  }[];
+  advectRain?: RainTile[];
 }): HTMLCanvasElement {
   const {
     cssW,
@@ -250,12 +333,12 @@ function composeRadar(args: {
     tile,
     scale,
     windDir,
-    windSpeedKmh,
     z,
     x0,
     y0,
-    latitude,
     hoursAhead,
+    shiftX,
+    shiftY,
     cells,
     advectRain,
   } = args;
@@ -282,13 +365,8 @@ function composeRadar(args: {
     );
   }
 
-  const { ux, uy } = windAxes(windDir);
-  const mpp = metersPerPixel(latitude, z) / Math.max(scale, 0.2);
-  const driftPx = ((Math.max(windSpeedKmh, 8) * Math.max(0, hoursAhead)) * 1000) / mpp;
-  const shiftX = ux * driftPx;
-  const shiftY = uy * driftPx;
-  const radarAlpha = hoursAhead <= 0 ? 0.9 : Math.max(0, 0.84 - hoursAhead * 0.13);
-  const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(0.88, 0.18 + hoursAhead * 0.14);
+  const radarAlpha = hoursAhead <= 0 ? 0.9 : Math.max(0, 0.88 - hoursAhead * 0.11);
+  const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(0.8, 0.12 + hoursAhead * 0.12);
 
   if (advectRain?.length && radarAlpha > 0.04) {
     ctx.save();
@@ -572,16 +650,56 @@ export function RadarMap({
     void (async () => {
       const tiles = await loadTiles(active);
       if (cancelled) return;
-      const lastObs = [...frames]
-        .reverse()
-        .find((f) => f.kind === "observed" && f.tileUrl);
-      const forecast = active.kind === "forecast";
+      const withTiles = frames.filter((f) => f.tileUrl);
+      const nowSec = Date.now() / 1000;
+      const pastScans = withTiles.filter((f) => f.time <= nowSec + 45);
+      const source = withTiles.at(-1);
+      const isFc = active.kind === "forecast";
+      const trackB = pastScans.at(-1);
+      const trackA = pastScans.length >= 3 ? pastScans.at(-3) : pastScans.at(-2);
       const advectRain =
-        forecast && lastObs && lastObs !== active ? await loadTiles(lastObs) : undefined;
+        isFc && source && source !== active ? await loadTiles(source) : undefined;
+      const trackARain =
+        isFc && trackA && trackB && trackA !== trackB ? await loadTiles(trackA) : undefined;
+      const trackBRain =
+        isFc && trackB && trackARain ? await loadTiles(trackB) : undefined;
       if (cancelled) return;
-      const hoursAhead = forecast
-        ? Math.max(0, (active.time - Date.now() / 1000) / 3600)
-        : 0;
+
+      const hoursAhead =
+        isFc && source ? Math.max(0, (active.time - source.time) / 3600) : 0;
+      const { ux, uy } = windAxes(current.windDir);
+      const mpp = metersPerPixel(place.latitude, z) / Math.max(scale, 0.2);
+      const steerKmh = Math.max(current.windSpeedKmh * 1.85, 18);
+      const steerPx = (steerKmh * 1000) / mpp;
+      let vx = ux * steerPx;
+      let vy = uy * steerPx;
+      if (trackARain && trackBRain && trackA && trackB) {
+        const dtH = Math.max(0.25, (trackB.time - trackA.time) / 3600);
+        const a = rainCentroid(
+          paintRainLayer(trackARain, originX, originY, tile, scale, cssW, cssH),
+        );
+        const b = rainCentroid(
+          paintRainLayer(trackBRain, originX, originY, tile, scale, cssW, cssH),
+        );
+        if (a && b) {
+          vx = (b.x - a.x) / dtH;
+          vy = (b.y - a.y) / dtH;
+          const cap = (140 * 1000) / mpp;
+          const sp = Math.hypot(vx, vy);
+          if (sp > cap) {
+            vx = (vx / sp) * cap;
+            vy = (vy / sp) * cap;
+          }
+        }
+      }
+      const drift = integrateShift({
+        hours: hoursAhead,
+        vx,
+        vy,
+        steerUx: ux,
+        steerUy: uy,
+        steerPxPerHour: steerPx,
+      });
       const next = composeRadar({
         cssW,
         cssH,
@@ -592,13 +710,13 @@ export function RadarMap({
         tile,
         scale,
         windDir: current.windDir,
-        windSpeedKmh: current.windSpeedKmh,
         z,
         x0,
         y0,
-        latitude: place.latitude,
         hoursAhead,
-        cells: forecast ? active.cells : undefined,
+        shiftX: drift.x,
+        shiftY: drift.y,
+        cells: isFc ? active.cells : undefined,
         advectRain,
       });
       const prev = lastBitmap.current;

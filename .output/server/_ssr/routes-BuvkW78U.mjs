@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-C9SLai8B.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CPLzigGE.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CHD-XBE_.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BuvkW78U.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1501,6 +1501,68 @@ function windAxes(deg) {
 function metersPerPixel(lat, z) {
 	return 156543.03392 * Math.cos(lat * Math.PI / 180) / 2 ** z;
 }
+function paintRainLayer(tiles, originX, originY, tile, scale, cssW, cssH) {
+	const c = document.createElement("canvas");
+	c.width = Math.max(1, Math.round(cssW));
+	c.height = Math.max(1, Math.round(cssH));
+	const ctx = c.getContext("2d");
+	if (!ctx) return c;
+	for (const t of tiles) {
+		if (!t.rain) continue;
+		ctx.drawImage(t.rain, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
+	}
+	return c;
+}
+function rainCentroid(canvas) {
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return null;
+	const { width, height } = canvas;
+	if (width < 4 || height < 4) return null;
+	const data = ctx.getImageData(0, 0, width, height).data;
+	let mass = 0;
+	let sx = 0;
+	let sy = 0;
+	for (let y = 0; y < height; y += 2) for (let x = 0; x < width; x += 2) {
+		const a = data[(y * width + x) * 4 + 3];
+		if (a < 28) continue;
+		const w = a / 255;
+		mass += w;
+		sx += x * w;
+		sy += y * w;
+	}
+	if (mass < 12) return null;
+	return {
+		x: sx / mass,
+		y: sy / mass,
+		mass
+	};
+}
+function integrateShift(args) {
+	const step = .25;
+	let { vx, vy } = args;
+	let x = 0;
+	let y = 0;
+	for (let t = 0; t < args.hours;) {
+		const dt = Math.min(step, args.hours - t);
+		const sp = Math.hypot(vx, vy);
+		const ux = sp > .4 ? vx / sp : args.steerUx;
+		const uy = sp > .4 ? vy / sp : args.steerUy;
+		const turn = Math.min(.28, .1 + t * .045);
+		const hx = ux * (1 - turn) + args.steerUx * turn;
+		const hy = uy * (1 - turn) + args.steerUy * turn;
+		const hn = Math.hypot(hx, hy) || 1;
+		const speed = sp * (1 - turn * .65) + args.steerPxPerHour * (turn * .65);
+		vx = hx / hn * speed;
+		vy = hy / hn * speed;
+		x += vx * dt;
+		y += vy * dt;
+		t += dt;
+	}
+	return {
+		x,
+		y
+	};
+}
 function radarRgba(mm) {
 	const t = Math.min(1, Math.log2(1 + mm * 3.4) / 3.6);
 	if (t < .4) {
@@ -1629,7 +1691,7 @@ function drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale
 	ctx.restore();
 }
 function composeRadar(args) {
-	const { cssW, cssH, dpr, tiles, originX, originY, tile, scale, windDir, windSpeedKmh, z, x0, y0, latitude, hoursAhead, cells, advectRain } = args;
+	const { cssW, cssH, dpr, tiles, originX, originY, tile, scale, windDir, z, x0, y0, hoursAhead, shiftX, shiftY, cells, advectRain } = args;
 	const off = document.createElement("canvas");
 	off.width = Math.round(cssW * dpr);
 	off.height = Math.round(cssH * dpr);
@@ -1646,13 +1708,8 @@ function composeRadar(args) {
 		if (!t.base) continue;
 		ctx.drawImage(t.base, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
 	}
-	const { ux, uy } = windAxes(windDir);
-	const mpp = metersPerPixel(latitude, z) / Math.max(scale, .2);
-	const driftPx = Math.max(windSpeedKmh, 8) * Math.max(0, hoursAhead) * 1e3 / mpp;
-	const shiftX = ux * driftPx;
-	const shiftY = uy * driftPx;
-	const radarAlpha = hoursAhead <= 0 ? .9 : Math.max(0, .84 - hoursAhead * .13);
-	const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(.88, .18 + hoursAhead * .14);
+	const radarAlpha = hoursAhead <= 0 ? .9 : Math.max(0, .88 - hoursAhead * .11);
+	const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(.8, .12 + hoursAhead * .12);
 	if (advectRain?.length && radarAlpha > .04) {
 		ctx.save();
 		ctx.globalAlpha = radarAlpha;
@@ -1873,11 +1930,46 @@ function RadarMap({ forecast, units }) {
 		(async () => {
 			const tiles = await loadTiles(active);
 			if (cancelled) return;
-			const lastObs = [...frames].reverse().find((f) => f.kind === "observed" && f.tileUrl);
-			const forecast = active.kind === "forecast";
-			const advectRain = forecast && lastObs && lastObs !== active ? await loadTiles(lastObs) : void 0;
+			const withTiles = frames.filter((f) => f.tileUrl);
+			const nowSec = Date.now() / 1e3;
+			const pastScans = withTiles.filter((f) => f.time <= nowSec + 45);
+			const source = withTiles.at(-1);
+			const isFc = active.kind === "forecast";
+			const trackB = pastScans.at(-1);
+			const trackA = pastScans.length >= 3 ? pastScans.at(-3) : pastScans.at(-2);
+			const advectRain = isFc && source && source !== active ? await loadTiles(source) : void 0;
+			const trackARain = isFc && trackA && trackB && trackA !== trackB ? await loadTiles(trackA) : void 0;
+			const trackBRain = isFc && trackB && trackARain ? await loadTiles(trackB) : void 0;
 			if (cancelled) return;
-			const hoursAhead = forecast ? Math.max(0, (active.time - Date.now() / 1e3) / 3600) : 0;
+			const hoursAhead = isFc && source ? Math.max(0, (active.time - source.time) / 3600) : 0;
+			const { ux, uy } = windAxes(current.windDir);
+			const mpp = metersPerPixel(place.latitude, z) / Math.max(scale, .2);
+			const steerPx = Math.max(current.windSpeedKmh * 1.85, 18) * 1e3 / mpp;
+			let vx = ux * steerPx;
+			let vy = uy * steerPx;
+			if (trackARain && trackBRain && trackA && trackB) {
+				const dtH = Math.max(.25, (trackB.time - trackA.time) / 3600);
+				const a = rainCentroid(paintRainLayer(trackARain, originX, originY, tile, scale, cssW, cssH));
+				const b = rainCentroid(paintRainLayer(trackBRain, originX, originY, tile, scale, cssW, cssH));
+				if (a && b) {
+					vx = (b.x - a.x) / dtH;
+					vy = (b.y - a.y) / dtH;
+					const cap = 14e4 / mpp;
+					const sp = Math.hypot(vx, vy);
+					if (sp > cap) {
+						vx = vx / sp * cap;
+						vy = vy / sp * cap;
+					}
+				}
+			}
+			const drift = integrateShift({
+				hours: hoursAhead,
+				vx,
+				vy,
+				steerUx: ux,
+				steerUy: uy,
+				steerPxPerHour: steerPx
+			});
 			const next = composeRadar({
 				cssW,
 				cssH,
@@ -1888,13 +1980,13 @@ function RadarMap({ forecast, units }) {
 				tile,
 				scale,
 				windDir: current.windDir,
-				windSpeedKmh: current.windSpeedKmh,
 				z,
 				x0,
 				y0,
-				latitude: place.latitude,
 				hoursAhead,
-				cells: forecast ? active.cells : void 0,
+				shiftX: drift.x,
+				shiftY: drift.y,
+				cells: isFc ? active.cells : void 0,
 				advectRain
 			});
 			const prev = lastBitmap.current;
