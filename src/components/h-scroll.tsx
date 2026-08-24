@@ -67,17 +67,6 @@ export function HScroll({
     ro.observe(el);
     el.addEventListener("scroll", sync, { passive: true });
 
-    const onWheel = (e: WheelEvent) => {
-      if (el.scrollWidth <= el.clientWidth + 4) return;
-      if (Math.abs(e.deltaX) >= Math.abs(e.deltaY) && e.deltaX !== 0) return;
-      e.preventDefault();
-      stopCoast();
-      const impulse = e.deltaMode === 1 ? e.deltaY * 10 : e.deltaY;
-      motion.current.vel += impulse * 0.42;
-      coast();
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-
     let pointer = -1;
     let startX = 0;
     let startScroll = 0;
@@ -128,7 +117,6 @@ export function HScroll({
       stopCoast();
       ro.disconnect();
       el.removeEventListener("scroll", sync);
-      el.removeEventListener("wheel", onWheel);
       el.removeEventListener("pointerdown", onDown);
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerup", onUp);
@@ -143,7 +131,7 @@ export function HScroll({
       <div
         ref={scroller}
         className={cn(
-          "relative flex min-w-0 touch-pan-x gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2",
+          "relative flex min-w-0 touch-[pan-x_pan-y] gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-auto scroll-px-2 pb-1.5 sm:gap-2",
           "[&>*]:shrink-0",
           "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]",
           "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent",

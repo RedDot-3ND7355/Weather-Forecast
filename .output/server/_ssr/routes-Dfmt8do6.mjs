@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-BYNWVcCP.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CLY4Lf7S.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BN8MNJ4W.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BlbaHEU1.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-Dfmt8do6.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1227,16 +1227,6 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		const ro = new ResizeObserver(sync);
 		ro.observe(el);
 		el.addEventListener("scroll", sync, { passive: true });
-		const onWheel = (e) => {
-			if (el.scrollWidth <= el.clientWidth + 4) return;
-			if (Math.abs(e.deltaX) >= Math.abs(e.deltaY) && e.deltaX !== 0) return;
-			e.preventDefault();
-			stopCoast();
-			const impulse = e.deltaMode === 1 ? e.deltaY * 10 : e.deltaY;
-			motion.current.vel += impulse * .42;
-			coast();
-		};
-		el.addEventListener("wheel", onWheel, { passive: false });
 		let pointer = -1;
 		let startX = 0;
 		let startScroll = 0;
@@ -1282,7 +1272,6 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 			stopCoast();
 			ro.disconnect();
 			el.removeEventListener("scroll", sync);
-			el.removeEventListener("wheel", onWheel);
 			el.removeEventListener("pointerdown", onDown);
 			el.removeEventListener("pointermove", onMove);
 			el.removeEventListener("pointerup", onUp);
@@ -1295,7 +1284,7 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				ref: scroller,
-				className: cn("relative flex min-w-0 touch-pan-x gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2", "[&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
+				className: cn("relative flex min-w-0 touch-[pan-x_pan-y] gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-auto scroll-px-2 pb-1.5 sm:gap-2", "[&>*]:shrink-0", "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]", "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent", "cursor-grab active:cursor-grabbing select-none", contentClassName),
 				"aria-label": label,
 				"data-h-scroll": "",
 				style: { WebkitOverflowScrolling: "touch" },

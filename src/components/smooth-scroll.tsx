@@ -8,6 +8,12 @@ function ignore(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest(IGNORE));
 }
 
+function ignoreExceptStrip(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest("[data-h-scroll]")) return false;
+  return ignore(target);
+}
+
 function maxY(): number {
   return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
 }
@@ -71,7 +77,7 @@ export function SmoothScroll() {
 
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return;
-      if (ignore(e.target)) return;
+      if (ignoreExceptStrip(e.target)) return;
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       e.preventDefault();
       coasting = true;
@@ -86,7 +92,7 @@ export function SmoothScroll() {
         dragging = false;
         return;
       }
-      if (ignore(e.target)) {
+      if (ignoreExceptStrip(e.target)) {
         axis = "x";
         return;
       }
