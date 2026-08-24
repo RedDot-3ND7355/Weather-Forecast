@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BQ3pb1pf.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BFPITsRP.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-D0SAMK9K.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-ZIqMNY6C.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1578,7 +1578,7 @@ function measureFlow(prev, next, dtH, steerUx, steerUy, capPx) {
 	};
 	const expX = Math.round(steerUx * Math.min(capPx, 90) * dtH);
 	const expY = Math.round(steerUy * Math.min(capPx, 90) * dtH);
-	const search = 12;
+	const search = 16;
 	let hits = 0;
 	for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) {
 		const x0 = c * bs;
@@ -1598,10 +1598,6 @@ function measureFlow(prev, next, dtH, steerUx, steerUy, capPx) {
 		}
 		let vx = bestDx / dtH;
 		let vy = bestDy / dtH;
-		if (vx * steerUx + vy * steerUy < 0) {
-			vx = -vx;
-			vy = -vy;
-		}
 		const sp = Math.hypot(vx, vy);
 		if (sp > capPx) {
 			vx = vx / sp * capPx;
@@ -1688,21 +1684,30 @@ function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
 		const a0 = sd[i + 3];
 		if (a0 < 12) continue;
 		const f = lookupFlow(grid, x, y);
-		let vx = f.vx;
-		let vy = f.vy;
-		const turn = Math.min(.32, .08 + hours * .05);
-		vx = vx * (1 - turn) + steerUx * steerPx * turn;
-		vy = vy * (1 - turn) + steerUy * steerPx * turn;
-		const jx = (fbm(x * .07, y * .07) - .5) * hours * 10;
-		const jy = (fbm(x * .07 + 4, y * .07) - .5) * hours * 10;
-		const dx = vx * hours + jx;
-		const dy = vy * hours + jy;
+		let px = x;
+		let py = y;
+		const steps = Math.max(2, Math.ceil(hours / .2));
+		const dt = hours / steps;
+		let lastVx = f.vx;
+		let lastVy = f.vy;
+		for (let s = 0; s < steps; s += 1) {
+			const fl = lookupFlow(grid, px, py);
+			lastVx = fl.vx * .93 + steerUx * steerPx * .07;
+			lastVy = fl.vy * .93 + steerUy * steerPx * .07;
+			px += lastVx * dt;
+			py += lastVy * dt;
+		}
+		const jx = (fbm(x * .07, y * .07) - .5) * hours * 6;
+		const jy = (fbm(x * .07 + 4, y * .07) - .5) * hours * 6;
+		const destX = px + jx;
+		const destY = py + jy;
 		const grow = Math.max(.92, Math.min(1.28, 1 + f.g * hours * .4));
 		const aa = Math.min(255, a0 * grow);
-		splat(dd, w, h, x + dx, y + dy, sd[i], sd[i + 1], sd[i + 2], aa);
+		splat(dd, w, h, destX, destY, sd[i], sd[i + 1], sd[i + 2], aa);
 		if (f.g > .12 && hours > .15) {
-			const lead = Math.min(28, (6 + f.g * 18) * hours);
-			splat(dd, w, h, x + dx + steerUx * lead, y + dy + steerUy * lead, sd[i], sd[i + 1], sd[i + 2], aa * Math.min(.55, .28 + f.g * .3));
+			const sp = Math.hypot(lastVx, lastVy) || 1;
+			const lead = Math.min(22, (5 + f.g * 14) * hours);
+			splat(dd, w, h, destX + lastVx / sp * lead, destY + lastVy / sp * lead, sd[i], sd[i + 1], sd[i + 2], aa * Math.min(.55, .28 + f.g * .3));
 		}
 	}
 	octx.putImageData(dst, 0, 0);
