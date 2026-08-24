@@ -106,6 +106,126 @@
       transparent 70%
     );
   }
+
+  .vane-wx-rays {
+    transform-origin: 0 0;
+    animation: vane-wx-spin 36s linear infinite;
+  }
+  .vane-wx-glow {
+    animation: vane-wx-breathe 4.5s ease-in-out infinite;
+  }
+  .vane-wx-sun {
+    animation: vane-wx-breathe 6s ease-in-out infinite;
+  }
+  .vane-wx-twinkle {
+    animation: vane-wx-twinkle 3s ease-in-out infinite;
+  }
+  .vane-wx-cloud {
+    animation: vane-wx-drift 22s linear infinite alternate;
+  }
+  .vane-wx-fog {
+    animation: vane-wx-fog 9s ease-in-out infinite;
+  }
+  .vane-wx-fall {
+    transform-box: fill-box;
+    transform-origin: center top;
+    animation: vane-wx-fall 1.2s linear infinite;
+  }
+  .vane-wx-flake {
+    animation-timing-function: linear;
+  }
+  .vane-wx-streak {
+    animation: vane-wx-streak 1.4s linear infinite;
+  }
+  .vane-wx-flash {
+    opacity: 0;
+    animation: vane-wx-flash 5.5s steps(1, end) infinite;
+  }
+  .vane-wx-bolt {
+    opacity: 0;
+    animation: vane-wx-flash 5.5s steps(1, end) infinite;
+    animation-delay: 0.02s;
+  }
+
+  @keyframes vane-wx-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes vane-wx-breathe {
+    50% {
+      opacity: 0.72;
+    }
+  }
+  @keyframes vane-wx-twinkle {
+    0%,
+    100% {
+      opacity: 0.15;
+    }
+    50% {
+      opacity: 0.95;
+    }
+  }
+  @keyframes vane-wx-drift {
+    from {
+      transform: translateX(-18px);
+    }
+    to {
+      transform: translateX(22px);
+    }
+  }
+  @keyframes vane-wx-fog {
+    0%,
+    100% {
+      transform: translateX(-12px);
+    }
+    50% {
+      transform: translateX(14px);
+    }
+  }
+  @keyframes vane-wx-fall {
+    from {
+      transform: translate3d(0, -20px, 0) skewX(var(--wx-lean, 0deg));
+    }
+    to {
+      transform: translate3d(calc(var(--wx-gust, 0.4) * 28px), 250px, 0)
+        skewX(var(--wx-lean, 0deg));
+    }
+  }
+  @keyframes vane-wx-streak {
+    from {
+      transform: translateX(-30px);
+      opacity: 0;
+    }
+    20% {
+      opacity: 0.35;
+    }
+    to {
+      transform: translateX(240px);
+      opacity: 0;
+    }
+  }
+  @keyframes vane-wx-flash {
+    0%,
+    88%,
+    92%,
+    96%,
+    100% {
+      opacity: 0;
+    }
+    89% {
+      opacity: 0.28;
+    }
+    93% {
+      opacity: 0.12;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vane-wx * {
+      animation: none !important;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

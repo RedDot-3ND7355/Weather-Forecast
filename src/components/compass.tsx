@@ -1,6 +1,7 @@
 import { precipWord } from "@/lib/weather/codes";
 import { compassPoint, fromThe, windLong } from "@/lib/weather/compass";
 import { useDeviceHeading } from "@/lib/weather/device-heading";
+import { WeatherScene } from "@/components/weather-scene";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,16 +9,20 @@ import { cn } from "@/lib/utils";
 type CompassProps = {
   windDir: number;
   windSpeedLabel: string;
+  windKmh?: number;
   chance: number;
   weatherCode?: number;
+  isDay?: boolean;
   className?: string;
 };
 
 export function Compass({
   windDir,
   windSpeedLabel,
+  windKmh = 0,
   chance,
   weatherCode = 61,
+  isDay = true,
   className,
 }: CompassProps) {
   const { locale, t } = useT();
@@ -37,9 +42,10 @@ export function Compass({
 
   return (
     <div className={cn("relative mx-auto aspect-square w-full max-w-64 sm:max-w-80", className)}>
+      <WeatherScene code={weatherCode} isDay={isDay} windKmh={windKmh} />
       <svg
         viewBox="0 0 240 240"
-        className="size-full"
+        className="relative size-full"
         role="img"
         aria-label={
           live
@@ -48,17 +54,13 @@ export function Compass({
         }
       >
         <defs>
-          <radialGradient id="vane-disc" cx="50%" cy="45%" r="55%">
-            <stop offset="0%" stopColor="var(--color-raised)" />
-            <stop offset="100%" stopColor="var(--color-surface)" />
-          </radialGradient>
           <linearGradient id="vane-needle" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-fg)" />
             <stop offset="100%" stopColor="var(--color-accent)" />
           </linearGradient>
         </defs>
 
-        <circle cx="120" cy="120" r="112" fill="url(#vane-disc)" />
+        <circle cx="120" cy="120" r="112" fill="transparent" />
         <circle
           cx="120"
           cy="120"
@@ -198,7 +200,7 @@ export function Compass({
       </svg>
 
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pt-10">
-        <p className="font-display text-3xl font-medium tabular-nums leading-none tracking-tight text-fg sm:text-4xl">
+        <p className="font-display text-3xl font-medium tabular-nums leading-none tracking-tight text-fg [text-shadow:0_1px_12px_#0b1014] sm:text-4xl">
           {chance}
           <span className="text-lg text-muted">%</span>
         </p>

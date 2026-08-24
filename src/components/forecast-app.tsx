@@ -268,8 +268,10 @@ export function ForecastApp() {
               <Compass
                 windDir={forecast.current.windDir}
                 windSpeedLabel={formatSpeed(forecast.current.windSpeedKmh, units)}
+                windKmh={forecast.current.windSpeedKmh}
                 chance={forecast.current.rain.chance}
                 weatherCode={forecast.current.weatherCode}
+                isDay={forecast.current.isDay}
               />
             </div>
             <CurrentPanel

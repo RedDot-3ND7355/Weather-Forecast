@@ -13,9 +13,9 @@ import { n as Input, r as cn, t as Button } from "./input-B7ohLyZK.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-DNZmC55f.mjs";
-import { n as createSsrRpc } from "./router-D6C1V5P8.mjs";
+import { n as createSsrRpc } from "./router-Cq1X05HD.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BuWDm4Hg.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CsBcJYQe.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -843,7 +843,335 @@ function useDeviceHeading() {
 		}, [])
 	};
 }
-function Compass({ windDir, windSpeedLabel, chance, weatherCode = 61, className }) {
+function sceneFor(code) {
+	if (code === 0 || code === 1) return "clear";
+	if (code === 2) return "partly";
+	if (code === 3) return "overcast";
+	if (code === 45 || code === 48) return "fog";
+	if (code >= 51 && code <= 57) return "drizzle";
+	if (code >= 80 && code <= 82) return "shower";
+	if (code === 85 || code === 86) return "snowshower";
+	if (code >= 71 && code <= 77) return "snow";
+	if (code >= 95) return "thunder";
+	if (code >= 61 && code <= 67) return "rain";
+	return "partly";
+}
+function intensity(code) {
+	if ([
+		51,
+		56,
+		61,
+		66,
+		71,
+		80,
+		85
+	].includes(code)) return 1;
+	if ([
+		55,
+		57,
+		65,
+		67,
+		75,
+		82,
+		86,
+		99
+	].includes(code)) return 3;
+	return 2;
+}
+function unit(i, salt) {
+	const x = Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453;
+	return x - Math.floor(x);
+}
+function WeatherScene({ code, isDay, windKmh, className }) {
+	const scene = sceneFor(code);
+	const level = intensity(code);
+	const wind = Math.max(0, windKmh);
+	const lean = Math.min(22, wind * .42);
+	const gust = Math.min(1, wind / 48);
+	const precip = scene === "drizzle" || scene === "rain" || scene === "shower" || scene === "thunder";
+	const snow = scene === "snow" || scene === "snowshower";
+	const cloudy = scene === "partly" || scene === "overcast" || precip || snow || scene === "fog";
+	const storm = scene === "thunder" || scene === "shower" || scene === "overcast";
+	const sky = isDay ? storm ? ["#152028", "#0b1014"] : scene === "clear" ? ["#1c4454", "#0f1c24"] : ["#17323e", "#0c141a"] : storm ? ["#0c1014", "#07090c"] : ["#101820", "#080b0e"];
+	const drops = precip ? 8 + level * 8 : 0;
+	const flakes = snow ? 7 + level * 6 : 0;
+	const clouds = cloudy ? scene === "partly" ? 2 : scene === "fog" ? 4 : 3 : 0;
+	const stars = !isDay && scene === "clear" ? 14 : !isDay ? 7 : 0;
+	const streaks = wind >= 14 ? 4 + Math.round(gust * 5) : 0;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		className: cn("vane-wx pointer-events-none absolute inset-0", className),
+		"aria-hidden": true,
+		style: {
+			"--wx-lean": `${lean}deg`,
+			"--wx-gust": String(.35 + gust * .9)
+		},
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
+			viewBox: "0 0 240 240",
+			className: "size-full",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("defs", { children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("clipPath", {
+					id: "wx-clip",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+						cx: "120",
+						cy: "120",
+						r: "110"
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("radialGradient", {
+					id: "wx-sky",
+					cx: "50%",
+					cy: "38%",
+					r: "70%",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
+						offset: "0%",
+						stopColor: sky[0]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
+						offset: "100%",
+						stopColor: sky[1]
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("radialGradient", {
+					id: "wx-scrim",
+					cx: "50%",
+					cy: "52%",
+					r: "42%",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
+							offset: "0%",
+							stopColor: "#0b1014",
+							stopOpacity: "0.55"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
+							offset: "70%",
+							stopColor: "#0b1014",
+							stopOpacity: "0.12"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
+							offset: "100%",
+							stopColor: "#0b1014",
+							stopOpacity: "0"
+						})
+					]
+				})
+			] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", {
+				clipPath: "url(#wx-clip)",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+						cx: "120",
+						cy: "120",
+						r: "110",
+						fill: "url(#wx-sky)"
+					}),
+					stars ? Array.from({ length: stars }, (_, i) => {
+						const x = 18 + unit(i, 1) * 204;
+						const y = 16 + unit(i, 2) * 208;
+						const r = .5 + unit(i, 3) * 1.1;
+						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+							cx: x,
+							cy: y,
+							r,
+							fill: "#e7eef4",
+							className: "vane-wx-twinkle",
+							style: {
+								animationDelay: `${unit(i, 4) * 3}s`,
+								animationDuration: `${2.4 + unit(i, 5) * 2.2}s`
+							}
+						}, `s${i}`);
+					}) : null,
+					isDay && (scene === "clear" || scene === "partly") ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", {
+						className: "vane-wx-sun",
+						transform: "translate(120 78)",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("g", {
+								className: "vane-wx-rays",
+								children: Array.from({ length: 8 }, (_, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", {
+									x1: "0",
+									y1: "-22",
+									x2: "0",
+									y2: "-30",
+									stroke: "#f5d76e",
+									strokeWidth: "1.6",
+									strokeLinecap: "round",
+									opacity: "0.7",
+									transform: `rotate(${i * 45})`
+								}, i))
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+								cx: "0",
+								cy: "0",
+								r: "16",
+								fill: "#f5d76e",
+								opacity: "0.95"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+								cx: "0",
+								cy: "0",
+								r: "22",
+								fill: "#f5d76e",
+								opacity: "0.16",
+								className: "vane-wx-glow"
+							})
+						]
+					}) : null,
+					!isDay && (scene === "clear" || scene === "partly") ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", {
+						transform: "translate(120 78)",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+							cx: "0",
+							cy: "0",
+							r: "15",
+							fill: "#d5dde4",
+							opacity: "0.92"
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+							cx: "7",
+							cy: "-4",
+							r: "13",
+							fill: sky[0]
+						})]
+					}) : null,
+					clouds ? Array.from({ length: clouds }, (_, i) => {
+						const x = 30 + unit(i, 6) * 140;
+						const y = 48 + unit(i, 7) * 70;
+						const s = .7 + unit(i, 8) * .55;
+						const dur = 18 + unit(i, 9) * 16 - gust * 8;
+						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("g", {
+							transform: `translate(${x} ${y}) scale(${s})`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", {
+								className: "vane-wx-cloud",
+								style: {
+									animationDuration: `${Math.max(9, dur)}s`,
+									animationDelay: `${-unit(i, 10) * 12}s`,
+									opacity: scene === "fog" ? .35 : scene === "partly" ? .45 : .62
+								},
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("ellipse", {
+										cx: "28",
+										cy: "10",
+										rx: "28",
+										ry: "12",
+										fill: "#c5d0d8"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("ellipse", {
+										cx: "10",
+										cy: "12",
+										rx: "16",
+										ry: "10",
+										fill: "#c5d0d8"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("ellipse", {
+										cx: "46",
+										cy: "13",
+										rx: "14",
+										ry: "9",
+										fill: "#c5d0d8"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("ellipse", {
+										cx: "24",
+										cy: "0",
+										rx: "14",
+										ry: "11",
+										fill: "#dce4ea"
+									})
+								]
+							})
+						}, `c${i}`);
+					}) : null,
+					scene === "fog" ? [
+						0,
+						1,
+						2
+					].map((i) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ellipse", {
+						cx: "120",
+						cy: 90 + i * 28,
+						rx: 90 - i * 8,
+						ry: "16",
+						fill: "#c5d0d8",
+						className: "vane-wx-fog",
+						style: {
+							animationDelay: `${i * 1.2}s`,
+							opacity: .22 + i * .06
+						}
+					}, `f${i}`)) : null,
+					precip ? Array.from({ length: drops }, (_, i) => {
+						const x = 20 + unit(i, 11) * 200;
+						const delay = -unit(i, 12) * 1.8;
+						const dur = (scene === "drizzle" ? 1.6 : scene === "shower" ? .85 : 1.15) - level * .12;
+						const len = scene === "drizzle" ? 5 + level : 9 + level * 3;
+						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", {
+							x1: x,
+							y1: "-8",
+							x2: x,
+							y2: len,
+							stroke: "var(--color-rain)",
+							strokeWidth: scene === "drizzle" ? .8 : 1.15,
+							strokeLinecap: "round",
+							opacity: .35 + level * .12,
+							className: "vane-wx-fall",
+							style: {
+								animationDelay: `${delay}s`,
+								animationDuration: `${Math.max(.55, dur)}s`
+							}
+						}, `r${i}`);
+					}) : null,
+					snow ? Array.from({ length: flakes }, (_, i) => {
+						const x = 16 + unit(i, 13) * 208;
+						const r = 1.1 + unit(i, 14) * 1.8 * (level === 1 ? 1.15 : 1);
+						const dur = 4.2 + unit(i, 15) * 3.4 - level * .4;
+						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+							cx: x,
+							cy: "-6",
+							r,
+							fill: "#e7eef4",
+							opacity: .55 + unit(i, 16) * .35,
+							className: "vane-wx-fall vane-wx-flake",
+							style: {
+								animationDelay: `${-unit(i, 17) * 4}s`,
+								animationDuration: `${dur}s`
+							}
+						}, `n${i}`);
+					}) : null,
+					streaks ? Array.from({ length: streaks }, (_, i) => {
+						const y = 40 + unit(i, 18) * 150;
+						const w = 18 + unit(i, 19) * 36;
+						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", {
+							x1: "8",
+							y1: y,
+							x2: 8 + w,
+							y2: y,
+							stroke: "#e7eef4",
+							strokeWidth: "0.8",
+							strokeLinecap: "round",
+							opacity: .12 + gust * .22,
+							className: "vane-wx-streak",
+							style: {
+								animationDelay: `${-unit(i, 20) * 2}s`,
+								animationDuration: `${1.1 + unit(i, 21) * 1.2}s`
+							}
+						}, `w${i}`);
+					}) : null,
+					scene === "thunder" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
+						x: "0",
+						y: "0",
+						width: "240",
+						height: "240",
+						fill: "#e7eef4",
+						className: "vane-wx-flash"
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+						d: "M128 52 L108 108 L122 108 L112 164 L148 96 L130 96 L142 52 Z",
+						fill: "#f5d76e",
+						className: "vane-wx-bolt"
+					})] }) : null,
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+						cx: "120",
+						cy: "120",
+						r: "110",
+						fill: "url(#wx-scrim)"
+					})
+				]
+			})]
+		})
+	});
+}
+function Compass({ windDir, windSpeedLabel, windKmh = 0, chance, weatherCode = 61, isDay = true, className }) {
 	const { locale, t } = useT();
 	const wet = chance >= 35;
 	const ticks = Array.from({ length: 72 }, (_, i) => i);
@@ -860,9 +1188,14 @@ function Compass({ windDir, windSpeedLabel, chance, weatherCode = 61, className 
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: cn("relative mx-auto aspect-square w-full max-w-64 sm:max-w-80", className),
 		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(WeatherScene, {
+				code: weatherCode,
+				isDay,
+				windKmh
+			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
 				viewBox: "0 0 240 240",
-				className: "size-full",
+				className: "relative size-full",
 				role: "img",
 				"aria-label": live ? t("compassLive", {
 					facing: facing ?? "",
@@ -875,19 +1208,7 @@ function Compass({ windDir, windSpeedLabel, chance, weatherCode = 61, className 
 					chance
 				}),
 				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("defs", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("radialGradient", {
-						id: "vane-disc",
-						cx: "50%",
-						cy: "45%",
-						r: "55%",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
-							offset: "0%",
-							stopColor: "var(--color-raised)"
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
-							offset: "100%",
-							stopColor: "var(--color-surface)"
-						})]
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("linearGradient", {
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("defs", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("linearGradient", {
 						id: "vane-needle",
 						x1: "0",
 						y1: "0",
@@ -900,12 +1221,12 @@ function Compass({ windDir, windSpeedLabel, chance, weatherCode = 61, className 
 							offset: "100%",
 							stopColor: "var(--color-accent)"
 						})]
-					})] }),
+					}) }),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
 						cx: "120",
 						cy: "120",
 						r: "112",
-						fill: "url(#vane-disc)"
+						fill: "transparent"
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
 						cx: "120",
@@ -1035,7 +1356,7 @@ function Compass({ windDir, windSpeedLabel, chance, weatherCode = 61, className 
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "pointer-events-none absolute inset-0 flex flex-col items-center justify-center pt-10",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-					className: "font-display text-3xl font-medium tabular-nums leading-none tracking-tight text-fg sm:text-4xl",
+					className: "font-display text-3xl font-medium tabular-nums leading-none tracking-tight text-fg [text-shadow:0_1px_12px_#0b1014] sm:text-4xl",
 					children: [chance, /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 						className: "text-lg text-muted",
 						children: "%"
@@ -3550,8 +3871,10 @@ function ForecastApp() {
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Compass, {
 								windDir: forecast.current.windDir,
 								windSpeedLabel: formatSpeed(forecast.current.windSpeedKmh, units),
+								windKmh: forecast.current.windSpeedKmh,
 								chance: forecast.current.rain.chance,
-								weatherCode: forecast.current.weatherCode
+								weatherCode: forecast.current.weatherCode,
+								isDay: forecast.current.isDay
 							})
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CurrentPanel, {

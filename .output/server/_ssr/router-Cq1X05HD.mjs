@@ -8,7 +8,7 @@ import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-D6C1V5P8.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-Cq1X05HD.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -513,7 +513,7 @@ function SmoothScroll() {
 	}, []);
 	return null;
 }
-var styles_default = "/assets/styles-D5AZmyOe.css";
+var styles_default = "/assets/styles-BsKfzDNK.css";
 var APP_NAME = "Vane";
 var fetchSessionUser = createServerFn({ method: "GET" }).handler(createSsrRpc("2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26"));
 var Route$3 = createRootRoute({
@@ -635,7 +635,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-BuWDm4Hg.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-CsBcJYQe.mjs");
 function num(v) {
 	const n = typeof v === "string" ? Number(v) : typeof v === "number" ? v : NaN;
 	return Number.isFinite(n) ? n : void 0;
