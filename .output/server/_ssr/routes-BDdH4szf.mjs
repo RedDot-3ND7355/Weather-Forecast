@@ -11,10 +11,10 @@ import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BN-xiRnA.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-zuPDimL4.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-EfDHwLoe.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BDdH4szf.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -542,7 +542,7 @@ function screenAngle() {
 	const legacy = window.orientation;
 	return typeof legacy === "number" ? legacy : 0;
 }
-function isAppleTouch() {
+function isAppleTouch$1() {
 	const ua = navigator.userAgent;
 	if (/iP(hone|od|ad)/.test(ua)) return true;
 	if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
@@ -592,7 +592,7 @@ function useDeviceHeading() {
 		shown.current = null;
 		target.current = null;
 		setHint(null);
-		const appleNow = isAppleTouch();
+		const appleNow = isAppleTouch$1();
 		const apply = (e, fromAbsolute) => {
 			const ev = e;
 			const h = readHeading(ev, appleNow);
@@ -648,7 +648,7 @@ function useDeviceHeading() {
 			setStatus("missing");
 			return;
 		}
-		const ios = canRequest() || isAppleTouch();
+		const ios = canRequest() || isAppleTouch$1();
 		const coarse = window.matchMedia("(pointer: coarse)").matches;
 		if (ios) setStatus("need");
 		setOffer(ios || coarse);
@@ -685,7 +685,7 @@ function useDeviceHeading() {
 			target.current = null;
 			shown.current = null;
 			absOk.current = false;
-			setStatus(canRequest() || isAppleTouch() ? "need" : "off");
+			setStatus(canRequest() || isAppleTouch$1() ? "need" : "off");
 		}, [])
 	};
 }
@@ -2233,64 +2233,73 @@ var GeoError = class extends Error {
 		this.name = "GeoError";
 	}
 };
-function once(high, timeout, maximumAge) {
-	return new Promise((resolve, reject) => {
-		navigator.geolocation.getCurrentPosition(resolve, reject, {
-			enableHighAccuracy: high,
-			timeout,
-			maximumAge
-		});
-	});
+function isAppleTouch() {
+	if (typeof navigator === "undefined") return false;
+	const ua = navigator.userAgent;
+	if (/iP(hone|od|ad)/.test(ua)) return true;
+	if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+	return navigator.vendor === "Apple Computer, Inc." && "ontouchend" in window;
 }
-function watchOnce(timeout) {
-	return new Promise((resolve, reject) => {
-		let settled = false;
-		const id = navigator.geolocation.watchPosition((pos) => {
-			if (settled) return;
-			settled = true;
-			navigator.geolocation.clearWatch(id);
-			resolve(pos);
-		}, (err) => {
-			if (settled) return;
-			settled = true;
-			navigator.geolocation.clearWatch(id);
-			reject(err);
-		}, {
-			enableHighAccuracy: true,
-			timeout,
-			maximumAge: 15e3
-		});
-		window.setTimeout(() => {
-			if (settled) return;
-			settled = true;
-			navigator.geolocation.clearWatch(id);
-			reject(Object.assign(/* @__PURE__ */ new Error("timeout"), { code: 3 }));
-		}, timeout + 500);
-	});
+function isInAppBrowser() {
+	const ua = navigator.userAgent;
+	return /FBAN|FBAV|Instagram|Twitter|Line\/|WhatsApp|Snapchat|GSA\//.test(ua);
 }
 function wrap(err) {
 	const code = err && typeof err === "object" && "code" in err ? Number(err.code) : 0;
-	if (code === 1) return new GeoError("Location is blocked. On iPhone: Settings → Safari → Location, then Allow.", "denied");
-	if (code === 3) return new GeoError("Location timed out. Try again outside or with Wi-Fi on.", "timeout");
-	return new GeoError("Could not read your location.", "unavailable");
+	if (isInAppBrowser()) return new GeoError("Open this page in Safari (not in-app), then tap locate.", "unavailable");
+	if (code === 1) return new GeoError("Location is blocked. iPhone: Settings → Privacy & Security → Location Services → Safari Websites → Allow, then reload.", "denied");
+	if (code === 3) return new GeoError("Location timed out. Turn on Location Services / Wi-Fi and try again.", "timeout");
+	return new GeoError("Could not read your location. Check Location Services is on for Safari.", "unavailable");
 }
-async function readDevicePosition() {
-	if (typeof navigator === "undefined" || !navigator.geolocation) throw new GeoError("Location is not available in this browser.", "missing");
-	try {
-		return await once(true, 12e3, 3e4);
-	} catch (first) {
-		if ((first && typeof first === "object" && "code" in first ? Number(first.code) : 0) === 1) throw wrap(first);
+/**
+* Start GPS in the same tick as the tap. iOS Safari often ignores
+* getCurrentPosition timeouts and only delivers via watchPosition.
+*/
+function readDevicePosition() {
+	if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.reject(new GeoError("Location is not available in this browser.", "missing"));
+	return new Promise((resolve, reject) => {
+		let settled = false;
+		const watches = [];
+		const done = (fn) => {
+			if (settled) return;
+			settled = true;
+			window.clearTimeout(watchdog);
+			window.clearTimeout(lowAcc);
+			for (const id of watches) navigator.geolocation.clearWatch(id);
+			fn();
+		};
+		const onOk = (pos) => done(() => resolve(pos));
+		const onDenied = (err) => {
+			if (err.code === 1) done(() => reject(wrap(err)));
+		};
+		const high = {
+			enableHighAccuracy: true,
+			timeout: 6e4,
+			maximumAge: 0
+		};
+		const low = {
+			enableHighAccuracy: false,
+			timeout: 25e3,
+			maximumAge: 12e4
+		};
 		try {
-			return await once(false, 14e3, 6e4);
-		} catch (second) {
-			if ((second && typeof second === "object" && "code" in second ? Number(second.code) : 0) === 1) throw wrap(second);
-			try {
-				return await watchOnce(16e3);
-			} catch (third) {
-				throw wrap(third);
-			}
+			watches.push(navigator.geolocation.watchPosition(onOk, onDenied, high));
+		} catch (err) {
+			done(() => reject(wrap(err)));
+			return;
 		}
-	}
+		navigator.geolocation.getCurrentPosition(onOk, onDenied, high);
+		const lowAcc = window.setTimeout(() => {
+			if (settled) return;
+			navigator.geolocation.getCurrentPosition(onOk, onDenied, low);
+			try {
+				watches.push(navigator.geolocation.watchPosition(onOk, onDenied, low));
+			} catch {}
+		}, 2800);
+		const watchdog = window.setTimeout(() => {
+			done(() => reject(wrap(Object.assign(/* @__PURE__ */ new Error("timeout"), { code: 3 }))));
+		}, 45e3);
+	});
 }
 function ForecastApp() {
 	const { user } = useCurrentUserState();
@@ -2320,6 +2329,7 @@ function ForecastApp() {
 	const savedPlaces = savedQuery.data ?? [];
 	const saved = Boolean(active) && savedPlaces.some((p) => Math.abs(p.latitude - active.latitude) < 8e-4 && Math.abs(p.longitude - active.longitude) < 8e-4);
 	function locate() {
+		if (isAppleTouch()) toast("Safari will ask for location — tap Allow at the top.");
 		setLocating(true);
 		readDevicePosition().then((pos) => reversePlace({ data: {
 			latitude: pos.coords.latitude,

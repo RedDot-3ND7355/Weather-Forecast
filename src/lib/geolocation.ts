@@ -8,45 +8,17 @@ export class GeoError extends Error {
   }
 }
 
-function once(
-  high: boolean,
-  timeout: number,
-  maximumAge: number,
-): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: high,
-      timeout,
-      maximumAge,
-    });
-  });
+export function isAppleTouch(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  if (/iP(hone|od|ad)/.test(ua)) return true;
+  if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+  return navigator.vendor === "Apple Computer, Inc." && "ontouchend" in window;
 }
 
-function watchOnce(timeout: number): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const id = navigator.geolocation.watchPosition(
-      (pos) => {
-        if (settled) return;
-        settled = true;
-        navigator.geolocation.clearWatch(id);
-        resolve(pos);
-      },
-      (err) => {
-        if (settled) return;
-        settled = true;
-        navigator.geolocation.clearWatch(id);
-        reject(err);
-      },
-      { enableHighAccuracy: true, timeout, maximumAge: 15_000 },
-    );
-    window.setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      navigator.geolocation.clearWatch(id);
-      reject(Object.assign(new Error("timeout"), { code: 3 }));
-    }, timeout + 500);
-  });
+function isInAppBrowser(): boolean {
+  const ua = navigator.userAgent;
+  return /FBAN|FBAV|Instagram|Twitter|Line\/|WhatsApp|Snapchat|GSA\//.test(ua);
 }
 
 function wrap(err: unknown): GeoError {
@@ -54,43 +26,90 @@ function wrap(err: unknown): GeoError {
     err && typeof err === "object" && "code" in err
       ? Number((err as GeolocationPositionError).code)
       : 0;
+  if (isInAppBrowser()) {
+    return new GeoError(
+      "Open this page in Safari (not in-app), then tap locate.",
+      "unavailable",
+    );
+  }
   if (code === 1) {
     return new GeoError(
-      "Location is blocked. On iPhone: Settings → Safari → Location, then Allow.",
+      "Location is blocked. iPhone: Settings → Privacy & Security → Location Services → Safari Websites → Allow, then reload.",
       "denied",
     );
   }
   if (code === 3) {
-    return new GeoError("Location timed out. Try again outside or with Wi-Fi on.", "timeout");
+    return new GeoError(
+      "Location timed out. Turn on Location Services / Wi-Fi and try again.",
+      "timeout",
+    );
   }
-  return new GeoError("Could not read your location.", "unavailable");
+  return new GeoError(
+    "Could not read your location. Check Location Services is on for Safari.",
+    "unavailable",
+  );
 }
 
-export async function readDevicePosition(): Promise<GeolocationPosition> {
+/**
+ * Start GPS in the same tick as the tap. iOS Safari often ignores
+ * getCurrentPosition timeouts and only delivers via watchPosition.
+ */
+export function readDevicePosition(): Promise<GeolocationPosition> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
-    throw new GeoError("Location is not available in this browser.", "missing");
+    return Promise.reject(
+      new GeoError("Location is not available in this browser.", "missing"),
+    );
   }
-  try {
-    return await once(true, 12_000, 30_000);
-  } catch (first) {
-    const code =
-      first && typeof first === "object" && "code" in first
-        ? Number((first as GeolocationPositionError).code)
-        : 0;
-    if (code === 1) throw wrap(first);
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const watches: number[] = [];
+
+    const done = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(watchdog);
+      window.clearTimeout(lowAcc);
+      for (const id of watches) navigator.geolocation.clearWatch(id);
+      fn();
+    };
+
+    const onOk = (pos: GeolocationPosition) => done(() => resolve(pos));
+    const onDenied = (err: GeolocationPositionError) => {
+      if (err.code === 1) done(() => reject(wrap(err)));
+    };
+
+    const high = {
+      enableHighAccuracy: true,
+      timeout: 60_000,
+      maximumAge: 0,
+    } as const;
+    const low = {
+      enableHighAccuracy: false,
+      timeout: 25_000,
+      maximumAge: 120_000,
+    } as const;
+
     try {
-      return await once(false, 14_000, 60_000);
-    } catch (second) {
-      const code2 =
-        second && typeof second === "object" && "code" in second
-          ? Number((second as GeolocationPositionError).code)
-          : 0;
-      if (code2 === 1) throw wrap(second);
-      try {
-        return await watchOnce(16_000);
-      } catch (third) {
-        throw wrap(third);
-      }
+      watches.push(navigator.geolocation.watchPosition(onOk, onDenied, high));
+    } catch (err) {
+      done(() => reject(wrap(err)));
+      return;
     }
-  }
+    navigator.geolocation.getCurrentPosition(onOk, onDenied, high);
+
+    const lowAcc = window.setTimeout(() => {
+      if (settled) return;
+      navigator.geolocation.getCurrentPosition(onOk, onDenied, low);
+      try {
+        watches.push(navigator.geolocation.watchPosition(onOk, onDenied, low));
+      } catch {
+        /* ignore */
+      }
+    }, 2_800);
+
+    const watchdog = window.setTimeout(() => {
+      done(() => reject(wrap(Object.assign(new Error("timeout"), { code: 3 }))));
+    }, 45_000);
+  });
 }

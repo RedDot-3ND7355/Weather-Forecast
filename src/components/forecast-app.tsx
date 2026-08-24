@@ -17,7 +17,7 @@ import { listPlaces, removePlace } from "@/lib/places";
 import { useWeatherStore } from "@/lib/store";
 import { fetchForecast, reversePlace } from "@/lib/weather/api";
 import { formatSpeed } from "@/lib/weather/format";
-import { GeoError, readDevicePosition } from "@/lib/geolocation";
+import { GeoError, isAppleTouch, readDevicePosition } from "@/lib/geolocation";
 import type { Place } from "@/lib/weather/types";
 
 export function ForecastApp() {
@@ -55,6 +55,9 @@ export function ForecastApp() {
     );
 
   function locate() {
+    if (isAppleTouch()) {
+      toast("Safari will ask for location — tap Allow at the top.");
+    }
     setLocating(true);
     void readDevicePosition()
       .then((pos) =>
