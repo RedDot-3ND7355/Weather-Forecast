@@ -119,6 +119,8 @@ export function overlayLayer(
   if (kind === "rdps") return "rdps";
   return "obs";
 }
+
+export function mscTimeIso(unix: number): string {
   return new Date(unix * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 

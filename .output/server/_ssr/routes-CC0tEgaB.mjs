@@ -3,19 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-Dr3eFf-n.mjs";
-import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BQUFD3CQ.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-Dp4pSiB7.mjs";
+import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-Dzmg0Cbp.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { n as arrivalCopy, r as formatEta } from "./advection-CPgkiWww.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-DOw1cUNi.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CrMHpjJN.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CofTRlxo.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CWDZUR3Z.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CC0tEgaB.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1397,17 +1397,23 @@ var fetchMscRadar = createServerFn({ method: "GET" }).handler(createSsrRpc("26eb
 function inMscDomain(lat, lon) {
 	return lat >= 24 && lat <= 72 && lon >= -168 && lon <= -52;
 }
+function overlayLayer(kind) {
+	if (kind === "msc-fc") return "fc";
+	if (kind === "rdps") return "rdps";
+	return "obs";
+}
 function mscTimeIso(unix) {
 	return (/* @__PURE__ */ new Date(unix * 1e3)).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 function mscGetMapUrl(args) {
-	const layer = args.layer === "obs" ? "RADAR_1KM_RRAI" : "Radar_1km_RainPrecipRate-Extrapolation";
+	const layer = args.layer === "obs" ? "RADAR_1KM_RRAI" : args.layer === "fc" ? "Radar_1km_RainPrecipRate-Extrapolation" : "RDPS_10km_Precip-Accum1h";
+	const style = args.layer === "rdps" ? "PRECIPMM-LINEAR" : "Radar-Rain_14colors";
 	return `https://geo.weather.gc.ca/geomet?${new URLSearchParams({
 		SERVICE: "WMS",
 		VERSION: "1.3.0",
 		REQUEST: "GetMap",
 		LAYERS: layer,
-		STYLES: "Radar-Rain_14colors",
+		STYLES: style,
 		CRS: "EPSG:3857",
 		BBOX: args.bbox,
 		WIDTH: String(Math.max(64, Math.round(args.width))),
@@ -1467,7 +1473,7 @@ function buildRadarTimeline(args) {
 	const now = args.now ?? Date.now() / 1e3;
 	const step = args.stepSec ?? 600;
 	const nowTick = Math.floor(now / step) * step;
-	const end = nowTick + (args.futureHours ?? 2) * 3600;
+	const end = nowTick + (args.futureHours ?? 6) * 3600;
 	const out = [];
 	const seen = /* @__PURE__ */ new Set();
 	const push = (f) => {
@@ -1478,6 +1484,7 @@ function buildRadarTimeline(args) {
 	};
 	const mscObs = args.msc?.observed ?? [];
 	const mscFc = args.msc?.forecast ?? [];
+	const mscModel = args.msc?.model ?? [];
 	if (mscObs.length) for (const t of mscObs) {
 		if (t > now + 90) continue;
 		push({
@@ -1503,7 +1510,16 @@ function buildRadarTimeline(args) {
 		});
 		lastCovered = Math.max(lastCovered, t);
 	}
-	for (let t = Math.floor(lastCovered / step) * step + step; t <= end + 1; t += step) {
+	if (mscModel.length) for (const t of mscModel) {
+		if (t <= lastCovered + 600) continue;
+		if (t > end + 1) break;
+		push({
+			time: t,
+			kind: "forecast",
+			overlay: "rdps"
+		});
+	}
+	else for (let t = Math.floor(lastCovered / step) * step + step; t <= end + 1; t += step) {
 		const rv = nearestFrame(args.catalog, t, 480);
 		if (rv && rv.time > now) {
 			push({
@@ -2267,7 +2283,7 @@ function RadarMap({ forecast, units }) {
 		grid: gridQuery.data ?? [],
 		msc: inMscDomain(place.latitude, place.longitude) ? mscQuery.data : null,
 		stepSec: 600,
-		futureHours: 2
+		futureHours: 6
 	}), [
 		catalogQuery.data?.frames,
 		gridQuery.data,
@@ -2420,7 +2436,7 @@ function RadarMap({ forecast, units }) {
 				cssH
 			});
 			const overlayUrl = active.overlay ? mscGetMapUrl({
-				layer: active.overlay === "msc-fc" ? "fc" : "obs",
+				layer: overlayLayer(active.overlay),
 				time: active.time,
 				bbox,
 				width: cssW,
@@ -2434,7 +2450,7 @@ function RadarMap({ forecast, units }) {
 			const overlayFor = (f, keep) => {
 				if (!f?.overlay) return Promise.resolve(null);
 				return loadImg(mscGetMapUrl({
-					layer: f.overlay === "msc-fc" ? "fc" : "obs",
+					layer: overlayLayer(f.overlay),
 					time: f.time,
 					bbox,
 					width: cssW,
@@ -2805,7 +2821,7 @@ function RadarMap({ forecast, units }) {
 							}),
 							hasForecast ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute right-0",
-								children: "+2h"
+								children: "+6h"
 							}) : null
 						]
 					})]

@@ -1,9 +1,9 @@
 import { r as createServerFn } from "./ssr.mjs";
 import { t as createServerRpc } from "./createServerRpc-CcvdN_gc.mjs";
-import { i as estimateRain } from "./rain-BQUFD3CQ.mjs";
+import { i as estimateRain } from "./rain-Dzmg0Cbp.mjs";
 import { hn as object, mn as number } from "../_libs/@better-auth/core+[...].mjs";
-import { a as travelHours, i as offsetKm, n as arrivalCopy, r as formatEta, t as FETCH_KM } from "./advection-CPgkiWww.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/radar-CyxrAdPN.js
+import { a as travelHours, i as offsetKm, n as arrivalCopy, r as formatEta, t as FETCH_KM } from "./advection-DOw1cUNi.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/radar-CiUkCioX.js
 var UA = "Vane/1.0 (wind-aware weather forecast)";
 function num(v, fallback = 0) {
 	return typeof v === "number" && Number.isFinite(v) ? v : fallback;
@@ -48,19 +48,28 @@ var fetchMscRadar = createServerFn({ method: "GET" }).handler(fetchMscRadar_crea
 	if (mscCache.value && Date.now() - mscCache.at < 12e4) return mscCache.value;
 	const empty = {
 		observed: [],
-		forecast: []
+		forecast: [],
+		model: []
 	};
 	try {
-		const [obsXml, fcXml] = await Promise.all([fetch("https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RADAR_1KM_RRAI", { headers: {
-			accept: "application/xml",
-			"user-agent": UA
-		} }).then((r) => r.text()), fetch("https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=Radar_1km_RainPrecipRate-Extrapolation", { headers: {
-			accept: "application/xml",
-			"user-agent": UA
-		} }).then((r) => r.text())]);
+		const [obsXml, fcXml, modelXml] = await Promise.all([
+			fetch("https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RADAR_1KM_RRAI", { headers: {
+				accept: "application/xml",
+				"user-agent": UA
+			} }).then((r) => r.text()),
+			fetch("https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=Radar_1km_RainPrecipRate-Extrapolation", { headers: {
+				accept: "application/xml",
+				"user-agent": UA
+			} }).then((r) => r.text()),
+			fetch("https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RDPS_10km_Precip-Accum1h", { headers: {
+				accept: "application/xml",
+				"user-agent": UA
+			} }).then((r) => r.text())
+		]);
 		const value = {
 			observed: timeDimFromCaps(obsXml),
-			forecast: timeDimFromCaps(fcXml)
+			forecast: timeDimFromCaps(fcXml),
+			model: timeDimFromCaps(modelXml)
 		};
 		mscCache.at = Date.now();
 		mscCache.value = value;
