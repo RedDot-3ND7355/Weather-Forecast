@@ -65,8 +65,13 @@ export function Compass({
             </linearGradient>
           </defs>
 
-          {/* Weather disc — same viewBox / center as the rose */}
-          <WeatherSceneGroup code={weatherCode} isDay={isDay} windKmh={windKmh} />
+          <WeatherSceneGroup
+            code={weatherCode}
+            isDay={isDay}
+            windKmh={windKmh}
+            idPrefix="compass"
+            shape="circle"
+          />
 
           <circle
             cx="120"
