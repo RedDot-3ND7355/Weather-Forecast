@@ -1,59 +1,78 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const CRITICAL_BOOT_CSS = `
 html{color-scheme:dark;background:#0b1014}
 html,body,#app{background:#0b1014;color:#e7eef4;margin:0}
-#vane-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#0b1014;color:#e7eef4;transition:opacity .45s cubic-bezier(.22,1,.36,1),visibility .45s}
-#vane-splash.is-out{opacity:0;visibility:hidden;pointer-events:none}
+#vane-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#0b1014;color:#e7eef4;opacity:1;transition:opacity .7s cubic-bezier(.22,1,.36,1)}
+#vane-splash.is-out{opacity:0;pointer-events:none}
 #vane-splash .inner{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px}
 #vane-splash .mark{width:52px;height:52px}
 #vane-splash .needle{transform-origin:16px 16px;animation:vane-sweep 2.8s cubic-bezier(.22,1,.36,1) infinite}
 #vane-splash .word{margin:0;font:500 1.65rem/1 Georgia,ui-serif,serif;letter-spacing:-0.03em}
 #vane-splash .sub{margin:0;font:500 .68rem/1.4 system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#667380}
 @keyframes vane-sweep{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(22deg)}}
-@media (prefers-reduced-motion:reduce){#vane-splash .needle{animation:none}}
+@media (prefers-reduced-motion:reduce){
+  #vane-splash{transition:opacity .2s linear}
+  #vane-splash .needle{animation:none}
+}
 `;
 
 export function BootSplash() {
+  const [out, setOut] = useState(false);
+  const [gone, setGone] = useState(false);
+
   useEffect(() => {
-    const el = document.getElementById("vane-splash");
-    if (!el) return;
-    let hideTimer = 0;
-    let removeTimer = 0;
-    const hide = () => {
-      el.classList.add("is-out");
-      el.setAttribute("aria-busy", "false");
-      removeTimer = window.setTimeout(() => el.remove(), 480);
-    };
-    const start = () => {
-      hideTimer = window.setTimeout(hide, 280);
+    const started = performance.now();
+    let startTimer = 0;
+    let fallback = 0;
+    const MIN_MS = 700;
+    const fade = () => {
+      const wait = Math.max(0, MIN_MS - (performance.now() - started));
+      startTimer = window.setTimeout(() => setOut(true), wait);
     };
     const links = [...document.querySelectorAll('link[rel="stylesheet"]')];
-    const pending = links.filter((n) => {
-      const link = n as HTMLLinkElement;
-      return !link.sheet;
-    });
+    const pending = links.filter((n) => !(n as HTMLLinkElement).sheet);
     if (pending.length === 0) {
-      requestAnimationFrame(() => requestAnimationFrame(start));
+      requestAnimationFrame(() => requestAnimationFrame(fade));
     } else {
       let left = pending.length;
       const onOne = () => {
         left -= 1;
-        if (left <= 0) start();
+        if (left <= 0) fade();
       };
-      for (const n of pending) n.addEventListener("load", onOne, { once: true });
-      nError(pending, onOne);
+      for (const n of pending) {
+        n.addEventListener("load", onOne, { once: true });
+        n.addEventListener("error", onOne, { once: true });
+      }
     }
-    const fallback = window.setTimeout(hide, 2200);
+    fallback = window.setTimeout(() => setOut(true), 2400);
     return () => {
-      window.clearTimeout(hideTimer);
-      window.clearTimeout(removeTimer);
+      window.clearTimeout(startTimer);
       window.clearTimeout(fallback);
     };
   }, []);
 
+  useEffect(() => {
+    if (!out) return;
+    const t = window.setTimeout(() => setGone(true), 900);
+    return () => window.clearTimeout(t);
+  }, [out]);
+
+  if (gone) return null;
+
   return (
-    <div id="vane-splash" role="status" aria-live="polite" aria-busy="true">
+    <div
+      id="vane-splash"
+      className={out ? "is-out" : undefined}
+      role="status"
+      aria-live="polite"
+      aria-busy={!out}
+      onTransitionEnd={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.propertyName !== "opacity") return;
+        if (out) setGone(true);
+      }}
+    >
       <div className="inner">
         <svg className="mark" viewBox="0 0 32 32" aria-hidden="true">
           <circle
@@ -82,8 +101,4 @@ export function BootSplash() {
       </div>
     </div>
   );
-}
-
-function nError(nodes: Element[], cb: () => void) {
-  for (const n of nodes) n.addEventListener("error", cb, { once: true });
 }

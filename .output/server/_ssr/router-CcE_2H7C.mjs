@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-D90c6B3c.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-CcE_2H7C.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -81,55 +81,67 @@ function AppProviders({ children }) {
 var CRITICAL_BOOT_CSS = `
 html{color-scheme:dark;background:#0b1014}
 html,body,#app{background:#0b1014;color:#e7eef4;margin:0}
-#vane-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#0b1014;color:#e7eef4;transition:opacity .45s cubic-bezier(.22,1,.36,1),visibility .45s}
-#vane-splash.is-out{opacity:0;visibility:hidden;pointer-events:none}
+#vane-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#0b1014;color:#e7eef4;opacity:1;transition:opacity .7s cubic-bezier(.22,1,.36,1)}
+#vane-splash.is-out{opacity:0;pointer-events:none}
 #vane-splash .inner{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px}
 #vane-splash .mark{width:52px;height:52px}
 #vane-splash .needle{transform-origin:16px 16px;animation:vane-sweep 2.8s cubic-bezier(.22,1,.36,1) infinite}
 #vane-splash .word{margin:0;font:500 1.65rem/1 Georgia,ui-serif,serif;letter-spacing:-0.03em}
 #vane-splash .sub{margin:0;font:500 .68rem/1.4 system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#667380}
 @keyframes vane-sweep{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(22deg)}}
-@media (prefers-reduced-motion:reduce){#vane-splash .needle{animation:none}}
+@media (prefers-reduced-motion:reduce){
+  #vane-splash{transition:opacity .2s linear}
+  #vane-splash .needle{animation:none}
+}
 `;
 function BootSplash() {
+	const [out, setOut] = (0, import_react.useState)(false);
+	const [gone, setGone] = (0, import_react.useState)(false);
 	(0, import_react.useEffect)(() => {
-		const el = document.getElementById("vane-splash");
-		if (!el) return;
-		let hideTimer = 0;
-		let removeTimer = 0;
-		const hide = () => {
-			el.classList.add("is-out");
-			el.setAttribute("aria-busy", "false");
-			removeTimer = window.setTimeout(() => el.remove(), 480);
+		const started = performance.now();
+		let startTimer = 0;
+		let fallback = 0;
+		const MIN_MS = 700;
+		const fade = () => {
+			const wait = Math.max(0, MIN_MS - (performance.now() - started));
+			startTimer = window.setTimeout(() => setOut(true), wait);
 		};
-		const start = () => {
-			hideTimer = window.setTimeout(hide, 280);
-		};
-		const pending = [...document.querySelectorAll("link[rel=\"stylesheet\"]")].filter((n) => {
-			return !n.sheet;
-		});
-		if (pending.length === 0) requestAnimationFrame(() => requestAnimationFrame(start));
+		const pending = [...document.querySelectorAll("link[rel=\"stylesheet\"]")].filter((n) => !n.sheet);
+		if (pending.length === 0) requestAnimationFrame(() => requestAnimationFrame(fade));
 		else {
 			let left = pending.length;
 			const onOne = () => {
 				left -= 1;
-				if (left <= 0) start();
+				if (left <= 0) fade();
 			};
-			for (const n of pending) n.addEventListener("load", onOne, { once: true });
-			nError(pending, onOne);
+			for (const n of pending) {
+				n.addEventListener("load", onOne, { once: true });
+				n.addEventListener("error", onOne, { once: true });
+			}
 		}
-		const fallback = window.setTimeout(hide, 2200);
+		fallback = window.setTimeout(() => setOut(true), 2400);
 		return () => {
-			window.clearTimeout(hideTimer);
-			window.clearTimeout(removeTimer);
+			window.clearTimeout(startTimer);
 			window.clearTimeout(fallback);
 		};
 	}, []);
+	(0, import_react.useEffect)(() => {
+		if (!out) return;
+		const t = window.setTimeout(() => setGone(true), 900);
+		return () => window.clearTimeout(t);
+	}, [out]);
+	if (gone) return null;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		id: "vane-splash",
+		className: out ? "is-out" : void 0,
 		role: "status",
 		"aria-live": "polite",
-		"aria-busy": "true",
+		"aria-busy": !out,
+		onTransitionEnd: (e) => {
+			if (e.target !== e.currentTarget) return;
+			if (e.propertyName !== "opacity") return;
+			if (out) setGone(true);
+		},
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 			className: "inner",
 			children: [
@@ -177,9 +189,6 @@ function BootSplash() {
 			]
 		})
 	});
-}
-function nError(nodes, cb) {
-	for (const n of nodes) n.addEventListener("error", cb, { once: true });
 }
 function isGrokEmbedderOrigin(origin) {
 	try {
@@ -492,7 +501,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-CzuRgrUL.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-BS7Z6A8f.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-yRCMsAbs.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });
