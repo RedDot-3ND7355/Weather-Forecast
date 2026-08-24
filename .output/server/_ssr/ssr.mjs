@@ -118,7 +118,7 @@ var HEADERS = { TSS_SHELL: "X-TSS_SHELL" };
 * the dev styles URL for route-scoped CSS collection.
 */
 async function getStartManifest(matchedRoutes) {
-	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-DkWh3as9.mjs");
+	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-xJ1dEO80.mjs");
 	const startManifest = tsrStartManifest();
 	let routes = startManifest.routes;
 	routes[rootRouteId];
@@ -144,7 +144,7 @@ var manifest = {
 	},
 	"15e2b9a1b9e19d4fce08228a67e0ab8734cdef8facc9972da8cad05b3efcba82": {
 		functionName: "fetchRadarNowcast_createServerFn_handler",
-		importer: () => import("./radar-EH8wXeNl.mjs")
+		importer: () => import("./radar-OGNMdjL2.mjs")
 	},
 	"21ad410098f5212eb73a8072460c39308832d91ccaec66faff1ebc0abcda6bd9": {
 		functionName: "removePlace_createServerFn_handler",
@@ -164,11 +164,11 @@ var manifest = {
 	},
 	"863a609e34c3563b807d29e784e5f4e9472c3185c8b5b5cffc6ffdc4f3f304e9": {
 		functionName: "fetchRadarCatalog_createServerFn_handler",
-		importer: () => import("./radar-EH8wXeNl.mjs")
+		importer: () => import("./radar-OGNMdjL2.mjs")
 	},
 	"a18c3671cbbca41ac752d67ab55ebc45fcd3d2935dffba314e0c7217c41206c5": {
 		functionName: "fetchPrecipGrid_createServerFn_handler",
-		importer: () => import("./radar-EH8wXeNl.mjs")
+		importer: () => import("./radar-OGNMdjL2.mjs")
 	},
 	"f5f33966c1a68a8e3cea1abd24a3eb1faef2991b2daf75449e1f34bc610df2de": {
 		functionName: "searchPlaces_createServerFn_handler",
@@ -1446,7 +1446,7 @@ var getBaseManifest = getProdBaseManifest;
 var createEarlyHintsForRequest = createEarlyHintsCollector;
 async function loadEntries() {
 	const [routerEntry, startEntry, pluginAdapters] = await Promise.all([
-		import("./router-Bb4h8gYB.mjs").then((n) => n.t),
+		import("./router-C2s5Q3rQ.mjs").then((n) => n.t),
 		import("./start-5Z2QO8AU.mjs"),
 		import("./empty-plugin-adapters-D9UWiqvJ.mjs")
 	]);

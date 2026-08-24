@@ -6,7 +6,6 @@ import { HScroll } from "@/components/h-scroll";
 import { Button } from "@/components/ui/button";
 import { WindArrow } from "@/components/wind-arrow";
 import {
-  buildAdvectionFrames,
   fetchPrecipGrid,
   fetchRadarCatalog,
   fetchRadarNowcast,
@@ -46,14 +45,6 @@ function loadImg(src: string): Promise<HTMLImageElement | null> {
   return pending;
 }
 
-function hexToRgb(hex: string): string {
-  const h = hex.replace("#", "").trim();
-  if (h.length >= 6) {
-    return `${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)}`;
-  }
-  return "126, 180, 198";
-}
-
 function hourStatus(h: {
   hereMm: number;
   fetchMm: number;
@@ -64,6 +55,87 @@ function hourStatus(h: {
   if (h.arriving || h.fetchMm >= 0.12) return "On the way";
   if (h.chance >= 45) return "Possible";
   return "Dry";
+}
+
+function hash2(x: number, y: number): number {
+  const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+function drawForecastField(
+  ctx: CanvasRenderingContext2D,
+  cells: PrecipCell[],
+  cssW: number,
+  cssH: number,
+  originX: number,
+  originY: number,
+  tile: number,
+  scale: number,
+  z: number,
+  x0: number,
+  y0: number,
+) {
+  const pts = cells
+    .filter((c) => c.precipMm >= 0.05)
+    .map((c) => ({
+      x: originX + (lon2tile(c.longitude, z) - x0) * tile * scale,
+      y: originY + (lat2tile(c.latitude, z) - y0) * tile * scale,
+      mm: c.precipMm,
+    }));
+  if (!pts.length) return;
+
+  let spacing = 72;
+  for (let i = 0; i < pts.length; i += 1) {
+    for (let j = i + 1; j < pts.length; j += 1) {
+      const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
+      if (d > 10 && d < spacing) spacing = d;
+    }
+  }
+  const maxR = Math.max(22, spacing * 0.92);
+  const maxR2 = maxR * maxR;
+  const step = 3;
+  const w = Math.max(1, Math.ceil(cssW / step));
+  const h = Math.max(1, Math.ceil(cssH / step));
+  const off = document.createElement("canvas");
+  off.width = w;
+  off.height = h;
+  const octx = off.getContext("2d");
+  if (!octx) return;
+  const img = octx.createImageData(w, h);
+  const data = img.data;
+
+  for (let iy = 0; iy < h; iy += 1) {
+    for (let ix = 0; ix < w; ix += 1) {
+      const n1 = hash2(ix * 0.31, iy * 0.29);
+      const n2 = hash2(ix * 0.17 + 8, iy * 0.19);
+      const x = (ix + 0.5) * step + (n1 - 0.5) * 16;
+      const y = (iy + 0.5) * step + (n2 - 0.5) * 16;
+      let num = 0;
+      let den = 0;
+      for (const p of pts) {
+        const d2 = (x - p.x) ** 2 + (y - p.y) ** 2;
+        if (d2 > maxR2) continue;
+        const wt = 1 / (d2 + 28);
+        num += p.mm * wt;
+        den += wt;
+      }
+      if (den <= 0) continue;
+      let mm = (num / den) * (0.55 + 0.45 * hash2(ix * 0.73, iy * 0.81));
+      if (mm < 0.09) continue;
+      const t = Math.min(1, Math.log2(1 + mm * 4) / 3.2);
+      const i = (iy * w + ix) * 4;
+      data[i] = Math.round(55 + t * 120);
+      data[i + 1] = Math.round(118 + t * 90);
+      data[i + 2] = Math.round(128 + t * 80);
+      data[i + 3] = Math.min(175, 28 + mm * 70);
+    }
+  }
+  octx.putImageData(img, 0, 0);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(off, 0, 0, cssW, cssH);
+  ctx.restore();
 }
 
 function composeRadar(args: {
@@ -111,7 +183,6 @@ function composeRadar(args: {
   const raised = root.getPropertyValue("--color-raised").trim() || "#131a21";
   const rain = root.getPropertyValue("--color-rain").trim() || "#7eb4c6";
   const fg = root.getPropertyValue("--color-fg").trim() || "#e7eef4";
-  const rainRgb = hexToRgb(rain);
   ctx.fillStyle = raised;
   ctx.fillRect(0, 0, cssW, cssH);
   for (const t of tiles) {
@@ -137,24 +208,7 @@ function composeRadar(args: {
   }
   ctx.globalAlpha = 1;
   if (cells?.length) {
-    const radius = Math.max(52, tile * scale * 0.48);
-    for (const cell of cells) {
-      const intensity = cell.precipMm + (cell.chance ?? 0) / 55;
-      if (intensity < 0.14) continue;
-      const x = originX + (lon2tile(cell.longitude, z) - x0) * tile * scale;
-      const y = originY + (lat2tile(cell.latitude, z) - y0) * tile * scale;
-      const a = Math.min(0.88, 0.28 + intensity * 0.32);
-      const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      g.addColorStop(0, `rgba(${rainRgb}, ${a})`);
-      g.addColorStop(0.55, `rgba(${rainRgb}, ${a * 0.45})`);
-      g.addColorStop(1, `rgba(${rainRgb}, 0)`);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
+    drawForecastField(ctx, cells, cssW, cssH, originX, originY, tile, scale, z, x0, y0);
   }
   const px = cssW / 2;
   const py = cssH / 2;
@@ -239,36 +293,11 @@ export function RadarMap({
   const frames = useMemo(() => {
     const past = pickHalfHourFrames(catalogQuery.data?.frames ?? []);
     const lastPast = past.at(-1)?.time ?? Math.floor(Date.now() / 1000);
-    const advected = buildAdvectionFrames({
-      latitude: place.latitude,
-      longitude: place.longitude,
-      hours: forecast.hourly,
-    });
-    const grid = (gridQuery.data ?? []).filter((f) => f.time > lastPast + 600);
-    const byTime = new Map<number, RadarFrame>();
-    for (const f of advected) {
-      if (f.time > lastPast + 600) byTime.set(f.time, f);
-    }
-    for (const f of grid) {
-      const hit = byTime.get(f.time);
-      if (hit) {
-        byTime.set(f.time, {
-          ...hit,
-          cells: [...(hit.cells ?? []), ...(f.cells ?? [])],
-        });
-      } else {
-        byTime.set(f.time, f);
-      }
-    }
-    const future = [...byTime.values()].sort((a, b) => a.time - b.time);
+    const future = (gridQuery.data ?? [])
+      .filter((f) => f.time > lastPast + 600)
+      .sort((a, b) => a.time - b.time);
     return [...past, ...future];
-  }, [
-    catalogQuery.data?.frames,
-    gridQuery.data,
-    forecast.hourly,
-    place.latitude,
-    place.longitude,
-  ]);
+  }, [catalogQuery.data?.frames, gridQuery.data]);
 
   const nowcast = nowcastQuery.data;
   const hours =

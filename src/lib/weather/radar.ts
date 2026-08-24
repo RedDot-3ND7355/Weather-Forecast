@@ -79,8 +79,8 @@ export function buildAdvectionFrames(args: {
       for (let j = 0; j < hours.length && j <= i + 5; j += 1) {
         const h = hours[j];
         const offsetH = j - frac;
-        const intensity = Math.max(h.precipMm, h.rain.chance / 40);
-        if (h.rain.chance < 14 && h.precipMm < 0.08) continue;
+        const intensity = h.precipMm;
+        if (intensity < 0.08 && h.rain.chance < 50) continue;
         const dist = Math.abs(offsetH) * Math.max(h.windSpeedKmh, 14);
         const bearing = offsetH >= 0 ? h.windDir : (h.windDir + 180) % 360;
         const pos = offsetKm(latitude, longitude, bearing, dist);
@@ -90,14 +90,6 @@ export function buildAdvectionFrames(args: {
           precipMm: intensity,
           chance: h.rain.chance,
         });
-        if (intensity >= 0.45 && dist > 8) {
-          const left = offsetKm(pos.latitude, pos.longitude, h.windDir + 90, 22);
-          const right = offsetKm(pos.latitude, pos.longitude, h.windDir - 90, 22);
-          cells.push(
-            { ...left, precipMm: intensity * 0.55, chance: h.rain.chance },
-            { ...right, precipMm: intensity * 0.55, chance: h.rain.chance },
-          );
-        }
       }
       const base = Math.floor(new Date(hours[i].time).getTime() / 1000);
       frames.push({
@@ -197,9 +189,9 @@ export const fetchRadarCatalog = createServerFn({ method: "GET" }).handler(
 
 const gridCache = new Map<string, { at: number; value: RadarFrame[] }>();
 
-function makeGrid(lat: number, lon: number, n = 4): { latitude: number; longitude: number }[] {
-  const dLat = 1.35;
-  const dLon = 1.35 / Math.max(0.35, Math.cos((lat * Math.PI) / 180));
+function makeGrid(lat: number, lon: number, n = 6): { latitude: number; longitude: number }[] {
+  const dLat = 1.7;
+  const dLon = 1.7 / Math.max(0.35, Math.cos((lat * Math.PI) / 180));
   const pts: { latitude: number; longitude: number }[] = [];
   for (let i = 0; i < n; i += 1) {
     for (let j = 0; j < n; j += 1) {
@@ -273,12 +265,12 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
         }
         const id = `${pt.latitude.toFixed(3)},${pt.longitude.toFixed(3)}`;
         const mm = num(precip[t]);
-        const pct = num(chance[t]);
+        if (mm < 0.05) return;
         grid.set(id, {
           latitude: pt.latitude,
           longitude: pt.longitude,
-          precipMm: Math.max(mm, pct / 40),
-          chance: pct,
+          precipMm: mm,
+          chance: num(chance[t]),
         });
       });
     });
