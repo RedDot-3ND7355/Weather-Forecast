@@ -3,19 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-xmHdaacp.mjs";
-import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-D166MaFx.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-DWV8FJ-7.mjs";
+import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BWpW3PU7.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-DHwsWf1h.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BFPITsRP.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CqLlwFXn.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-ZIqMNY6C.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DCTtJfUP.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1415,7 +1415,7 @@ function buildRadarTimeline(args) {
 	const now = args.now ?? Date.now() / 1e3;
 	const step = args.stepSec ?? 1800;
 	const nowTick = Math.floor(now / step) * step;
-	const start = nowTick - (args.pastHours ?? 2) * 3600;
+	const start = nowTick - (args.pastHours ?? 3) * 3600;
 	const end = nowTick + (args.futureHours ?? 6) * 3600;
 	const out = [];
 	for (let t = start; t <= end + 1; t += step) {
@@ -1573,22 +1573,25 @@ function measureFlow(prev, next, dtH, steerUx, steerUy, capPx) {
 		rows,
 		vx: new Float32Array(cols * rows),
 		vy: new Float32Array(cols * rows),
+		ax: new Float32Array(cols * rows),
+		ay: new Float32Array(cols * rows),
 		g: new Float32Array(cols * rows),
-		ok: new Uint8Array(cols * rows)
+		ok: new Uint8Array(cols * rows),
+		omega: 0
 	};
-	const expX = Math.round(steerUx * Math.min(capPx, 90) * dtH);
-	const expY = Math.round(steerUy * Math.min(capPx, 90) * dtH);
-	const search = 16;
+	const search = 18;
 	let hits = 0;
+	let svx = 0;
+	let svy = 0;
 	for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) {
 		const x0 = c * bs;
 		const y0 = r * bs;
 		const i0 = blockMean(a, w, h, x0, y0, bs);
 		if (i0 < 10) continue;
 		let best = Infinity;
-		let bestDx = expX;
-		let bestDy = expY;
-		for (let dy = expY - search; dy <= expY + search; dy += 2) for (let dx = expX - search; dx <= expX + search; dx += 2) {
+		let bestDx = 0;
+		let bestDy = 0;
+		for (let dy = -18; dy <= search; dy += 2) for (let dx = -18; dx <= search; dx += 2) {
 			const sad = blockSad(a, b, w, h, x0, y0, x0 + dx, y0 + dy, bs);
 			if (sad < best) {
 				best = sad;
@@ -1611,34 +1614,76 @@ function measureFlow(prev, next, dtH, steerUx, steerUy, capPx) {
 		grid.g[idx] = g;
 		grid.ok[idx] = 1;
 		hits += 1;
+		svx += vx;
+		svy += vy;
 	}
 	if (hits < 3) return null;
+	const meanVx = svx / hits;
+	const meanVy = svy / hits;
+	grid.omega = 0;
 	for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) {
 		const idx = r * cols + c;
 		if (grid.ok[idx]) continue;
-		let svx = 0;
-		let svy = 0;
-		let sg = 0;
+		let nvx = 0;
+		let nvy = 0;
+		let ng = 0;
 		let n = 0;
 		for (let rr = r - 1; rr <= r + 1; rr += 1) for (let cc = c - 1; cc <= c + 1; cc += 1) {
 			if (rr < 0 || cc < 0 || rr >= rows || cc >= cols) continue;
 			const j = rr * cols + cc;
 			if (!grid.ok[j]) continue;
-			svx += grid.vx[j];
-			svy += grid.vy[j];
-			sg += grid.g[j];
+			nvx += grid.vx[j];
+			nvy += grid.vy[j];
+			ng += grid.g[j];
 			n += 1;
 		}
 		if (n) {
-			grid.vx[idx] = svx / n;
-			grid.vy[idx] = svy / n;
-			grid.g[idx] = sg / n;
+			grid.vx[idx] = nvx / n;
+			grid.vy[idx] = nvy / n;
+			grid.g[idx] = ng / n;
 		} else {
-			grid.vx[idx] = steerUx * capPx * .45;
-			grid.vy[idx] = steerUy * capPx * .45;
+			grid.vx[idx] = meanVx;
+			grid.vy[idx] = meanVy;
 		}
 	}
 	return grid;
+}
+function heading(vx, vy) {
+	return Math.atan2(vy, vx);
+}
+function wrapAngle(a) {
+	while (a > Math.PI) a -= Math.PI * 2;
+	while (a < -Math.PI) a += Math.PI * 2;
+	return a;
+}
+function mergeFlowPair(earlier, later, dtH) {
+	const n = later.vx.length;
+	const out = {
+		...later,
+		vx: new Float32Array(later.vx),
+		vy: new Float32Array(later.vy),
+		ax: new Float32Array(n),
+		ay: new Float32Array(n),
+		g: new Float32Array(later.g),
+		ok: new Uint8Array(later.ok),
+		omega: 0
+	};
+	let mvx0 = 0;
+	let mvy0 = 0;
+	let mvx1 = 0;
+	let mvy1 = 0;
+	let nh = 0;
+	for (let i = 0; i < n; i += 1) if (earlier.ok[i] && later.ok[i]) {
+		out.ax[i] = (later.vx[i] - earlier.vx[i]) / dtH;
+		out.ay[i] = (later.vy[i] - earlier.vy[i]) / dtH;
+		mvx0 += earlier.vx[i];
+		mvy0 += earlier.vy[i];
+		mvx1 += later.vx[i];
+		mvy1 += later.vy[i];
+		nh += 1;
+	}
+	if (nh > 4) out.omega = wrapAngle(heading(mvx1, mvy1) - heading(mvx0, mvy0)) / dtH;
+	return out;
 }
 function lookupFlow(grid, x, y) {
 	const c = Math.max(0, Math.min(grid.cols - 1, Math.floor(x / grid.bs)));
@@ -1646,6 +1691,8 @@ function lookupFlow(grid, x, y) {
 	return {
 		vx: grid.vx[i],
 		vy: grid.vy[i],
+		ax: grid.ax[i],
+		ay: grid.ay[i],
 		g: grid.g[i]
 	};
 }
@@ -1686,16 +1733,27 @@ function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
 		const f = lookupFlow(grid, x, y);
 		let px = x;
 		let py = y;
-		const steps = Math.max(2, Math.ceil(hours / .2));
+		const steps = Math.max(3, Math.ceil(hours / .18));
 		const dt = hours / steps;
 		let lastVx = f.vx;
 		let lastVy = f.vy;
+		let tAcc = 0;
 		for (let s = 0; s < steps; s += 1) {
 			const fl = lookupFlow(grid, px, py);
-			lastVx = fl.vx * .93 + steerUx * steerPx * .07;
-			lastVy = fl.vy * .93 + steerUy * steerPx * .07;
+			lastVx = fl.vx + fl.ax * tAcc;
+			lastVy = fl.vy + fl.ay * tAcc;
+			const ang = grid.omega * dt;
+			if (Math.abs(ang) > 1e-5) {
+				const ca = Math.cos(ang);
+				const sa = Math.sin(ang);
+				const nvx = lastVx * ca - lastVy * sa;
+				const nvy = lastVx * sa + lastVy * ca;
+				lastVx = nvx;
+				lastVy = nvy;
+			}
 			px += lastVx * dt;
 			py += lastVy * dt;
+			tAcc += dt;
 		}
 		const jx = (fbm(x * .07, y * .07) - .5) * hours * 6;
 		const jy = (fbm(x * .07 + 4, y * .07) - .5) * hours * 6;
@@ -2046,7 +2104,8 @@ function RadarMap({ forecast, units }) {
 	});
 	const frames = (0, import_react.useMemo)(() => buildRadarTimeline({
 		catalog: catalogQuery.data?.frames ?? [],
-		grid: gridQuery.data ?? []
+		grid: gridQuery.data ?? [],
+		pastHours: 3
 	}), [catalogQuery.data?.frames, gridQuery.data]);
 	const nowIdx = (0, import_react.useMemo)(() => nowFrameIndex(frames), [frames]);
 	const nowcast = nowcastQuery.data;
@@ -2177,11 +2236,15 @@ function RadarMap({ forecast, units }) {
 			const pastScans = withTiles.filter((f) => f.time <= nowSec + 45);
 			const source = withTiles.at(-1);
 			const isFc = active.kind === "forecast";
-			const trackB = pastScans.at(-1);
-			const trackA = pastScans.length >= 3 ? pastScans.at(-3) : pastScans.at(-2);
+			const trackNow = pastScans.at(-1);
+			const trackMid = pastScans.length >= 5 ? pastScans.at(-3) : pastScans.at(-2);
+			const trackOld = pastScans.length >= 7 ? pastScans.at(-5) : pastScans.length >= 5 ? pastScans.at(-5) : pastScans.length >= 4 ? pastScans.at(-4) : void 0;
 			const advectRain = isFc && source && source !== active ? await loadTiles(source) : void 0;
-			const trackARain = isFc && trackA && trackB && trackA !== trackB ? await loadTiles(trackA) : void 0;
-			const trackBRain = isFc && trackB && trackARain ? await loadTiles(trackB) : void 0;
+			const [nowRain, midRain, oldRain] = await Promise.all([
+				isFc && trackNow ? loadTiles(trackNow) : Promise.resolve(void 0),
+				isFc && trackMid && trackMid !== trackNow ? loadTiles(trackMid) : Promise.resolve(void 0),
+				isFc && trackOld && trackOld !== trackMid ? loadTiles(trackOld) : Promise.resolve(void 0)
+			]);
 			if (cancelled) return;
 			const hoursAhead = isFc && source ? Math.max(0, (active.time - source.time) / 3600) : 0;
 			const { ux, uy } = windAxes(current.windDir);
@@ -2191,26 +2254,33 @@ function RadarMap({ forecast, units }) {
 			let vx = ux * steerPx;
 			let vy = uy * steerPx;
 			let evolvedRain = null;
-			if (trackARain && trackBRain && trackA && trackB && advectRain) {
-				const dtH = Math.max(.25, (trackB.time - trackA.time) / 3600);
-				const earlierC = paintRainLayer(trackARain, originX, originY, tile, scale, cssW, cssH);
-				const laterC = paintRainLayer(trackBRain, originX, originY, tile, scale, cssW, cssH);
+			if (nowRain && midRain && trackNow && trackMid && advectRain) {
+				const laterC = paintRainLayer(nowRain, originX, originY, tile, scale, cssW, cssH);
+				const midC = paintRainLayer(midRain, originX, originY, tile, scale, cssW, cssH);
 				const sourceC = paintRainLayer(advectRain, originX, originY, tile, scale, cssW, cssH);
-				const flow = measureFlow(earlierC, laterC, dtH, ux, uy, cap);
+				const dtLate = Math.max(.25, (trackNow.time - trackMid.time) / 3600);
+				const flowLate = measureFlow(midC, laterC, dtLate, ux, uy, cap);
+				let flow = flowLate;
+				if (flowLate && oldRain && trackOld) {
+					const oldC = paintRainLayer(oldRain, originX, originY, tile, scale, cssW, cssH);
+					const dtEarly = Math.max(.25, (trackMid.time - trackOld.time) / 3600);
+					const flowEarly = measureFlow(oldC, midC, dtEarly, ux, uy, cap);
+					if (flowEarly) flow = mergeFlowPair(flowEarly, flowLate, Math.max(.25, (dtEarly + dtLate) / 2));
+				}
 				if (flow) {
 					evolvedRain = evolveRain(sourceC, flow, hoursAhead, ux, uy, steerPx);
-					let svx = 0;
-					let svy = 0;
+					let mvx = 0;
+					let mvy = 0;
 					let n = 0;
 					for (let i = 0; i < flow.ok.length; i += 1) {
 						if (!flow.ok[i]) continue;
-						svx += flow.vx[i];
-						svy += flow.vy[i];
+						mvx += flow.vx[i];
+						mvy += flow.vy[i];
 						n += 1;
 					}
 					if (n) {
-						vx = svx / n;
-						vy = svy / n;
+						vx = mvx / n;
+						vy = mvy / n;
 					}
 				}
 			}
@@ -2471,7 +2541,7 @@ function RadarMap({ forecast, units }) {
 						children: [
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute left-0",
-								children: "-2h"
+								children: "-3h"
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute -translate-x-1/2 text-muted",

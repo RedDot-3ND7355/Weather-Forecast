@@ -129,8 +129,11 @@ type FlowGrid = {
   rows: number;
   vx: Float32Array;
   vy: Float32Array;
+  ax: Float32Array;
+  ay: Float32Array;
   g: Float32Array;
   ok: Uint8Array;
+  omega: number;
 };
 
 function blockMean(
@@ -219,13 +222,16 @@ function measureFlow(
     rows,
     vx: new Float32Array(cols * rows),
     vy: new Float32Array(cols * rows),
+    ax: new Float32Array(cols * rows),
+    ay: new Float32Array(cols * rows),
     g: new Float32Array(cols * rows),
     ok: new Uint8Array(cols * rows),
+    omega: 0,
   };
-  const expX = Math.round(steerUx * Math.min(capPx, 90) * dtH);
-  const expY = Math.round(steerUy * Math.min(capPx, 90) * dtH);
-  const search = 16;
+  const search = 18;
   let hits = 0;
+  let svx = 0;
+  let svy = 0;
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
       const x0 = c * bs;
@@ -233,10 +239,10 @@ function measureFlow(
       const i0 = blockMean(a, w, h, x0, y0, bs);
       if (i0 < 10) continue;
       let best = Infinity;
-      let bestDx = expX;
-      let bestDy = expY;
-      for (let dy = expY - search; dy <= expY + search; dy += 2) {
-        for (let dx = expX - search; dx <= expX + search; dx += 2) {
+      let bestDx = 0;
+      let bestDy = 0;
+      for (let dy = -search; dy <= search; dy += 2) {
+        for (let dx = -search; dx <= search; dx += 2) {
           const sad = blockSad(a, b, w, h, x0, y0, x0 + dx, y0 + dy, bs);
           if (sad < best) {
             best = sad;
@@ -260,46 +266,105 @@ function measureFlow(
       grid.g[idx] = g;
       grid.ok[idx] = 1;
       hits += 1;
+      svx += vx;
+      svy += vy;
     }
   }
   if (hits < 3) return null;
+  const meanVx = svx / hits;
+  const meanVy = svy / hits;
+  grid.omega = 0;
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
       const idx = r * cols + c;
       if (grid.ok[idx]) continue;
-      let svx = 0;
-      let svy = 0;
-      let sg = 0;
+      let nvx = 0;
+      let nvy = 0;
+      let ng = 0;
       let n = 0;
       for (let rr = r - 1; rr <= r + 1; rr += 1) {
         for (let cc = c - 1; cc <= c + 1; cc += 1) {
           if (rr < 0 || cc < 0 || rr >= rows || cc >= cols) continue;
           const j = rr * cols + cc;
           if (!grid.ok[j]) continue;
-          svx += grid.vx[j];
-          svy += grid.vy[j];
-          sg += grid.g[j];
+          nvx += grid.vx[j];
+          nvy += grid.vy[j];
+          ng += grid.g[j];
           n += 1;
         }
       }
       if (n) {
-        grid.vx[idx] = svx / n;
-        grid.vy[idx] = svy / n;
-        grid.g[idx] = sg / n;
+        grid.vx[idx] = nvx / n;
+        grid.vy[idx] = nvy / n;
+        grid.g[idx] = ng / n;
       } else {
-        grid.vx[idx] = steerUx * capPx * 0.45;
-        grid.vy[idx] = steerUy * capPx * 0.45;
+        grid.vx[idx] = meanVx;
+        grid.vy[idx] = meanVy;
       }
     }
   }
   return grid;
 }
 
-function lookupFlow(grid: FlowGrid, x: number, y: number): { vx: number; vy: number; g: number } {
+function heading(vx: number, vy: number): number {
+  return Math.atan2(vy, vx);
+}
+
+function wrapAngle(a: number): number {
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+
+function mergeFlowPair(earlier: FlowGrid, later: FlowGrid, dtH: number): FlowGrid {
+  const n = later.vx.length;
+  const out: FlowGrid = {
+    ...later,
+    vx: new Float32Array(later.vx),
+    vy: new Float32Array(later.vy),
+    ax: new Float32Array(n),
+    ay: new Float32Array(n),
+    g: new Float32Array(later.g),
+    ok: new Uint8Array(later.ok),
+    omega: 0,
+  };
+  let mvx0 = 0;
+  let mvy0 = 0;
+  let mvx1 = 0;
+  let mvy1 = 0;
+  let nh = 0;
+  for (let i = 0; i < n; i += 1) {
+    if (earlier.ok[i] && later.ok[i]) {
+      out.ax[i] = (later.vx[i] - earlier.vx[i]) / dtH;
+      out.ay[i] = (later.vy[i] - earlier.vy[i]) / dtH;
+      mvx0 += earlier.vx[i];
+      mvy0 += earlier.vy[i];
+      mvx1 += later.vx[i];
+      mvy1 += later.vy[i];
+      nh += 1;
+    }
+  }
+  if (nh > 4) {
+    out.omega = wrapAngle(heading(mvx1, mvy1) - heading(mvx0, mvy0)) / dtH;
+  }
+  return out;
+}
+
+function lookupFlow(
+  grid: FlowGrid,
+  x: number,
+  y: number,
+): { vx: number; vy: number; ax: number; ay: number; g: number } {
   const c = Math.max(0, Math.min(grid.cols - 1, Math.floor(x / grid.bs)));
   const r = Math.max(0, Math.min(grid.rows - 1, Math.floor(y / grid.bs)));
   const i = r * grid.cols + c;
-  return { vx: grid.vx[i], vy: grid.vy[i], g: grid.g[i] };
+  return {
+    vx: grid.vx[i],
+    vy: grid.vy[i],
+    ax: grid.ax[i],
+    ay: grid.ay[i],
+    g: grid.g[i],
+  };
 }
 
 function splat(
@@ -360,16 +425,27 @@ function evolveRain(
       const f = lookupFlow(grid, x, y);
       let px = x;
       let py = y;
-      const steps = Math.max(2, Math.ceil(hours / 0.2));
+      const steps = Math.max(3, Math.ceil(hours / 0.18));
       const dt = hours / steps;
       let lastVx = f.vx;
       let lastVy = f.vy;
+      let tAcc = 0;
       for (let s = 0; s < steps; s += 1) {
         const fl = lookupFlow(grid, px, py);
-        lastVx = fl.vx * 0.93 + steerUx * steerPx * 0.07;
-        lastVy = fl.vy * 0.93 + steerUy * steerPx * 0.07;
+        lastVx = fl.vx + fl.ax * tAcc;
+        lastVy = fl.vy + fl.ay * tAcc;
+        const ang = grid.omega * dt;
+        if (Math.abs(ang) > 1e-5) {
+          const ca = Math.cos(ang);
+          const sa = Math.sin(ang);
+          const nvx = lastVx * ca - lastVy * sa;
+          const nvy = lastVx * sa + lastVy * ca;
+          lastVx = nvx;
+          lastVy = nvy;
+        }
         px += lastVx * dt;
         py += lastVy * dt;
+        tAcc += dt;
       }
       const jx = (fbm(x * 0.07, y * 0.07) - 0.5) * hours * 6;
       const jy = (fbm(x * 0.07 + 4, y * 0.07) - 0.5) * hours * 6;
@@ -854,6 +930,7 @@ export function RadarMap({
       buildRadarTimeline({
         catalog: catalogQuery.data?.frames ?? [],
         grid: gridQuery.data ?? [],
+        pastHours: 3,
       }),
     [catalogQuery.data?.frames, gridQuery.data],
   );
@@ -1007,14 +1084,28 @@ export function RadarMap({
       const pastScans = withTiles.filter((f) => f.time <= nowSec + 45);
       const source = withTiles.at(-1);
       const isFc = active.kind === "forecast";
-      const trackB = pastScans.at(-1);
-      const trackA = pastScans.length >= 3 ? pastScans.at(-3) : pastScans.at(-2);
+      const trackNow = pastScans.at(-1);
+      const trackMid =
+        pastScans.length >= 5 ? pastScans.at(-3) : pastScans.at(-2);
+      const trackOld =
+        pastScans.length >= 7
+          ? pastScans.at(-5)
+          : pastScans.length >= 5
+            ? pastScans.at(-5)
+            : pastScans.length >= 4
+              ? pastScans.at(-4)
+              : undefined;
       const advectRain =
         isFc && source && source !== active ? await loadTiles(source) : undefined;
-      const trackARain =
-        isFc && trackA && trackB && trackA !== trackB ? await loadTiles(trackA) : undefined;
-      const trackBRain =
-        isFc && trackB && trackARain ? await loadTiles(trackB) : undefined;
+      const [nowRain, midRain, oldRain] = await Promise.all([
+        isFc && trackNow ? loadTiles(trackNow) : Promise.resolve(undefined),
+        isFc && trackMid && trackMid !== trackNow
+          ? loadTiles(trackMid)
+          : Promise.resolve(undefined),
+        isFc && trackOld && trackOld !== trackMid
+          ? loadTiles(trackOld)
+          : Promise.resolve(undefined),
+      ]);
       if (cancelled) return;
 
       const hoursAhead =
@@ -1027,10 +1118,9 @@ export function RadarMap({
       let vx = ux * steerPx;
       let vy = uy * steerPx;
       let evolvedRain: HTMLCanvasElement | null = null;
-      if (trackARain && trackBRain && trackA && trackB && advectRain) {
-        const dtH = Math.max(0.25, (trackB.time - trackA.time) / 3600);
-        const earlierC = paintRainLayer(
-          trackARain,
+      if (nowRain && midRain && trackNow && trackMid && advectRain) {
+        const laterC = paintRainLayer(
+          nowRain,
           originX,
           originY,
           tile,
@@ -1038,8 +1128,8 @@ export function RadarMap({
           cssW,
           cssH,
         );
-        const laterC = paintRainLayer(
-          trackBRain,
+        const midC = paintRainLayer(
+          midRain,
           originX,
           originY,
           tile,
@@ -1056,21 +1146,43 @@ export function RadarMap({
           cssW,
           cssH,
         );
-        const flow = measureFlow(earlierC, laterC, dtH, ux, uy, cap);
+        const dtLate = Math.max(0.25, (trackNow.time - trackMid.time) / 3600);
+        const flowLate = measureFlow(midC, laterC, dtLate, ux, uy, cap);
+        let flow = flowLate;
+        if (flowLate && oldRain && trackOld) {
+          const oldC = paintRainLayer(
+            oldRain,
+            originX,
+            originY,
+            tile,
+            scale,
+            cssW,
+            cssH,
+          );
+          const dtEarly = Math.max(0.25, (trackMid.time - trackOld.time) / 3600);
+          const flowEarly = measureFlow(oldC, midC, dtEarly, ux, uy, cap);
+          if (flowEarly) {
+            flow = mergeFlowPair(
+              flowEarly,
+              flowLate,
+              Math.max(0.25, (dtEarly + dtLate) / 2),
+            );
+          }
+        }
         if (flow) {
           evolvedRain = evolveRain(sourceC, flow, hoursAhead, ux, uy, steerPx);
-          let svx = 0;
-          let svy = 0;
+          let mvx = 0;
+          let mvy = 0;
           let n = 0;
           for (let i = 0; i < flow.ok.length; i += 1) {
             if (!flow.ok[i]) continue;
-            svx += flow.vx[i];
-            svy += flow.vy[i];
+            mvx += flow.vx[i];
+            mvy += flow.vy[i];
             n += 1;
           }
           if (n) {
-            vx = svx / n;
-            vy = svy / n;
+            vx = mvx / n;
+            vy = mvy / n;
           }
         }
       }
@@ -1363,7 +1475,7 @@ export function RadarMap({
             ) : null}
           </div>
           <div className="relative mt-1 h-4 text-[11px] text-faint">
-            <span className="absolute left-0">-2h</span>
+            <span className="absolute left-0">-3h</span>
             <span
               className="absolute -translate-x-1/2 text-muted"
               style={{

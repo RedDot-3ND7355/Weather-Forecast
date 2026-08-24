@@ -69,7 +69,7 @@ export function buildRadarTimeline(args: {
   const now = args.now ?? Date.now() / 1000;
   const step = args.stepSec ?? 30 * 60;
   const nowTick = Math.floor(now / step) * step;
-  const start = nowTick - (args.pastHours ?? 2) * 3600;
+  const start = nowTick - (args.pastHours ?? 3) * 3600;
   const end = nowTick + (args.futureHours ?? 6) * 3600;
   const out: RadarFrame[] = [];
   for (let t = start; t <= end + 1; t += step) {
