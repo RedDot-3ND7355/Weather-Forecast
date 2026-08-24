@@ -28,6 +28,7 @@ export function ForecastApp() {
   const units = useWeatherStore((s) => s.units);
   const recent = useWeatherStore((s) => s.recent);
   const setPlace = useWeatherStore((s) => s.setPlace);
+  const locale = useWeatherStore((s) => s.locale);
   const [hydrated, setHydrated] = useState(false);
   const [locating, setLocating] = useState(false);
 
@@ -67,6 +68,7 @@ export function ForecastApp() {
           data: {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
+            language: locale,
           },
         })
           .then(setPlace)

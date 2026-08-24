@@ -5,7 +5,7 @@ import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack
 import { r as createServerFn } from "./ssr.mjs";
 import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-CJOFeXbl.mjs";
 import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BTolBrM-.mjs";
-import { _n as string, mn as object, pn as number } from "../_libs/@better-auth/core+[...].mjs";
+import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-CQBuJCaz.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-7Nz-NSXc.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BktFmXMT.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BVj9Ny4n.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-B2ToH7FN.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -107,7 +107,8 @@ var placeSchema = object({
 var searchPlaces = createServerFn({ method: "GET" }).validator(object({ q: string().trim().min(1).max(80) })).handler(createSsrRpc("f5f33966c1a68a8e3cea1abd24a3eb1faef2991b2daf75449e1f34bc610df2de"));
 var reversePlace = createServerFn({ method: "GET" }).validator(object({
 	latitude: number().min(-90).max(90),
-	longitude: number().min(-180).max(180)
+	longitude: number().min(-180).max(180),
+	language: _enum(["en", "fr"]).optional()
 })).handler(createSsrRpc("733f19c61804a32ffd9ab27261a4ea8a7347d8b360d88ca132caab1999ea02a5"));
 var fetchForecast = createServerFn({ method: "GET" }).validator(placeSchema).handler(createSsrRpc("530522ada6bf8b03636e6c39ffd5c0ada5294f0a243012533f078ff63b368aae"));
 function formatTemp(c, units) {
@@ -2367,6 +2368,7 @@ function ForecastApp() {
 	const units = useWeatherStore((s) => s.units);
 	const recent = useWeatherStore((s) => s.recent);
 	const setPlace = useWeatherStore((s) => s.setPlace);
+	const locale = useWeatherStore((s) => s.locale);
 	const [hydrated, setHydrated] = (0, import_react.useState)(false);
 	const [locating, setLocating] = (0, import_react.useState)(false);
 	(0, import_react.useEffect)(() => setHydrated(true), []);
@@ -2393,7 +2395,8 @@ function ForecastApp() {
 		setLocating(true);
 		readDevicePosition().then((pos) => reversePlace({ data: {
 			latitude: pos.coords.latitude,
-			longitude: pos.coords.longitude
+			longitude: pos.coords.longitude,
+			language: locale
 		} }).then(setPlace).catch(() => setPlace({
 			name: t("yourLocation"),
 			latitude: pos.coords.latitude,

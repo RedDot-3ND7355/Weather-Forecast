@@ -1,8 +1,8 @@
 import { r as createServerFn } from "./ssr.mjs";
 import { t as createServerRpc } from "./createServerRpc-CcvdN_gc.mjs";
 import { i as estimateRain, n as detectWindShift, o as nextRainWindow, r as dewpointFromRh } from "./rain-BTolBrM-.mjs";
-import { _n as string, mn as object, pn as number } from "../_libs/@better-auth/core+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/api-B6JYerX9.js
+import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/api-DWEL620k.js
 function num$1(v, fallback = 0) {
 	return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
@@ -436,6 +436,19 @@ var searchPlaces = createServerFn({ method: "GET" }).validator(object({ q: strin
 		timezone: r.timezone ?? null
 	}));
 });
+function placeFromNominatim(json, lat, lon) {
+	const a = json.address;
+	if (!a && !json.name) return null;
+	const name = a?.city || a?.town || a?.village || a?.municipality || a?.city_district || a?.suburb || a?.hamlet || json.name;
+	if (!name) return null;
+	return {
+		name,
+		latitude: lat,
+		longitude: lon,
+		admin: a?.state ?? a?.county ?? null,
+		country: a?.country ?? null
+	};
+}
 var reversePlace_createServerFn_handler = createServerRpc({
 	id: "733f19c61804a32ffd9ab27261a4ea8a7347d8b360d88ca132caab1999ea02a5",
 	name: "reversePlace",
@@ -443,22 +456,23 @@ var reversePlace_createServerFn_handler = createServerRpc({
 }, (opts) => reversePlace.__executeServer(opts));
 var reversePlace = createServerFn({ method: "GET" }).validator(object({
 	latitude: number().min(-90).max(90),
-	longitude: number().min(-180).max(180)
+	longitude: number().min(-180).max(180),
+	language: _enum(["en", "fr"]).optional()
 })).handler(reversePlace_createServerFn_handler, async ({ data }) => {
-	const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${data.latitude}&longitude=${data.longitude}&language=en&format=json`;
+	const lang = data.language === "fr" ? "fr" : "en";
+	const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${data.latitude}&lon=${data.longitude}&zoom=14&addressdetails=1&accept-language=${lang}`;
 	try {
-		const hit = (await getJson(url)).results?.[0];
-		if (hit) return {
-			name: hit.name,
-			latitude: data.latitude,
-			longitude: data.longitude,
-			admin: hit.admin1 ?? null,
-			country: hit.country ?? null,
-			timezone: hit.timezone ?? null
-		};
+		const res = await fetch(url, { headers: {
+			accept: "application/json",
+			"user-agent": UA
+		} });
+		if (res.ok) {
+			const place = placeFromNominatim(await res.json(), data.latitude, data.longitude);
+			if (place) return place;
+		}
 	} catch {}
 	return {
-		name: "Your location",
+		name: lang === "fr" ? "Votre position" : "Your location",
 		latitude: data.latitude,
 		longitude: data.longitude,
 		admin: null,
