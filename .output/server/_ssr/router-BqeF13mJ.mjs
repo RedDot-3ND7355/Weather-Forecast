@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-BN8MNJ4W.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-BqeF13mJ.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -651,7 +651,13 @@ var Route$3 = createRootRoute({
 				rel: "icon",
 				type: "image/png",
 				sizes: "192x192",
-				href: "/icon-192.png"
+				href: "/icons/vane-192.png"
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				sizes: "512x512",
+				href: "/icons/vane-512.png"
 			},
 			{
 				rel: "preconnect",
@@ -695,7 +701,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-Dfmt8do6.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-P07oh_LN.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-BsgabjBm.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });
