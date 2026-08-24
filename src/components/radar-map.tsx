@@ -930,7 +930,7 @@ export function RadarMap({
       buildRadarTimeline({
         catalog: catalogQuery.data?.frames ?? [],
         grid: gridQuery.data ?? [],
-        pastHours: 3,
+        stepSec: 10 * 60,
       }),
     [catalogQuery.data?.frames, gridQuery.data],
   );
@@ -975,7 +975,7 @@ export function RadarMap({
     if (!playing || frames.length < 2) return;
     const id = window.setInterval(() => {
       setFrame((i) => (i + 1) % frames.length);
-    }, 1200);
+    }, 420);
     return () => window.clearInterval(id);
   }, [playing, frames.length]);
 
@@ -1227,7 +1227,7 @@ export function RadarMap({
         return;
       }
       const start = performance.now();
-      const dur = 280;
+      const dur = 180;
       const tick = (now: number) => {
         if (cancelled) return;
         const t = Math.min(1, (now - start) / dur);

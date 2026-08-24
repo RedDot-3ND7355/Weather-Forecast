@@ -67,18 +67,22 @@ export function buildRadarTimeline(args: {
   stepSec?: number;
 }): RadarFrame[] {
   const now = args.now ?? Date.now() / 1000;
-  const step = args.stepSec ?? 30 * 60;
+  const step = args.stepSec ?? 10 * 60;
   const nowTick = Math.floor(now / step) * step;
-  const oldest =
-    args.catalog.reduce((m, f) => Math.min(m, f.time), nowTick) || nowTick - 2 * 3600;
-  const wantStart = nowTick - (args.pastHours ?? 3) * 3600;
-  let start = Math.max(wantStart, Math.floor(oldest / step) * step);
-  if (!nearestFrame(args.catalog, start, 12 * 60)) start += step;
   const end = nowTick + (args.futureHours ?? 6) * 3600;
   const out: RadarFrame[] = [];
-  for (let t = start; t <= end + 1; t += step) {
-    const rv = nearestFrame(args.catalog, t, 12 * 60);
-    if (rv) {
+  const seen = new Set<number>();
+  const catalogSorted = [...args.catalog].sort((a, b) => a.time - b.time);
+  for (const f of catalogSorted) {
+    if (f.time > now + 90) continue;
+    const key = Math.round(f.time / 60);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ ...f });
+  }
+  for (let t = nowTick + step; t <= end + 1; t += step) {
+    const rv = nearestFrame(args.catalog, t, 8 * 60);
+    if (rv && rv.time > now) {
       out.push({ ...rv, time: t });
       continue;
     }

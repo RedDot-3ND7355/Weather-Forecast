@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-CZ7_SvZj.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CLSfO2xy.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CbGzZkS_.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-xUAAHDpl.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-D7Xycira.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1413,17 +1413,22 @@ function nowFrameIndex(frames, now = Date.now() / 1e3) {
 }
 function buildRadarTimeline(args) {
 	const now = args.now ?? Date.now() / 1e3;
-	const step = args.stepSec ?? 1800;
+	const step = args.stepSec ?? 600;
 	const nowTick = Math.floor(now / step) * step;
-	const oldest = args.catalog.reduce((m, f) => Math.min(m, f.time), nowTick) || nowTick - 7200;
-	const wantStart = nowTick - (args.pastHours ?? 3) * 3600;
-	let start = Math.max(wantStart, Math.floor(oldest / step) * step);
-	if (!nearestFrame(args.catalog, start, 720)) start += step;
 	const end = nowTick + (args.futureHours ?? 6) * 3600;
 	const out = [];
-	for (let t = start; t <= end + 1; t += step) {
-		const rv = nearestFrame(args.catalog, t, 720);
-		if (rv) {
+	const seen = /* @__PURE__ */ new Set();
+	const catalogSorted = [...args.catalog].sort((a, b) => a.time - b.time);
+	for (const f of catalogSorted) {
+		if (f.time > now + 90) continue;
+		const key = Math.round(f.time / 60);
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push({ ...f });
+	}
+	for (let t = nowTick + step; t <= end + 1; t += step) {
+		const rv = nearestFrame(args.catalog, t, 480);
+		if (rv && rv.time > now) {
 			out.push({
 				...rv,
 				time: t
@@ -2108,7 +2113,7 @@ function RadarMap({ forecast, units }) {
 	const frames = (0, import_react.useMemo)(() => buildRadarTimeline({
 		catalog: catalogQuery.data?.frames ?? [],
 		grid: gridQuery.data ?? [],
-		pastHours: 3
+		stepSec: 600
 	}), [catalogQuery.data?.frames, gridQuery.data]);
 	const nowIdx = (0, import_react.useMemo)(() => nowFrameIndex(frames), [frames]);
 	const nowcast = nowcastQuery.data;
@@ -2143,7 +2148,7 @@ function RadarMap({ forecast, units }) {
 		if (!playing || frames.length < 2) return;
 		const id = window.setInterval(() => {
 			setFrame((i) => (i + 1) % frames.length);
-		}, 1200);
+		}, 420);
 		return () => window.clearInterval(id);
 	}, [playing, frames.length]);
 	(0, import_react.useEffect)(() => {
@@ -2332,7 +2337,7 @@ function RadarMap({ forecast, units }) {
 				return;
 			}
 			const start = performance.now();
-			const dur = 280;
+			const dur = 180;
 			const tick = (now) => {
 				if (cancelled) return;
 				const t = Math.min(1, (now - start) / dur);
