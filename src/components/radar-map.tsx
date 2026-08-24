@@ -7,10 +7,14 @@ import { Button } from "@/components/ui/button";
 import { WindArrow } from "@/components/wind-arrow";
 import {
   buildRadarTimeline,
+  fetchMscRadar,
   fetchPrecipGrid,
   fetchRadarCatalog,
   fetchRadarNowcast,
+  inMscDomain,
+  mscGetMapUrl,
   nowFrameIndex,
+  viewBBox3857,
   type PrecipCell,
   type RadarFrame,
 } from "@/lib/weather/radar";
@@ -744,6 +748,7 @@ function composeRadar(args: {
   cells?: PrecipCell[];
   advectRain?: RainTile[];
   evolvedRain?: HTMLCanvasElement | null;
+  overlay?: HTMLImageElement | null;
 }): HTMLCanvasElement {
   const {
     cssW,
@@ -764,6 +769,7 @@ function composeRadar(args: {
     cells,
     advectRain,
     evolvedRain,
+    overlay,
   } = args;
   const off = document.createElement("canvas");
   off.width = Math.round(cssW * dpr);
@@ -791,7 +797,12 @@ function composeRadar(args: {
   const radarAlpha = hoursAhead <= 0 ? 1 : Math.max(0.9, 1 - hoursAhead * 0.018);
   const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(0.72, 0.08 + hoursAhead * 0.11);
 
-  if (evolvedRain && radarAlpha > 0.04) {
+  if (overlay) {
+    ctx.save();
+    ctx.globalAlpha = radarAlpha;
+    ctx.drawImage(overlay, 0, 0, cssW, cssH);
+    ctx.restore();
+  } else if (evolvedRain && radarAlpha > 0.04) {
     ctx.save();
     ctx.globalAlpha = radarAlpha;
     ctx.drawImage(evolvedRain, 0, 0, cssW, cssH);
@@ -898,6 +909,12 @@ export function RadarMap({
     queryFn: () => fetchRadarCatalog(),
     staleTime: 2 * 60 * 1000,
   });
+  const mscQuery = useQuery({
+    queryKey: ["msc-radar"],
+    queryFn: () => fetchMscRadar(),
+    staleTime: 2 * 60 * 1000,
+    enabled: inMscDomain(place.latitude, place.longitude),
+  });
   const nowcastQuery = useQuery({
     queryKey: [
       "radar-nowcast",
@@ -930,9 +947,18 @@ export function RadarMap({
       buildRadarTimeline({
         catalog: catalogQuery.data?.frames ?? [],
         grid: gridQuery.data ?? [],
+        msc: inMscDomain(place.latitude, place.longitude)
+          ? mscQuery.data
+          : null,
         stepSec: 10 * 60,
       }),
-    [catalogQuery.data?.frames, gridQuery.data],
+    [
+      catalogQuery.data?.frames,
+      gridQuery.data,
+      mscQuery.data,
+      place.latitude,
+      place.longitude,
+    ],
   );
   const nowIdx = useMemo(() => nowFrameIndex(frames), [frames]);
 
@@ -1079,6 +1105,25 @@ export function RadarMap({
     void (async () => {
       const tiles = await loadTiles(active);
       if (cancelled) return;
+      const bbox = viewBBox3857({
+        lat: place.latitude,
+        lon: place.longitude,
+        z,
+        cssW,
+        cssH,
+      });
+      const overlayUrl = active.overlay
+        ? mscGetMapUrl({
+            layer: active.overlay === "msc-fc" ? "fc" : "obs",
+            time: active.time,
+            bbox,
+            width: cssW,
+            height: cssH,
+          })
+        : "";
+      const overlay = overlayUrl ? await loadImg(overlayUrl) : null;
+      if (cancelled) return;
+      const skipTrack = Boolean(overlay);
       const withTiles = frames.filter((f) => f.tileUrl);
       const nowSec = Date.now() / 1000;
       const catalogPast = (catalogQuery.data?.frames ?? [])
@@ -1093,20 +1138,28 @@ export function RadarMap({
         nPast >= 7 ? catalogPast[nPast - 7] : catalogPast.at(-Math.min(nPast, 4));
       const trackOld = nPast >= 3 ? catalogPast[0] : undefined;
       const advectRain =
-        isFc && source && source !== active ? await loadTiles(source) : undefined;
-      const [nowRain, midRain, oldRain] = await Promise.all([
-        isFc && trackNow ? loadTiles(trackNow) : Promise.resolve(undefined),
-        isFc && trackMid && trackMid !== trackNow
-          ? loadTiles(trackMid)
-          : Promise.resolve(undefined),
-        isFc && trackOld && trackOld !== trackMid
-          ? loadTiles(trackOld)
-          : Promise.resolve(undefined),
-      ]);
+        !skipTrack && isFc && source && source !== active
+          ? await loadTiles(source)
+          : undefined;
+      const [nowRain, midRain, oldRain] = skipTrack
+        ? [undefined, undefined, undefined]
+        : await Promise.all([
+            isFc && trackNow ? loadTiles(trackNow) : Promise.resolve(undefined),
+            isFc && trackMid && trackMid !== trackNow
+              ? loadTiles(trackMid)
+              : Promise.resolve(undefined),
+            isFc && trackOld && trackOld !== trackMid
+              ? loadTiles(trackOld)
+              : Promise.resolve(undefined),
+          ]);
       if (cancelled) return;
 
       const hoursAhead =
-        isFc && source ? Math.max(0, (active.time - source.time) / 3600) : 0;
+        active.overlay === "msc-fc"
+          ? 0
+          : isFc && source
+            ? Math.max(0, (active.time - source.time) / 3600)
+            : 0;
       const { ux, uy } = windAxes(current.windDir);
       const mpp = metersPerPixel(place.latitude, z) / Math.max(scale, 0.2);
       const steerKmh = Math.max(current.windSpeedKmh * 1.85, 18);
@@ -1115,7 +1168,7 @@ export function RadarMap({
       let vx = ux * steerPx;
       let vy = uy * steerPx;
       let evolvedRain: HTMLCanvasElement | null = null;
-      if (nowRain && midRain && trackNow && trackMid && advectRain) {
+      if (!overlay && nowRain && midRain && trackNow && trackMid && advectRain) {
         const laterC = paintRainLayer(
           nowRain,
           originX,
@@ -1211,9 +1264,10 @@ export function RadarMap({
         hoursAhead,
         shiftX: evolvedRain ? 0 : vx,
         shiftY: evolvedRain ? 0 : vy,
-        cells: isFc ? active.cells : undefined,
-        advectRain,
-        evolvedRain,
+        cells: isFc && !overlay ? active.cells : undefined,
+        advectRain: overlay ? undefined : advectRain,
+        evolvedRain: overlay ? null : evolvedRain,
+        overlay,
       });
       const prev = lastBitmap.current;
       lastBitmap.current = next;

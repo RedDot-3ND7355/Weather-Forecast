@@ -30,7 +30,149 @@ export type RadarFrame = {
   kind: "observed" | "forecast";
   tileUrl?: string;
   cells?: PrecipCell[];
+  overlay?: "msc-obs" | "msc-fc";
 };
+
+export type MscRadar = {
+  observed: number[];
+  forecast: number[];
+};
+
+function parseIsoDuration(s: string): number {
+  const m = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i.exec(s.trim());
+  if (!m) return 360;
+  return Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0);
+}
+
+function expandTimeDimension(raw: string): number[] {
+  const parts = raw.trim().split(",");
+  const out: number[] = [];
+  for (const part of parts) {
+    const bits = part.split("/");
+    if (bits.length === 3 && bits[2].startsWith("PT")) {
+      const start = Date.parse(bits[0]);
+      const end = Date.parse(bits[1]);
+      const step = parseIsoDuration(bits[2]) * 1000;
+      if (!Number.isFinite(start) || !Number.isFinite(end) || step < 1000) continue;
+      for (let t = start; t <= end + 1; t += step) out.push(Math.floor(t / 1000));
+    } else {
+      const t = Date.parse(part);
+      if (Number.isFinite(t)) out.push(Math.floor(t / 1000));
+    }
+  }
+  return out;
+}
+
+function timeDimFromCaps(xml: string): number[] {
+  const m = xml.match(/<Dimension[^>]*name="time"[^>]*>([^<]+)<\/Dimension>/i);
+  return m ? expandTimeDimension(m[1]) : [];
+}
+
+const mscCache = { at: 0, value: null as MscRadar | null };
+
+export const fetchMscRadar = createServerFn({ method: "GET" }).handler(
+  async (): Promise<MscRadar> => {
+    if (mscCache.value && Date.now() - mscCache.at < 2 * 60 * 1000) {
+      return mscCache.value;
+    }
+    const empty: MscRadar = { observed: [], forecast: [] };
+    try {
+      const [obsXml, fcXml] = await Promise.all([
+        fetch(
+          "https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RADAR_1KM_RRAI",
+          { headers: { accept: "application/xml", "user-agent": UA } },
+        ).then((r) => r.text()),
+        fetch(
+          "https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=Radar_1km_RainPrecipRate-Extrapolation",
+          { headers: { accept: "application/xml", "user-agent": UA } },
+        ).then((r) => r.text()),
+      ]);
+      const value: MscRadar = {
+        observed: timeDimFromCaps(obsXml),
+        forecast: timeDimFromCaps(fcXml),
+      };
+      mscCache.at = Date.now();
+      mscCache.value = value;
+      return value;
+    } catch {
+      mscCache.at = Date.now();
+      mscCache.value = empty;
+      return empty;
+    }
+  },
+);
+
+export function inMscDomain(lat: number, lon: number): boolean {
+  return lat >= 24 && lat <= 72 && lon >= -168 && lon <= -52;
+}
+
+export function mscTimeIso(unix: number): string {
+  return new Date(unix * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+export function mscGetMapUrl(args: {
+  layer: "obs" | "fc";
+  time: number;
+  bbox: string;
+  width: number;
+  height: number;
+}): string {
+  const layer =
+    args.layer === "obs" ? "RADAR_1KM_RRAI" : "Radar_1km_RainPrecipRate-Extrapolation";
+  const q = new URLSearchParams({
+    SERVICE: "WMS",
+    VERSION: "1.3.0",
+    REQUEST: "GetMap",
+    LAYERS: layer,
+    STYLES: "Radar-Rain_14colors",
+    CRS: "EPSG:3857",
+    BBOX: args.bbox,
+    WIDTH: String(Math.max(64, Math.round(args.width))),
+    HEIGHT: String(Math.max(64, Math.round(args.height))),
+    FORMAT: "image/png",
+    TRANSPARENT: "TRUE",
+    TIME: mscTimeIso(args.time),
+  });
+  return `https://geo.weather.gc.ca/geomet?${q.toString()}`;
+}
+
+function lon2x(lon: number): number {
+  return (lon * 20037508.34) / 180;
+}
+function lat2y(lat: number): number {
+  const y =
+    Math.log(Math.tan(((90 + lat) * Math.PI) / 360)) / (Math.PI / 180);
+  return (y * 20037508.34) / 180;
+}
+
+export function viewBBox3857(args: {
+  lat: number;
+  lon: number;
+  z: number;
+  cssW: number;
+  cssH: number;
+}): string {
+  const n = 2 ** args.z;
+  const cx = ((args.lon + 180) / 360) * n;
+  const s = Math.sin((args.lat * Math.PI) / 180);
+  const cy = (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * n;
+  const tilesW = 2.15;
+  const tilesH = (2.15 * args.cssH) / Math.max(1, args.cssW);
+  const x0 = cx - tilesW / 2;
+  const x1 = cx + tilesW / 2;
+  const y0 = cy - tilesH / 2;
+  const y1 = cy + tilesH / 2;
+  const tile2lon = (x: number) => (x / n) * 360 - 180;
+  const tile2lat = (y: number) => {
+    const mer = Math.PI * (1 - (2 * y) / n);
+    return (Math.atan(Math.sinh(mer)) * 180) / Math.PI;
+  };
+  const west = tile2lon(x0);
+  const east = tile2lon(x1);
+  const north = tile2lat(y0);
+  const south = tile2lat(y1);
+  return `${lon2x(west)},${lat2y(south)},${lon2x(east)},${lat2y(north)}`;
+}
 
 export function nearestFrame(
   frames: RadarFrame[],
@@ -61,6 +203,7 @@ export function nowFrameIndex(frames: RadarFrame[], now = Date.now() / 1000): nu
 export function buildRadarTimeline(args: {
   catalog: RadarFrame[];
   grid: RadarFrame[];
+  msc?: MscRadar | null;
   now?: number;
   pastHours?: number;
   futureHours?: number;
@@ -72,22 +215,45 @@ export function buildRadarTimeline(args: {
   const end = nowTick + (args.futureHours ?? 6) * 3600;
   const out: RadarFrame[] = [];
   const seen = new Set<number>();
-  const catalogSorted = [...args.catalog].sort((a, b) => a.time - b.time);
-  for (const f of catalogSorted) {
-    if (f.time > now + 90) continue;
-    const key = Math.round(f.time / 60);
-    if (seen.has(key)) continue;
+  const push = (f: RadarFrame) => {
+    const key = Math.round(f.time / 30);
+    if (seen.has(key)) return;
     seen.add(key);
-    out.push({ ...f });
+    out.push(f);
+  };
+
+  const mscObs = args.msc?.observed ?? [];
+  const mscFc = args.msc?.forecast ?? [];
+  if (mscObs.length) {
+    for (const t of mscObs) {
+      if (t > now + 90) continue;
+      push({ time: t, kind: "observed", overlay: "msc-obs" });
+    }
+  } else {
+    const catalogSorted = [...args.catalog].sort((a, b) => a.time - b.time);
+    for (const f of catalogSorted) {
+      if (f.time > now + 90) continue;
+      push({ ...f });
+    }
   }
-  for (let t = nowTick + step; t <= end + 1; t += step) {
+
+  let lastCovered = out.at(-1)?.time ?? nowTick;
+  if (mscFc.length) {
+    for (const t of mscFc) {
+      if (t <= now + 60) continue;
+      push({ time: t, kind: "forecast", overlay: "msc-fc" });
+      lastCovered = Math.max(lastCovered, t);
+    }
+  }
+
+  for (let t = Math.floor(lastCovered / step) * step + step; t <= end + 1; t += step) {
     const rv = nearestFrame(args.catalog, t, 8 * 60);
     if (rv && rv.time > now) {
-      out.push({ ...rv, time: t });
+      push({ ...rv, time: t });
       continue;
     }
     const model = nearestFrame(args.grid, t, 25 * 60);
-    out.push(model ? { ...model, time: t } : { time: t, kind: "forecast", cells: [] });
+    push(model ? { ...model, time: t } : { time: t, kind: "forecast", cells: [] });
   }
   return out;
 }

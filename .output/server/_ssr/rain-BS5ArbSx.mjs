@@ -1,5 +1,5 @@
-import { n as t } from "./i18n-GSFOlZhC.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/rain-CKPiIl_K.js
+import { n as t } from "./i18n-Dc3QW1KM.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/rain-BS5ArbSx.js
 var POINTS = [
 	"N",
 	"NNE",

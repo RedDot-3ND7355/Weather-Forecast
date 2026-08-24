@@ -1,13 +1,76 @@
 import { r as createServerFn } from "./ssr.mjs";
 import { t as createServerRpc } from "./createServerRpc-CcvdN_gc.mjs";
-import { i as estimateRain } from "./rain-CKPiIl_K.mjs";
+import { i as estimateRain } from "./rain-BS5ArbSx.mjs";
 import { hn as object, mn as number } from "../_libs/@better-auth/core+[...].mjs";
-import { a as travelHours, i as offsetKm, n as arrivalCopy, r as formatEta, t as FETCH_KM } from "./advection-CZ7_SvZj.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/radar-BXE2Xex4.js
+import { a as travelHours, i as offsetKm, n as arrivalCopy, r as formatEta, t as FETCH_KM } from "./advection-DJZa-R4a.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/radar-DsfkVudk.js
 var UA = "Vane/1.0 (wind-aware weather forecast)";
 function num(v, fallback = 0) {
 	return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
+function parseIsoDuration(s) {
+	const m = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i.exec(s.trim());
+	if (!m) return 360;
+	return Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0);
+}
+function expandTimeDimension(raw) {
+	const parts = raw.trim().split(",");
+	const out = [];
+	for (const part of parts) {
+		const bits = part.split("/");
+		if (bits.length === 3 && bits[2].startsWith("PT")) {
+			const start = Date.parse(bits[0]);
+			const end = Date.parse(bits[1]);
+			const step = parseIsoDuration(bits[2]) * 1e3;
+			if (!Number.isFinite(start) || !Number.isFinite(end) || step < 1e3) continue;
+			for (let t = start; t <= end + 1; t += step) out.push(Math.floor(t / 1e3));
+		} else {
+			const t = Date.parse(part);
+			if (Number.isFinite(t)) out.push(Math.floor(t / 1e3));
+		}
+	}
+	return out;
+}
+function timeDimFromCaps(xml) {
+	const m = xml.match(/<Dimension[^>]*name="time"[^>]*>([^<]+)<\/Dimension>/i);
+	return m ? expandTimeDimension(m[1]) : [];
+}
+var mscCache = {
+	at: 0,
+	value: null
+};
+var fetchMscRadar_createServerFn_handler = createServerRpc({
+	id: "26eb3b422da5403c3ce83a326549a0f4d500744869384f25f6c31a9dc764c669",
+	name: "fetchMscRadar",
+	filename: "src/lib/weather/radar.ts"
+}, (opts) => fetchMscRadar.__executeServer(opts));
+var fetchMscRadar = createServerFn({ method: "GET" }).handler(fetchMscRadar_createServerFn_handler, async () => {
+	if (mscCache.value && Date.now() - mscCache.at < 12e4) return mscCache.value;
+	const empty = {
+		observed: [],
+		forecast: []
+	};
+	try {
+		const [obsXml, fcXml] = await Promise.all([fetch("https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RADAR_1KM_RRAI", { headers: {
+			accept: "application/xml",
+			"user-agent": UA
+		} }).then((r) => r.text()), fetch("https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=Radar_1km_RainPrecipRate-Extrapolation", { headers: {
+			accept: "application/xml",
+			"user-agent": UA
+		} }).then((r) => r.text())]);
+		const value = {
+			observed: timeDimFromCaps(obsXml),
+			forecast: timeDimFromCaps(fcXml)
+		};
+		mscCache.at = Date.now();
+		mscCache.value = value;
+		return value;
+	} catch {
+		mscCache.at = Date.now();
+		mscCache.value = empty;
+		return empty;
+	}
+});
 var catalogCache = {
 	at: 0,
 	value: null
@@ -304,4 +367,4 @@ var fetchRadarNowcast = createServerFn({ method: "GET" }).validator(object({
 	return value;
 });
 //#endregion
-export { fetchPrecipGrid_createServerFn_handler, fetchRadarCatalog_createServerFn_handler, fetchRadarNowcast_createServerFn_handler };
+export { fetchMscRadar_createServerFn_handler, fetchPrecipGrid_createServerFn_handler, fetchRadarCatalog_createServerFn_handler, fetchRadarNowcast_createServerFn_handler };

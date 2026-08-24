@@ -118,7 +118,7 @@ var HEADERS = { TSS_SHELL: "X-TSS_SHELL" };
 * the dev styles URL for route-scoped CSS collection.
 */
 async function getStartManifest(matchedRoutes) {
-	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-B5fjU2pc.mjs");
+	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-Cw8dyjQt.mjs");
 	const startManifest = tsrStartManifest();
 	let routes = startManifest.routes;
 	routes[rootRouteId];
@@ -144,11 +144,15 @@ var manifest = {
 	},
 	"15e2b9a1b9e19d4fce08228a67e0ab8734cdef8facc9972da8cad05b3efcba82": {
 		functionName: "fetchRadarNowcast_createServerFn_handler",
-		importer: () => import("./radar-BXE2Xex4.mjs")
+		importer: () => import("./radar-DsfkVudk.mjs")
 	},
 	"21ad410098f5212eb73a8072460c39308832d91ccaec66faff1ebc0abcda6bd9": {
 		functionName: "removePlace_createServerFn_handler",
 		importer: () => import("./places-Bd_MAD8U.mjs")
+	},
+	"26eb3b422da5403c3ce83a326549a0f4d500744869384f25f6c31a9dc764c669": {
+		functionName: "fetchMscRadar_createServerFn_handler",
+		importer: () => import("./radar-DsfkVudk.mjs")
 	},
 	"2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26": {
 		functionName: "fetchSessionUser_createServerFn_handler",
@@ -156,23 +160,23 @@ var manifest = {
 	},
 	"530522ada6bf8b03636e6c39ffd5c0ada5294f0a243012533f078ff63b368aae": {
 		functionName: "fetchForecast_createServerFn_handler",
-		importer: () => import("./api-o1aELaFm.mjs")
+		importer: () => import("./api-CSlMBAfQ.mjs")
 	},
 	"733f19c61804a32ffd9ab27261a4ea8a7347d8b360d88ca132caab1999ea02a5": {
 		functionName: "reversePlace_createServerFn_handler",
-		importer: () => import("./api-o1aELaFm.mjs")
+		importer: () => import("./api-CSlMBAfQ.mjs")
 	},
 	"863a609e34c3563b807d29e784e5f4e9472c3185c8b5b5cffc6ffdc4f3f304e9": {
 		functionName: "fetchRadarCatalog_createServerFn_handler",
-		importer: () => import("./radar-BXE2Xex4.mjs")
+		importer: () => import("./radar-DsfkVudk.mjs")
 	},
 	"a18c3671cbbca41ac752d67ab55ebc45fcd3d2935dffba314e0c7217c41206c5": {
 		functionName: "fetchPrecipGrid_createServerFn_handler",
-		importer: () => import("./radar-BXE2Xex4.mjs")
+		importer: () => import("./radar-DsfkVudk.mjs")
 	},
 	"f5f33966c1a68a8e3cea1abd24a3eb1faef2991b2daf75449e1f34bc610df2de": {
 		functionName: "searchPlaces_createServerFn_handler",
-		importer: () => import("./api-o1aELaFm.mjs")
+		importer: () => import("./api-CSlMBAfQ.mjs")
 	},
 	"f66d8b6132ae1f1dd9832b327b21c23629a045fbbc1dd13c82f07361963325b3": {
 		functionName: "savePlace_createServerFn_handler",
@@ -1446,7 +1450,7 @@ var getBaseManifest = getProdBaseManifest;
 var createEarlyHintsForRequest = createEarlyHintsCollector;
 async function loadEntries() {
 	const [routerEntry, startEntry, pluginAdapters] = await Promise.all([
-		import("./router-CbGzZkS_.mjs").then((n) => n.t),
+		import("./router-C6H49hk0.mjs").then((n) => n.t),
 		import("./start-5Z2QO8AU.mjs"),
 		import("./empty-plugin-adapters-D9UWiqvJ.mjs")
 	]);
