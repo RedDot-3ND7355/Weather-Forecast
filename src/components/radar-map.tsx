@@ -317,26 +317,21 @@ function splat(
   b: number,
   a: number,
 ) {
-  const x0 = Math.floor(x);
-  const y0 = Math.floor(y);
-  const fx = x - x0;
-  const fy = y - y0;
-  const wts = [
-    [x0, y0, (1 - fx) * (1 - fy)],
-    [x0 + 1, y0, fx * (1 - fy)],
-    [x0, y0 + 1, (1 - fx) * fy],
-    [x0 + 1, y0 + 1, fx * fy],
-  ] as const;
-  for (const [px, py, wt] of wts) {
-    if (px < 0 || py < 0 || px >= w || py >= h || wt < 0.02) continue;
-    const i = (py * w + px) * 4;
-    const aa = a * wt;
-    const outA = Math.min(255, data[i + 3] + aa);
-    const u = outA > 0 ? aa / outA : 0;
-    data[i] = data[i] * (1 - u) + r * u;
-    data[i + 1] = data[i + 1] * (1 - u) + g * u;
-    data[i + 2] = data[i + 2] * (1 - u) + b * u;
-    data[i + 3] = outA;
+  const x0 = Math.round(x);
+  const y0 = Math.round(y);
+  for (let oy = 0; oy <= 1; oy += 1) {
+    for (let ox = 0; ox <= 1; ox += 1) {
+      const px = x0 + ox;
+      const py = y0 + oy;
+      if (px < 0 || py < 0 || px >= w || py >= h) continue;
+      const i = (py * w + px) * 4;
+      const aa = ox === 0 && oy === 0 ? a : a * 0.85;
+      if (aa <= data[i + 3]) continue;
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+      data[i + 3] = Math.min(255, aa);
+    }
   }
 }
 
@@ -360,12 +355,12 @@ function evolveRain(
   const h = source.height;
   const sd = src.data;
   const dd = dst.data;
-  const step = 2;
+  const step = 1;
   for (let y = 0; y < h; y += step) {
     for (let x = 0; x < w; x += step) {
       const i = (y * w + x) * 4;
       const a0 = sd[i + 3];
-      if (a0 < 16) continue;
+      if (a0 < 12) continue;
       const f = lookupFlow(grid, x, y);
       let vx = f.vx;
       let vy = f.vy;
@@ -376,8 +371,8 @@ function evolveRain(
       const jy = (fbm(x * 0.07 + 4, y * 0.07) - 0.5) * hours * 10;
       const dx = vx * hours + jx;
       const dy = vy * hours + jy;
-      const grow = Math.max(0.22, Math.min(1.9, 1 + f.g * hours * 0.9));
-      const aa = Math.min(255, a0 * grow);
+      const grow = Math.max(0.82, Math.min(1.65, 1 + f.g * hours * 0.55));
+      const aa = Math.min(255, a0 * grow * 1.15);
       splat(dd, w, h, x + dx, y + dy, sd[i], sd[i + 1], sd[i + 2], aa);
       if (f.g > 0.12 && hours > 0.15) {
         const lead = Math.min(28, (6 + f.g * 18) * hours);
@@ -390,7 +385,7 @@ function evolveRain(
           sd[i],
           sd[i + 1],
           sd[i + 2],
-          aa * Math.min(0.55, 0.22 + f.g * 0.35),
+          aa * Math.min(0.7, 0.35 + f.g * 0.4),
         );
       }
     }
@@ -643,7 +638,7 @@ function composeRadar(args: {
     );
   }
 
-  const radarAlpha = hoursAhead <= 0 ? 0.9 : Math.max(0, 0.9 - hoursAhead * 0.1);
+  const radarAlpha = hoursAhead <= 0 ? 0.95 : Math.max(0.82, 0.96 - hoursAhead * 0.03);
   const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(0.72, 0.08 + hoursAhead * 0.11);
 
   if (evolvedRain && radarAlpha > 0.04) {

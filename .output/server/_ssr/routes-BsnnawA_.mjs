@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-80XZHdN1.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CRlkN5Fd.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BV536coS.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-Ci_rPZJ8.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BsnnawA_.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1654,42 +1654,19 @@ function lookupFlow(grid, x, y) {
 	};
 }
 function splat(data, w, h, x, y, r, g, b, a) {
-	const x0 = Math.floor(x);
-	const y0 = Math.floor(y);
-	const fx = x - x0;
-	const fy = y - y0;
-	const wts = [
-		[
-			x0,
-			y0,
-			(1 - fx) * (1 - fy)
-		],
-		[
-			x0 + 1,
-			y0,
-			fx * (1 - fy)
-		],
-		[
-			x0,
-			y0 + 1,
-			(1 - fx) * fy
-		],
-		[
-			x0 + 1,
-			y0 + 1,
-			fx * fy
-		]
-	];
-	for (const [px, py, wt] of wts) {
-		if (px < 0 || py < 0 || px >= w || py >= h || wt < .02) continue;
+	const x0 = Math.round(x);
+	const y0 = Math.round(y);
+	for (let oy = 0; oy <= 1; oy += 1) for (let ox = 0; ox <= 1; ox += 1) {
+		const px = x0 + ox;
+		const py = y0 + oy;
+		if (px < 0 || py < 0 || px >= w || py >= h) continue;
 		const i = (py * w + px) * 4;
-		const aa = a * wt;
-		const outA = Math.min(255, data[i + 3] + aa);
-		const u = outA > 0 ? aa / outA : 0;
-		data[i] = data[i] * (1 - u) + r * u;
-		data[i + 1] = data[i + 1] * (1 - u) + g * u;
-		data[i + 2] = data[i + 2] * (1 - u) + b * u;
-		data[i + 3] = outA;
+		const aa = ox === 0 && oy === 0 ? a : a * .85;
+		if (aa <= data[i + 3]) continue;
+		data[i] = r;
+		data[i + 1] = g;
+		data[i + 2] = b;
+		data[i + 3] = Math.min(255, aa);
 	}
 }
 function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
@@ -1705,11 +1682,11 @@ function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
 	const h = source.height;
 	const sd = src.data;
 	const dd = dst.data;
-	const step = 2;
+	const step = 1;
 	for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) {
 		const i = (y * w + x) * 4;
 		const a0 = sd[i + 3];
-		if (a0 < 16) continue;
+		if (a0 < 12) continue;
 		const f = lookupFlow(grid, x, y);
 		let vx = f.vx;
 		let vy = f.vy;
@@ -1720,12 +1697,12 @@ function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
 		const jy = (fbm(x * .07 + 4, y * .07) - .5) * hours * 10;
 		const dx = vx * hours + jx;
 		const dy = vy * hours + jy;
-		const grow = Math.max(.22, Math.min(1.9, 1 + f.g * hours * .9));
-		const aa = Math.min(255, a0 * grow);
+		const grow = Math.max(.82, Math.min(1.65, 1 + f.g * hours * .55));
+		const aa = Math.min(255, a0 * grow * 1.15);
 		splat(dd, w, h, x + dx, y + dy, sd[i], sd[i + 1], sd[i + 2], aa);
 		if (f.g > .12 && hours > .15) {
 			const lead = Math.min(28, (6 + f.g * 18) * hours);
-			splat(dd, w, h, x + dx + steerUx * lead, y + dy + steerUy * lead, sd[i], sd[i + 1], sd[i + 2], aa * Math.min(.55, .22 + f.g * .35));
+			splat(dd, w, h, x + dx + steerUx * lead, y + dy + steerUy * lead, sd[i], sd[i + 1], sd[i + 2], aa * Math.min(.7, .35 + f.g * .4));
 		}
 	}
 	octx.putImageData(dst, 0, 0);
@@ -1902,7 +1879,7 @@ function composeRadar(args) {
 		if (!t.base) continue;
 		ctx.drawImage(t.base, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
 	}
-	const radarAlpha = hoursAhead <= 0 ? .9 : Math.max(0, .9 - hoursAhead * .1);
+	const radarAlpha = hoursAhead <= 0 ? .95 : Math.max(.82, .96 - hoursAhead * .03);
 	const modelAlpha = hoursAhead <= 0 ? 0 : Math.min(.72, .08 + hoursAhead * .11);
 	if (evolvedRain && radarAlpha > .04) {
 		ctx.save();
