@@ -1,7 +1,7 @@
 export class GeoError extends Error {
   constructor(
     message: string,
-    readonly kind: "missing" | "denied" | "unavailable" | "timeout",
+    readonly kind: "missing" | "denied" | "unavailable" | "timeout" | "inapp",
   ) {
     super(message);
     this.name = "GeoError";
@@ -29,7 +29,7 @@ function wrap(err: unknown): GeoError {
   if (isInAppBrowser()) {
     return new GeoError(
       "Open this page in Safari (not in-app), then tap locate.",
-      "unavailable",
+      "inapp",
     );
   }
   if (code === 1) {

@@ -2,11 +2,12 @@ import { o as __toESM } from "../_runtime.mjs";
 import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].mjs";
 import { v as Link, y as useNavigate } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime } from "../_libs/react+tanstack__react-query.mjs";
+import { r as useT } from "./i18n-CJOFeXbl.mjs";
 import { r as signIn, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as GROK_PROVIDERS } from "./server-C7Y7B70S.mjs";
 import { n as Input, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/login-yRCMsAbs.js
+//#region node_modules/.nitro/vite/services/ssr/assets/login-CrJ5BeHG.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function brokerHost() {
@@ -15,6 +16,7 @@ function brokerHost() {
 	return h.endsWith(".grok-sandbox.com") || h === "localhost" || h === "127.0.0.1";
 }
 function Login() {
+	const { t } = useT();
 	const navigate = useNavigate();
 	const [busy, setBusy] = (0, import_react.useState)(null);
 	const [error, setError] = (0, import_react.useState)(null);
@@ -32,7 +34,7 @@ function Login() {
 		try {
 			await signIn(providerId, { callbackURL: "/" });
 		} catch (err) {
-			const message = showBroker ? err instanceof Error ? err.message : "Sign-in failed. Try again." : "Google and X are not available on this host. Use email instead.";
+			const message = showBroker ? err instanceof Error ? err.message : t("signInFail") : t("socialUnavailable");
 			setError(message);
 			toast(message);
 		} finally {
@@ -53,14 +55,14 @@ function Login() {
 				password
 			});
 			if (result.error) {
-				const message = result.error.message || "Sign-in failed. Try again.";
+				const message = result.error.message || t("signInFail");
 				setError(message);
 				toast(message);
 				return;
 			}
 			await navigate({ to: "/" });
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Sign-in failed. Try again.";
+			const message = err instanceof Error ? err.message : t("signInFail");
 			setError(message);
 			toast(message);
 		} finally {
@@ -86,7 +88,7 @@ function Login() {
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 							className: "mt-1 text-sm text-muted",
-							children: "Sign in to save places and their rain bearings."
+							children: t("loginLead")
 						})
 					]
 				}),
@@ -101,7 +103,7 @@ function Login() {
 								children: [
 									mode === "signup" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
 										autoComplete: "name",
-										placeholder: "Name",
+										placeholder: t("name"),
 										value: name,
 										onChange: (ev) => setName(ev.target.value)
 									}) : null,
@@ -109,7 +111,7 @@ function Login() {
 										type: "email",
 										autoComplete: "email",
 										required: true,
-										placeholder: "Email",
+										placeholder: t("email"),
 										value: email,
 										onChange: (ev) => setEmail(ev.target.value)
 									}),
@@ -118,7 +120,7 @@ function Login() {
 										autoComplete: mode === "signup" ? "new-password" : "current-password",
 										required: true,
 										minLength: 8,
-										placeholder: "Password",
+										placeholder: t("password"),
 										value: password,
 										onChange: (ev) => setPassword(ev.target.value)
 									}),
@@ -126,7 +128,7 @@ function Login() {
 										type: "submit",
 										className: "w-full justify-center",
 										disabled: busy !== null,
-										children: busy === "email" ? "Working…" : mode === "signup" ? "Create account" : "Sign in"
+										children: busy === "email" ? t("working") : mode === "signup" ? t("createAccount") : t("signIn")
 									})
 								]
 							}),
@@ -137,7 +139,7 @@ function Login() {
 									setError(null);
 									setMode((m) => m === "signin" ? "signup" : "signin");
 								},
-								children: mode === "signup" ? "Already have an account? Sign in" : "Need an account? Create one"
+								children: mode === "signup" ? t("haveAccount") : t("needAccount")
 							}),
 							showBroker ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "flex items-center gap-3 pt-1",
@@ -145,7 +147,7 @@ function Login() {
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "h-px flex-1 bg-raised" }),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 										className: "text-[11px] uppercase tracking-wide text-faint",
-										children: "or"
+										children: t("or")
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "h-px flex-1 bg-raised" })
 								]
@@ -155,7 +157,7 @@ function Login() {
 								className: "w-full justify-center",
 								disabled: busy !== null,
 								onClick: () => void onSocial(p.providerId),
-								children: [p.label === "Google" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GoogleMark, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(XMark, {}), busy === p.providerId ? "Opening…" : `Continue with ${p.label}`]
+								children: [p.label === "Google" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GoogleMark, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(XMark, {}), busy === p.providerId ? t("opening") : t("continueWith", { label: p.label })]
 							}, p.providerId))] }) : null,
 							error ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "pt-1 text-sm text-danger",
@@ -163,7 +165,7 @@ function Login() {
 								children: error
 							}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "pt-1 text-xs text-faint",
-								children: showBroker ? "Allow pop-ups for this site." : "Use email on this host. Google and X are not available here."
+								children: showBroker ? t("allowPopups") : t("emailOnly")
 							})
 						]
 					})
@@ -173,7 +175,7 @@ function Login() {
 					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
 						to: "/",
 						className: "text-sm text-muted hover:text-fg",
-						children: "Continue without an account"
+						children: t("continueGuest")
 					})
 				})
 			]

@@ -1,4 +1,5 @@
 import { Droplets, Eye, Gauge, Thermometer, Wind } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { weatherIcon, weatherLabel } from "@/lib/weather/codes";
 import {
   formatLongDate,
@@ -17,37 +18,38 @@ export function CurrentPanel({
   forecast: Forecast;
   units: Units;
 }) {
+  const { locale, t } = useT();
   const { current, place } = forecast;
   const Icon = weatherIcon(current.weatherCode, current.isDay);
   const stats = [
     {
       icon: Thermometer,
-      label: "Feels like",
+      label: t("feelsLike"),
       value: formatTemp(current.apparentC, units),
     },
     {
       icon: Droplets,
-      label: "Humidity",
+      label: t("humidity"),
       value: `${Math.round(current.humidity)}%`,
     },
     {
       icon: Eye,
-      label: "Dewpoint",
+      label: t("dewpoint"),
       value: formatTemp(current.dewpointC, units),
     },
     {
       icon: Gauge,
-      label: "Pressure",
+      label: t("pressure"),
       value: `${Math.round(current.pressureHpa)} hPa`,
     },
     {
       icon: Wind,
-      label: "Gusts",
+      label: t("gusts"),
       value: formatSpeed(current.windGustKmh, units),
     },
     {
       icon: Droplets,
-      label: "Precip now",
+      label: t("precipNow"),
       value: formatPrecip(current.precipitationMm, units),
     },
   ];
@@ -57,7 +59,7 @@ export function CurrentPanel({
       <p className="truncate text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
         {placeLabel(place)}
       </p>
-      <p className="mt-1 text-sm text-muted">{formatLongDate(current.time)}</p>
+      <p className="mt-1 text-sm text-muted">{formatLongDate(current.time, locale)}</p>
       <div className="mt-4 flex flex-wrap items-end gap-3 sm:gap-4">
         <p className="font-display text-5xl leading-none font-medium tracking-tight tabular-nums text-fg sm:text-7xl">
           {formatTemp(current.temperatureC, units)}
@@ -67,7 +69,7 @@ export function CurrentPanel({
         </p>
         <div className="mb-1 flex items-center gap-2 text-muted">
           <Icon className="size-5 sm:size-6" />
-          <span className="text-sm">{weatherLabel(current.weatherCode)}</span>
+          <span className="text-sm">{weatherLabel(current.weatherCode, locale)}</span>
         </div>
       </div>
       <dl className="mt-5 grid grid-cols-2 gap-2 sm:mt-6 sm:grid-cols-3 sm:gap-3">

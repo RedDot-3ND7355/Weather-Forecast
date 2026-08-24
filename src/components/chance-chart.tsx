@@ -7,12 +7,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useT } from "@/lib/i18n";
 import { formatHour } from "@/lib/weather/format";
 import type { HourPoint } from "@/lib/weather/types";
 
 export function ChanceChart({ hours }: { hours: HourPoint[] }) {
+  const { locale, t } = useT();
   const data = hours.map((h, i) => ({
-    label: i === 0 ? "Now" : formatHour(h.time),
+    label: i === 0 ? t("now") : formatHour(h.time, locale),
     vane: h.rain.chance,
     model: h.modelChance,
   }));
@@ -21,14 +23,14 @@ export function ChanceChart({ hours }: { hours: HourPoint[] }) {
     <section className="min-w-0 overflow-hidden rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-          Rain chance
+          {t("rainChance")}
         </h2>
         <p className="text-xs text-muted">
           <span className="mr-3 inline-flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-rain" /> Vane
+            <span className="size-2 rounded-full bg-rain" /> {t("vane")}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-accent/50" /> Model
+            <span className="size-2 rounded-full bg-accent/50" /> {t("model")}
           </span>
         </p>
       </div>

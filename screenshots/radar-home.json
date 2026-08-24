@@ -1,0 +1,35 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Vane",
+      "hasCanvas": false,
+      "bodyTextLen": 794,
+      "bodyTextHash": "8d5cb96cafa58a6d0cc0d11c60f6b9f029e5054ff6cb7324591046539cfc3daa",
+      "bodyTextPrefix": "Vane RAIN FOLLOWS THE WIND °C °F Vane Rain follows the wind. Sea",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/radar-home.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Vane",
+      "hasCanvas": false,
+      "bodyTextLen": 772,
+      "bodyTextHash": "fdbefc7832d496c05625abbcd06c3d74390598c22a345f6afd351ea2b33a82b0",
+      "bodyTextPrefix": "Vane °C °F Vane Rain follows the wind. Search a place and the co",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/radar-home-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "verdictFile": "/workspace/screenshots/radar-home.json"
+}

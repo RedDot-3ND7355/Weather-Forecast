@@ -1,5 +1,6 @@
 import { MapPin, X } from "lucide-react";
 import { HScroll } from "@/components/h-scroll";
+import { useT } from "@/lib/i18n";
 import type { SavedPlace } from "@/lib/places";
 import { placeLabel } from "@/lib/weather/format";
 import type { Place } from "@/lib/weather/types";
@@ -15,9 +16,10 @@ export function SavedRow({
   onPick: (place: Place) => void;
   onRemove: (id: number) => void;
 }) {
+  const { t } = useT();
   if (places.length === 0 && recent.length === 0) return null;
   return (
-    <HScroll label="Saved places" fadeFrom="from-bg" contentClassName="gap-2 px-1">
+    <HScroll label={t("savedPlaces")} fadeFrom="from-bg" contentClassName="gap-2 px-1">
       {places.map((p) => (
         <span
           key={p.id}
@@ -30,7 +32,7 @@ export function SavedRow({
           <button
             type="button"
             className="grid size-7 place-items-center rounded-full text-faint hover:text-fg"
-            aria-label={`Remove ${p.name}`}
+            aria-label={t("removePlace", { name: p.name })}
             onClick={() => onRemove(p.id)}
           >
             <X className="size-3" />

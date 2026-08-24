@@ -1,5 +1,6 @@
 import { HScroll } from "@/components/h-scroll";
 import { WindArrow } from "@/components/wind-arrow";
+import { useT } from "@/lib/i18n";
 import { formatHour, formatTemp } from "@/lib/weather/format";
 import type { HourPoint, Units } from "@/lib/weather/types";
 import { cn } from "@/lib/utils";
@@ -11,15 +12,16 @@ export function HourlyStrip({
   hours: HourPoint[];
   units: Units;
 }) {
+  const { locale, t } = useT();
   return (
     <section className="min-w-0 overflow-hidden rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5">
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-          Next 24 hours
+          {t("next24")}
         </h2>
-        <p className="text-xs text-muted">Swipe or drag</p>
+        <p className="text-xs text-muted">{t("swipeOrDrag")}</p>
       </div>
-      <HScroll label="Next 24 hours">
+      <HScroll label={t("next24")}>
         {hours.map((h, i) => {
           const wet = h.rain.chance >= 40;
           return (
@@ -31,7 +33,7 @@ export function HourlyStrip({
               )}
             >
               <p className="text-[11px] font-medium text-muted">
-                {i === 0 ? "Now" : formatHour(h.time)}
+                {i === 0 ? t("now") : formatHour(h.time, locale)}
               </p>
               <WindArrow deg={h.windDir} wet={wet} className="size-5" />
               <p

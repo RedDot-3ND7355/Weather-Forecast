@@ -1,3 +1,4 @@
+import { t, type Locale } from "@/lib/i18n";
 import { angleDelta, windAdverb, windLong } from "./compass";
 import type { HourPoint, RainDriver, RainEstimate } from "./types";
 
@@ -23,7 +24,9 @@ export function estimateRain(input: {
   cloudCover: number;
   cape?: number;
   latitude: number;
+  locale?: Locale;
 }): RainEstimate {
+  const locale = input.locale ?? "en";
   const modelChance = clamp(Math.round(input.modelProb), 0, 100);
   const depression = Math.max(0, input.tempC - input.dewpointC);
   const satScore = clamp(1 - (depression - 0.4) / 10, 0, 1);
@@ -48,47 +51,47 @@ export function estimateRain(input: {
     clamp(modelWeight * modelChance + (1 - modelWeight) * physical, 0, 100),
   );
 
-  const adverb = windAdverb(input.windDir);
-  const from = windLong(input.windDir);
+  const adverb = windAdverb(input.windDir, locale);
+  const from = windLong(input.windDir, locale);
   const hemisphereFetch =
-    input.latitude >= 0 ? "equatorward / southerly" : "equatorward / northerly";
+    input.latitude >= 0 ? t(locale, "sourceSouth") : t(locale, "sourceNorth");
 
   const drivers: RainDriver[] = [
     {
       id: "model",
-      label: "Model rain",
+      label: t(locale, "driverModel"),
       score: modelChance,
-      note: `${modelChance}% from the forecast ensemble`,
+      note: t(locale, "driverModelNote", { n: modelChance }),
     },
     {
       id: "moisture",
-      label: "Saturation",
+      label: t(locale, "driverMoisture"),
       score: Math.round(moisture * 100),
       note:
         depression < 2.2
-          ? `Air is nearly saturated (${depression.toFixed(1)}° dewpoint spread)`
-          : `Dewpoint is ${depression.toFixed(1)}° below air temperature`,
+          ? t(locale, "driverMoistureWet", { n: depression.toFixed(1) })
+          : t(locale, "driverMoistureDry", { n: depression.toFixed(1) }),
     },
     {
       id: "fetch",
-      label: "Wind fetch",
+      label: t(locale, "driverFetch"),
       score: Math.round(fetch * 100),
-      note: `${capitalize(adverb)} flow · ${hemisphereFetch} air is the moist source`,
+      note: t(locale, "driverFetchNote", { adverb, source: hemisphereFetch }),
     },
     {
       id: "cloud",
-      label: "Cloud cover",
+      label: t(locale, "driverCloud"),
       score: Math.round(cloud * 100),
-      note: `${Math.round(input.cloudCover)}% sky covered`,
+      note: t(locale, "driverCloudNote", { n: Math.round(input.cloudCover) }),
     },
   ];
 
   if ((input.cape ?? 0) > 80) {
     drivers.push({
       id: "cape",
-      label: "Instability",
+      label: t(locale, "driverCape"),
       score: Math.round(capeScore * 100),
-      note: `${Math.round(input.cape ?? 0)} J/kg CAPE`,
+      note: t(locale, "driverCapeNote", { n: Math.round(input.cape ?? 0) }),
     });
   }
 
@@ -100,13 +103,14 @@ export function estimateRain(input: {
     moisture,
     windSpeedKmh: input.windSpeedKmh,
     depression,
+    locale,
   });
 
   return {
     chance,
     modelChance,
     headline,
-    fetchLabel: capitalize(adverb),
+    fetchLabel: locale === "fr" ? adverb : capitalize(adverb),
     arrival: from,
     drivers,
   };
@@ -124,32 +128,35 @@ function buildHeadline(args: {
   moisture: number;
   windSpeedKmh: number;
   depression: number;
+  locale: Locale;
 }): string {
-  const { chance, adverb, fetch, moisture, windSpeedKmh, depression } = args;
+  const { chance, adverb, fetch, moisture, windSpeedKmh, depression, locale } = args;
   const still = windSpeedKmh < 8;
+  const spread = depression.toFixed(1);
+  const sat = Math.round(moisture * 100);
 
   if (chance >= 70 && fetch > 0.55) {
-    return `A ${adverb} fetch is feeding rain. Expect wet weather from that bearing.`;
+    return t(locale, "headWetFetch", { adverb });
   }
   if (chance >= 70 && still) {
-    return `Saturated, nearly still air. Rain is forming in place rather than being blown in.`;
+    return t(locale, "headWetStill");
   }
   if (chance >= 55) {
-    return `${capitalize(adverb)} wind and a ${depression.toFixed(1)}° dewpoint spread put rain on the table.`;
+    return t(locale, "headLikely", { adverb: locale === "fr" ? adverb : capitalize(adverb), spread });
   }
   if (chance >= 35 && fetch > 0.5) {
-    return `${capitalize(adverb)} flow is loading moisture. Rain chance is rising from that direction.`;
+    return t(locale, "headLoading", { adverb: locale === "fr" ? adverb : capitalize(adverb) });
   }
   if (chance >= 35 && still) {
-    return `Light wind, humid column. Any rain stays local rather than arriving on a fetch.`;
+    return t(locale, "headLocal");
   }
   if (chance < 20 && fetch < 0.35 && moisture < 0.45) {
-    return `${capitalize(adverb)} flow is draining moisture. Rain looks unlikely.`;
+    return t(locale, "headDraining", { adverb: locale === "fr" ? adverb : capitalize(adverb) });
   }
   if (chance < 25 && args.modelChance < 20) {
-    return `Dry ${adverb} air. The vane and the model both stay quiet.`;
+    return t(locale, "headDry", { adverb });
   }
-  return `${capitalize(adverb)} wind, ${Math.round(moisture * 100)}% saturation. Watch that bearing for rain.`;
+  return t(locale, "headWatch", { adverb: locale === "fr" ? adverb : capitalize(adverb), sat });
 }
 
 export function detectWindShift(

@@ -1,4 +1,5 @@
-import { windLong } from "./compass";
+import { t, type Locale } from "@/lib/i18n";
+import { fromThe } from "./compass";
 
 const EARTH_KM = 6371;
 export const FETCH_KM = [0, 25, 50, 90, 140, 200] as const;
@@ -33,12 +34,12 @@ export function travelHours(km: number, speedKmh: number): number {
   return km / Math.max(speedKmh, 8);
 }
 
-export function formatEta(minutes: number): string {
-  if (minutes <= 8) return "arriving now";
-  if (minutes < 60) return `~${Math.round(minutes / 5) * 5} min`;
+export function formatEta(minutes: number, locale: Locale = "en"): string {
+  if (minutes <= 8) return t(locale, "etaNow");
+  if (minutes < 60) return t(locale, "etaMin", { n: Math.round(minutes / 5) * 5 });
   const h = minutes / 60;
-  if (h < 1.6) return "~1 hour";
-  return `~${h < 10 ? h.toFixed(1) : Math.round(h)} hours`;
+  if (h < 1.6) return t(locale, "etaHour");
+  return t(locale, "etaHours", { n: h < 10 ? h.toFixed(1) : Math.round(h) });
 }
 
 export function arrivalCopy(args: {
@@ -47,15 +48,24 @@ export function arrivalCopy(args: {
   windDir: number;
   windSpeedKmh: number;
   rainingHere: boolean;
+  locale?: Locale;
 }): string {
-  const from = windLong(args.windDir);
+  const locale = args.locale ?? "en";
+  const from = fromThe(args.windDir, locale);
   if (args.rainingHere) {
-    return `It's raining here now. Wind from the ${from} is still feeding it.`;
+    return t(locale, "rainNowCopy", { from });
   }
   if (args.minutes > 12 * 60) {
-    return `No rain showing upwind of you. The next few hours look dry unless a new band forms.`;
+    return t(locale, "rainFarCopy");
   }
-  return `Rain about ${Math.round(args.km)} km away, coming from the ${from} at ${Math.round(args.windSpeedKmh)} km/h. ${capitalize(formatEta(args.minutes))} if the wind holds.`;
+  const eta = formatEta(args.minutes, locale);
+  const etaLabel = locale === "fr" ? eta.charAt(0).toUpperCase() + eta.slice(1) : capitalize(eta);
+  return t(locale, "rainComingCopy", {
+    km: Math.round(args.km),
+    from,
+    speed: Math.round(args.windSpeedKmh),
+    eta: etaLabel,
+  });
 }
 
 function capitalize(s: string): string {

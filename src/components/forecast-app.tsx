@@ -18,10 +18,12 @@ import { useWeatherStore } from "@/lib/store";
 import { fetchForecast, reversePlace } from "@/lib/weather/api";
 import { formatSpeed } from "@/lib/weather/format";
 import { GeoError, isAppleTouch, readDevicePosition } from "@/lib/geolocation";
+import { useT } from "@/lib/i18n";
 import type { Place } from "@/lib/weather/types";
 
 export function ForecastApp() {
   const { user } = useCurrentUserState();
+  const { t } = useT();
   const place = useWeatherStore((s) => s.place);
   const units = useWeatherStore((s) => s.units);
   const recent = useWeatherStore((s) => s.recent);
@@ -56,7 +58,7 @@ export function ForecastApp() {
 
   function locate() {
     if (isAppleTouch()) {
-      toast("Safari will ask for location — tap Allow at the top.");
+      toast(t("toastLocateAllow"));
     }
     setLocating(true);
     void readDevicePosition()
@@ -70,14 +72,25 @@ export function ForecastApp() {
           .then(setPlace)
           .catch(() =>
             setPlace({
-              name: "Your location",
+              name: t("yourLocation"),
               latitude: pos.coords.latitude,
               longitude: pos.coords.longitude,
             }),
           ),
       )
       .catch((err) => {
-        toast(err instanceof GeoError ? err.message : "Could not read your location");
+        const kind = err instanceof GeoError ? err.kind : "unavailable";
+        const key =
+          kind === "missing"
+            ? "geoMissing"
+            : kind === "denied"
+              ? "geoDenied"
+              : kind === "timeout"
+                ? "geoTimeout"
+                : kind === "inapp"
+                  ? "geoInApp"
+                  : "geoUnavailable";
+        toast(t(key));
       })
       .finally(() => setLocating(false));
   }
@@ -87,7 +100,7 @@ export function ForecastApp() {
       await removePlace({ data: { id } });
       await savedQuery.refetch();
     } catch {
-      toast("Could not remove that place");
+      toast(t("toastRemoveFail"));
     }
   }
 
@@ -124,7 +137,7 @@ export function ForecastApp() {
             message={
               forecastQuery.error instanceof Error
                 ? forecastQuery.error.message
-                : "Could not load the forecast."
+                : t("loadFail")
             }
           />
         ) : forecast ? (
@@ -163,14 +176,14 @@ function EmptyState({
   onLocate: () => void;
   locating: boolean;
 }) {
+  const { t } = useT();
   return (
     <div className="mx-auto max-w-xl py-4 text-center sm:py-12">
       <p className="font-display text-4xl font-medium tracking-tight text-fg sm:text-6xl">
         Vane
       </p>
       <p className="mt-3 text-sm text-muted sm:text-base">
-        Rain follows the wind. Search a place and the compass shows the bearing
-        moisture is arriving from — then estimates rain from that fetch.
+        {t("emptyLead")}
       </p>
       <div className="mt-6 hidden text-left sm:block">
         <PlaceSearch onSelect={onPick} autoFocus />
@@ -180,10 +193,10 @@ function EmptyState({
         onClick={onLocate}
         className="mt-4 h-11 text-sm font-medium text-accent hover:underline"
       >
-        {locating ? "Locating…" : "Use my location"}
+        {locating ? t("locating") : t("locate")}
       </button>
       <p className="mt-8 mb-3 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-        Try a city
+        {t("tryACity")}
       </p>
       <SampleCities onPick={onPick} />
       <HowItWorks compact />
@@ -203,22 +216,24 @@ function LoadingState() {
 }
 
 function ErrorState({ onRetry, message }: { onRetry: () => void; message: string }) {
+  const { t } = useT();
   return (
     <div className="mx-auto max-w-md py-16 text-center">
-      <h1 className="font-display text-2xl font-medium">Forecast unavailable</h1>
+      <h1 className="font-display text-2xl font-medium">{t("forecastUnavailable")}</h1>
       <p className="mt-2 text-sm text-muted">{message}</p>
       <button
         type="button"
         onClick={onRetry}
         className="mt-5 h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-fg"
       >
-        Try again
+        {t("tryAgain")}
       </button>
     </div>
   );
 }
 
 function HowItWorks({ compact = false }: { compact?: boolean }) {
+  const { t } = useT();
   return (
     <section
       className={
@@ -228,17 +243,10 @@ function HowItWorks({ compact = false }: { compact?: boolean }) {
       }
     >
       <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-        How the estimate works
+        {t("howTitle")}
       </h2>
       <p className="mt-2 leading-relaxed">
-        Weather vanes point into the wind — the direction rain is carried from.
-        Vane blends the forecast model’s precipitation probability with how
-        saturated the air is, how much cloud is overhead, and whether the wind
-        is a moist equatorward fetch (southerly in the north, northerly in the
-        south). Radar shows live rain. The dashed line is the wind — rain would
-        be blown in from that direction. The six-hour strip times those cells
-        against wind speed. The compass is the rain bearing. The percentage is
-        that blend, not a guarantee.
+        {t("howBody")}
       </p>
     </section>
   );

@@ -14,8 +14,10 @@ import {
   type PrecipCell,
   type RadarFrame,
 } from "@/lib/weather/radar";
+import { localeTag, useT } from "@/lib/i18n";
+import { arrivalCopy, formatEta } from "@/lib/weather/advection";
 import { formatHour, formatSpeed } from "@/lib/weather/format";
-import { windLong } from "@/lib/weather/compass";
+import { fromThe, windLong } from "@/lib/weather/compass";
 import type { Forecast, Units } from "@/lib/weather/types";
 import { cn } from "@/lib/utils";
 
@@ -46,16 +48,22 @@ function loadImg(src: string): Promise<HTMLImageElement | null> {
   return pending;
 }
 
-function hourStatus(h: {
-  hereMm: number;
-  fetchMm: number;
-  chance: number;
-  arriving: boolean;
-}): string {
-  if (h.hereMm >= 0.15) return "Raining";
-  if (h.arriving || h.fetchMm >= 0.12) return "On the way";
-  if (h.chance >= 45) return "Possible";
-  return "Dry";
+function hourStatus(
+  h: {
+    hereMm: number;
+    fetchMm: number;
+    chance: number;
+    arriving: boolean;
+  },
+  raining: string,
+  onTheWay: string,
+  possible: string,
+  dry: string,
+): string {
+  if (h.hereMm >= 0.15) return raining;
+  if (h.arriving || h.fetchMm >= 0.12) return onTheWay;
+  if (h.chance >= 45) return possible;
+  return dry;
 }
 
 function hash2(x: number, y: number): number {
@@ -245,6 +253,7 @@ export function RadarMap({
   forecast: Forecast;
   units: Units;
 }) {
+  const { locale, t } = useT();
   const { place, current } = forecast;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -498,22 +507,31 @@ export function RadarMap({
   }, [active, tilePlan, current.windDir, size.w, size.h, frames]);
 
   const stamp = active
-    ? new Intl.DateTimeFormat(undefined, {
+    ? new Intl.DateTimeFormat(localeTag(locale), {
         hour: "numeric",
         minute: "2-digit",
       }).format(new Date(active.time * 1000))
     : "—";
-  const from = windLong(current.windDir);
+  const from = fromThe(current.windDir, locale);
+  const fromWord = windLong(current.windDir, locale);
+  const etaLabel = arrival ? formatEta(arrival.minutes, locale) : "";
   const headline = arrival
     ? arrival.minutes === 0
-      ? "Raining here now"
-      : `Rain ${arrival.label}`
+      ? t("rainingNow")
+      : t("rainEta", { label: etaLabel })
     : nowcast?.hours?.length
-      ? "No rain headed this way"
-      : `Watch the ${from}`;
-  const copy =
-    arrival?.copy ??
-    `Wind is from the ${from}. Past 2 hours is live radar; the next 6 hours is a model forecast on the same map.`;
+      ? t("noRainHeaded")
+      : t("watchThe", { from });
+  const copy = arrival
+    ? arrivalCopy({
+        minutes: arrival.minutes,
+        km: arrival.km,
+        windDir: current.windDir,
+        windSpeedKmh: current.windSpeedKmh,
+        rainingHere: arrival.minutes === 0,
+        locale,
+      })
+    : t("radarCopy", { from });
 
   function closeView() {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -533,7 +551,7 @@ export function RadarMap({
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
             <Radar className="size-3.5" />
-            Rain radar
+            {t("radar")}
           </p>
           <h2 className="mt-1 font-display text-xl font-medium leading-tight text-fg">
             {headline}
@@ -547,7 +565,7 @@ export function RadarMap({
               wet={(arrival?.precipMm ?? current.rain.chance) > 40}
             />
             <div className="min-w-0">
-              <p className="text-xs font-medium text-fg">From the {from}</p>
+              <p className="text-xs font-medium text-fg">{t("fromThe", { from: fromWord })}</p>
               <p className="text-[11px] text-muted">
                 {formatSpeed(current.windSpeedKmh, units)}
               </p>
@@ -561,8 +579,8 @@ export function RadarMap({
                 variant="secondary"
                 className="size-9"
                 onClick={() => setMode("page")}
-                aria-label="Fill page"
-                title="Fill page"
+                aria-label={t("fillPage")}
+                title={t("fillPage")}
               >
                 <Maximize2 className="size-4" />
               </Button>
@@ -572,8 +590,8 @@ export function RadarMap({
                 variant="secondary"
                 className="size-9"
                 onClick={() => setMode("os")}
-                aria-label="Fullscreen"
-                title="Fullscreen"
+                aria-label={t("fullscreen")}
+                title={t("fullscreen")}
               >
                 <Expand className="size-4" />
               </Button>
@@ -599,7 +617,7 @@ export function RadarMap({
                 variant="secondary"
                 className="size-9"
                 onClick={closeView}
-                aria-label="Close"
+                aria-label={t("close")}
               >
                 <X className="size-4" />
               </Button>
@@ -619,15 +637,14 @@ export function RadarMap({
         <canvas
           ref={canvasRef}
           className="block h-full w-full"
-          aria-label={`Precipitation radar for ${place.name}`}
+          aria-label={t("radarAria", { name: place.name })}
         />
         {!ready && !catalogQuery.isError ? (
           <div className="absolute inset-0 animate-pulse bg-raised" />
         ) : null}
         {catalogQuery.isError && !frames.length ? (
           <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted">
-            Radar is unavailable right now. The hourly estimate below still uses
-            wind and the forecast model.
+            {t("radarUnavailable")}
           </p>
         ) : null}
         <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-1">
@@ -640,7 +657,7 @@ export function RadarMap({
               isForecast ? "bg-accent text-accent-fg" : "bg-bg/75 text-muted",
             )}
           >
-            {isForecast ? `Forecast · ${stamp}` : stamp}
+            {isForecast ? t("forecastStamp", { stamp }) : stamp}
           </p>
         </div>
         <div className="absolute right-3 top-3 flex gap-1">
@@ -651,7 +668,7 @@ export function RadarMap({
             className="size-9"
             disabled={zoom <= MIN_Z}
             onClick={() => setZoom((z) => Math.max(MIN_Z, z - 1))}
-            aria-label="Zoom out"
+            aria-label={t("zoomOut")}
           >
             <Minus className="size-4" />
           </Button>
@@ -662,13 +679,13 @@ export function RadarMap({
             className="size-9"
             disabled={zoom >= MAX_Z}
             onClick={() => setZoom((z) => Math.min(MAX_Z, z + 1))}
-            aria-label="Zoom in"
+            aria-label={t("zoomIn")}
           >
             <Plus className="size-4" />
           </Button>
         </div>
         <p className="pointer-events-none absolute bottom-3 right-3 rounded-md bg-bg/75 px-2 py-1 text-[11px] text-muted backdrop-blur-sm">
-          You are here · dashed line is wind
+          {t("youAreHere")}
         </p>
       </div>
 
@@ -680,7 +697,7 @@ export function RadarMap({
           onClick={() => setPlaying((p) => !p)}
         >
           {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-          {playing ? "Pause" : "Play"}
+          {playing ? t("pause") : t("play")}
         </Button>
         <div className="min-w-0 flex-1">
           <div className="relative">
@@ -695,7 +712,7 @@ export function RadarMap({
                 setFrame(Number(e.target.value));
               }}
               className="h-2 w-full accent-rain"
-              aria-label="Radar time, 30 minute steps"
+              aria-label={t("radarTimeAria")}
             />
             {frames.length > 1 ? (
               <span
@@ -715,7 +732,7 @@ export function RadarMap({
                 left: `${frames.length > 1 ? (nowIdx / (frames.length - 1)) * 100 : 50}%`,
               }}
             >
-              Now
+              {t("now")}
             </span>
             {hasForecast ? <span className="absolute right-0">+6h</span> : null}
           </div>
@@ -725,11 +742,17 @@ export function RadarMap({
       {hours.length && mode === "inline" ? (
         <div className="border-t border-border px-4 py-3 sm:px-5">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-            Next 6 hours
+            {t("next6")}
           </p>
-          <HScroll label="Next 6 hours">
+          <HScroll label={t("next6")}>
             {hours.map((h, i) => {
-              const status = hourStatus(h);
+              const status = hourStatus(
+                h,
+                t("statusRaining"),
+                t("statusOnTheWay"),
+                t("statusPossible"),
+                t("statusDry"),
+              );
               const wet = status !== "Dry";
               return (
                 <div
@@ -740,7 +763,7 @@ export function RadarMap({
                   )}
                 >
                   <p className="text-[11px] font-medium text-muted">
-                    {i === 0 ? "Now" : formatHour(h.time)}
+                    {i === 0 ? t("now") : formatHour(h.time, locale)}
                   </p>
                   <p
                     className={cn(

@@ -3,18 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { a as windLong, n as compassPoint, r as normalizeDeg } from "./compass-DEB7xUAV.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-CJOFeXbl.mjs";
+import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BTolBrM-.mjs";
 import { _n as string, mn as object, pn as number } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-CQBuJCaz.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-zuPDimL4.mjs";
-import { n as create, t as persist } from "../_libs/zustand.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-Boj0JZ5h.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BDdH4szf.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-ZlyddBD9.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -82,13 +83,14 @@ function usePageFullscreen() {
 }
 function PageFullscreenButton() {
 	const { on, toggle } = usePageFullscreen();
+	const { t } = useT();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 		type: "button",
 		variant: "ghost",
 		size: "icon",
-		"aria-label": on ? "Exit fullscreen" : "Fullscreen page",
+		"aria-label": on ? t("exitFullscreen") : t("fullscreen"),
 		"aria-pressed": on,
-		title: on ? "Exit fullscreen" : "Fullscreen",
+		title: on ? t("exitFullscreen") : t("fullscreen"),
 		onClick: () => void toggle(),
 		children: on ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Minimize2, { className: "size-4" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Maximize2, { className: "size-4" })
 	});
@@ -126,24 +128,24 @@ function formatPrecip(mm, units) {
 	}
 	return `${mm < 1 ? mm.toFixed(1) : Math.round(mm)} mm`;
 }
-function formatHour(iso) {
+function formatHour(iso, locale = "en") {
 	const d = new Date(iso);
-	return new Intl.DateTimeFormat(void 0, { hour: "numeric" }).format(d);
+	return new Intl.DateTimeFormat(localeTag(locale), { hour: "numeric" }).format(d);
 }
-function formatWeekday(iso) {
+function formatWeekday(iso, locale = "en") {
 	const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
-	return new Intl.DateTimeFormat(void 0, { weekday: "short" }).format(d);
+	return new Intl.DateTimeFormat(localeTag(locale), { weekday: "short" }).format(d);
 }
-function formatLongDate(iso) {
+function formatLongDate(iso, locale = "en") {
 	const d = new Date(iso);
-	return new Intl.DateTimeFormat(void 0, {
+	return new Intl.DateTimeFormat(localeTag(locale), {
 		weekday: "long",
 		month: "short",
 		day: "numeric"
 	}).format(d);
 }
-function formatClock(iso) {
-	return new Intl.DateTimeFormat(void 0, {
+function formatClock(iso, locale = "en") {
+	return new Intl.DateTimeFormat(localeTag(locale), {
 		hour: "numeric",
 		minute: "2-digit"
 	}).format(new Date(iso));
@@ -155,6 +157,7 @@ function placeLabel(place) {
 	return bits.join(", ");
 }
 function PlaceSearch({ onSelect, autoFocus = false }) {
+	const { t } = useT();
 	const [q, setQ] = (0, import_react.useState)("");
 	const [open, setOpen] = (0, import_react.useState)(false);
 	const rootRef = (0, import_react.useRef)(null);
@@ -181,14 +184,14 @@ function PlaceSearch({ onSelect, autoFocus = false }) {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
 				value: q,
 				autoFocus,
-				placeholder: "Search a city or place",
+				placeholder: t("searchPlaceholder"),
 				className: "pl-9 pr-9",
 				onChange: (e) => {
 					setQ(e.target.value);
 					setOpen(true);
 				},
 				onFocus: () => setOpen(true),
-				"aria-label": "Search location",
+				"aria-label": t("searchAria"),
 				autoComplete: "off"
 			}),
 			isFetching ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, { className: "absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted" }) : null,
@@ -196,7 +199,7 @@ function PlaceSearch({ onSelect, autoFocus = false }) {
 				className: "absolute z-20 mt-2 max-h-72 w-full overflow-auto rounded-xl bg-raised p-1 shadow-[var(--shadow-border)]",
 				children: results.length === 0 && !isFetching ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", {
 					className: "px-3 py-3 text-sm text-muted",
-					children: "No matching places."
+					children: t("searchEmpty")
 				}) : results.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 					type: "button",
 					className: cn("flex w-full items-start gap-2 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-surface"),
@@ -303,38 +306,27 @@ var placeInput = object({
 var listPlaces = createServerFn({ method: "GET" }).middleware([authMiddleware]).handler(createSsrRpc("081437df3557afbac2388d4b291357d3b99a142553e0e9e3a4d9a1077e1662f3"));
 var savePlace = createServerFn({ method: "POST" }).middleware([authMiddleware]).validator(placeInput).handler(createSsrRpc("f66d8b6132ae1f1dd9832b327b21c23629a045fbbc1dd13c82f07361963325b3"));
 var removePlace = createServerFn({ method: "POST" }).middleware([authMiddleware]).validator(object({ id: number().int().positive() })).handler(createSsrRpc("21ad410098f5212eb73a8072460c39308832d91ccaec66faff1ebc0abcda6bd9"));
-function samePlace(a, b) {
-	return Math.abs(a.latitude - b.latitude) < 8e-4 && Math.abs(a.longitude - b.longitude) < 8e-4;
-}
-var useWeatherStore = create()(persist((set) => ({
-	place: null,
-	units: "metric",
-	recent: [],
-	setPlace: (place) => set((state) => ({
-		place,
-		recent: [place, ...state.recent.filter((p) => !samePlace(p, place))].slice(0, 8)
-	})),
-	setUnits: (units) => set({ units }),
-	clearPlace: () => set({ place: null })
-}), { name: "vane-weather" }));
 function AppHeader({ onLocate, locating, saved, onSaved }) {
 	const { user, isPending } = useCurrentUserState();
+	const { t } = useT();
 	const place = useWeatherStore((s) => s.place);
 	const units = useWeatherStore((s) => s.units);
+	const locale = useWeatherStore((s) => s.locale);
 	const setPlace = useWeatherStore((s) => s.setPlace);
 	const setUnits = useWeatherStore((s) => s.setUnits);
+	const setLocale = useWeatherStore((s) => s.setLocale);
 	async function onSave() {
 		if (!place) return;
 		if (!user) {
-			toast("Sign in to save places");
+			toast(t("toastSignInSave"));
 			return;
 		}
 		try {
 			await savePlace({ data: place });
 			onSaved();
-			toast("Place saved");
+			toast(t("toastSaved"));
 		} catch {
-			toast("Could not save this place");
+			toast(t("toastSaveFail"));
 		}
 	}
 	const tools = /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
@@ -342,7 +334,7 @@ function AppHeader({ onLocate, locating, saved, onSaved }) {
 			type: "button",
 			variant: "ghost",
 			size: "icon",
-			"aria-label": "Use my location",
+			"aria-label": t("locateAria"),
 			onClick: onLocate,
 			disabled: locating,
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Locate, { className: cn("size-4", locating && "animate-pulse") })
@@ -352,10 +344,21 @@ function AppHeader({ onLocate, locating, saved, onSaved }) {
 			type: "button",
 			variant: "ghost",
 			size: "icon",
-			"aria-label": saved ? "Saved" : "Save this place",
+			"aria-label": saved ? t("saved") : t("savePlace"),
 			onClick: () => void onSave(),
 			disabled: !place,
 			children: saved ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookmarkCheck, { className: "size-4 text-accent" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Bookmark, { className: "size-4" })
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "flex rounded-full bg-raised p-0.5 shadow-[var(--shadow-border)]",
+			children: ["en", "fr"].map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				type: "button",
+				onClick: () => setLocale(l),
+				className: cn("h-10 min-w-8 rounded-full px-1.5 text-[11px] font-medium sm:min-w-9 sm:px-2", locale === l ? "bg-accent text-accent-fg" : "text-muted"),
+				"aria-pressed": locale === l,
+				"aria-label": l === "fr" ? "Français" : "English",
+				children: l.toUpperCase()
+			}, l))
 		}),
 		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 			className: "flex rounded-full bg-raised p-0.5 shadow-[var(--shadow-border)]",
@@ -374,7 +377,7 @@ function AppHeader({ onLocate, locating, saved, onSaved }) {
 			variant: "ghost",
 			size: "icon",
 			className: "sm:hidden",
-			"aria-label": "Sign out",
+			"aria-label": t("signOut"),
 			onClick: () => void signOut(),
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LogOut, { className: "size-4" })
 		})] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
@@ -383,10 +386,10 @@ function AppHeader({ onLocate, locating, saved, onSaved }) {
 			asChild: true,
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
 				to: "/login",
-				"aria-label": "Sign in",
+				"aria-label": t("signIn"),
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LogIn, { className: "size-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 					className: "hidden sm:inline",
-					children: "Sign in"
+					children: t("signIn")
 				})]
 			})
 		})
@@ -406,7 +409,7 @@ function AppHeader({ onLocate, locating, saved, onSaved }) {
 							children: "Vane"
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 							className: "hidden text-xs tracking-[0.14em] text-faint uppercase sm:inline",
-							children: "Rain follows the wind"
+							children: t("tagline")
 						})]
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						className: "ml-auto flex items-center gap-1 sm:hidden",
@@ -426,8 +429,9 @@ function AppHeader({ onLocate, locating, saved, onSaved }) {
 	});
 }
 function ChanceChart({ hours }) {
+	const { locale, t } = useT();
 	const data = hours.map((h, i) => ({
-		label: i === 0 ? "Now" : formatHour(h.time),
+		label: i === 0 ? t("now") : formatHour(h.time, locale),
 		vane: h.rain.chance,
 		model: h.modelChance
 	}));
@@ -437,15 +441,23 @@ function ChanceChart({ hours }) {
 			className: "mb-3 flex flex-wrap items-baseline justify-between gap-2",
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
 				className: "text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-				children: "Rain chance"
+				children: t("rainChance")
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 				className: "text-xs text-muted",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 					className: "mr-3 inline-flex items-center gap-1.5",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "size-2 rounded-full bg-rain" }), " Vane"]
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "size-2 rounded-full bg-rain" }),
+						" ",
+						t("vane")
+					]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 					className: "inline-flex items-center gap-1.5",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "size-2 rounded-full bg-accent/50" }), " Model"]
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "size-2 rounded-full bg-accent/50" }),
+						" ",
+						t("model")
+					]
 				})]
 			})]
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
@@ -690,10 +702,12 @@ function useDeviceHeading() {
 	};
 }
 function Compass({ windDir, windSpeedLabel, chance, className }) {
+	const { locale, t } = useT();
 	const wet = chance >= 35;
 	const ticks = Array.from({ length: 72 }, (_, i) => i);
 	const rainLines = Array.from({ length: 7 }, (_, i) => i - 3);
-	const from = windLong(windDir);
+	const from = fromThe(windDir, locale);
+	const fromWord = windLong(windDir, locale);
 	const point = compassPoint(windDir);
 	const { heading, status, accuracy, offer, hint, enable, disable } = useDeviceHeading();
 	const live = status === "live" && heading != null;
@@ -708,7 +722,16 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 				viewBox: "0 0 240 240",
 				className: "size-full",
 				role: "img",
-				"aria-label": live ? `You are facing ${facing}. Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.` : `Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`,
+				"aria-label": live ? t("compassLive", {
+					facing: facing ?? "",
+					from,
+					speed: windSpeedLabel,
+					chance
+				}) : t("compassStatic", {
+					from,
+					speed: windSpeedLabel,
+					chance
+				}),
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("defs", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("radialGradient", {
 						id: "vane-disc",
@@ -801,6 +824,7 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 								"S",
 								"W"
 							].map((label, i) => {
+								const shown = locale === "fr" && label === "W" ? "O" : label;
 								const a = (i * 90 - 90) * Math.PI / 180;
 								const r = 66;
 								const x = 120 + r * Math.cos(a);
@@ -815,7 +839,7 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 									fontWeight: "600",
 									letterSpacing: "0.08em",
 									transform: live ? `rotate(${hdg} ${x} ${y})` : void 0,
-									children: label
+									children: shown
 								}, label);
 							}),
 							wet ? rainLines.map((offset) => {
@@ -876,17 +900,17 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 					})]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-					children: "rain"
+					children: t("rainWord")
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "mt-3 flex items-end justify-between gap-3 text-sm",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "text-[11px] font-medium uppercase tracking-[0.14em] text-faint",
-					children: "From"
+					children: t("from")
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "font-medium capitalize text-fg",
-					children: from
+					children: fromWord
 				})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "text-right",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
@@ -902,23 +926,23 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 				className: "mt-3 flex items-center justify-between gap-2",
 				children: status === "live" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "text-xs text-muted",
-					children: hint === "calibrate" || uncalibrated ? "Wave the phone in a figure-8" : hint === "settings" ? "Safari Settings → Motion & Orientation Access" : hint === "move" ? "Turn the phone to lock north" : live ? `Facing ${facing}` : "Finding north…"
+					children: hint === "calibrate" || uncalibrated ? t("wavePhone") : hint === "settings" ? t("safariMotion") : hint === "move" ? t("turnPhone") : live ? t("facing", { dir: facing ?? "" }) : t("findingNorth")
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 					type: "button",
 					size: "sm",
 					variant: "ghost",
 					onClick: disable,
-					children: "North up"
+					children: t("northUp")
 				})] }) : status === "denied" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "text-xs text-muted",
-					children: "Compass permission is off"
+					children: t("compassDenied")
 				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 					type: "button",
 					size: "sm",
 					variant: "secondary",
 					className: "w-full",
 					onClick: () => void enable(),
-					children: "Use phone compass"
+					children: t("useCompass")
 				})
 			}) : null
 		]
@@ -936,19 +960,19 @@ function polar(cx, cy, r, deg) {
 		y: cy + r * Math.sin(a)
 	};
 }
-function weatherLabel(code) {
-	if (code === 0) return "Clear";
-	if (code === 1) return "Mostly clear";
-	if (code === 2) return "Partly cloudy";
-	if (code === 3) return "Overcast";
-	if (code === 45 || code === 48) return "Fog";
-	if (code >= 51 && code <= 57) return "Drizzle";
-	if (code >= 61 && code <= 67) return "Rain";
-	if (code >= 71 && code <= 77) return "Snow";
-	if (code >= 80 && code <= 82) return "Showers";
-	if (code === 85 || code === 86) return "Snow showers";
-	if (code >= 95) return "Thunderstorm";
-	return "Mixed skies";
+function weatherLabel(code, locale = "en") {
+	if (code === 0) return t(locale, "wx0");
+	if (code === 1) return t(locale, "wx1");
+	if (code === 2) return t(locale, "wx2");
+	if (code === 3) return t(locale, "wx3");
+	if (code === 45 || code === 48) return t(locale, "wx45");
+	if (code >= 51 && code <= 57) return t(locale, "wx51");
+	if (code >= 61 && code <= 67) return t(locale, "wx61");
+	if (code >= 71 && code <= 77) return t(locale, "wx71");
+	if (code >= 80 && code <= 82) return t(locale, "wx80");
+	if (code === 85 || code === 86) return t(locale, "wx85");
+	if (code >= 95) return t(locale, "wx95");
+	return t(locale, "wxMix");
 }
 function weatherIcon(code, isDay) {
 	if (code === 0) return isDay ? Sun : Moon;
@@ -964,37 +988,38 @@ function weatherIcon(code, isDay) {
 	return Cloud;
 }
 function CurrentPanel({ forecast, units }) {
+	const { locale, t } = useT();
 	const { current, place } = forecast;
 	const Icon = weatherIcon(current.weatherCode, current.isDay);
 	const stats = [
 		{
 			icon: Thermometer,
-			label: "Feels like",
+			label: t("feelsLike"),
 			value: formatTemp(current.apparentC, units)
 		},
 		{
 			icon: Droplets,
-			label: "Humidity",
+			label: t("humidity"),
 			value: `${Math.round(current.humidity)}%`
 		},
 		{
 			icon: Eye,
-			label: "Dewpoint",
+			label: t("dewpoint"),
 			value: formatTemp(current.dewpointC, units)
 		},
 		{
 			icon: Gauge,
-			label: "Pressure",
+			label: t("pressure"),
 			value: `${Math.round(current.pressureHpa)} hPa`
 		},
 		{
 			icon: Wind,
-			label: "Gusts",
+			label: t("gusts"),
 			value: formatSpeed(current.windGustKmh, units)
 		},
 		{
 			icon: Droplets,
-			label: "Precip now",
+			label: t("precipNow"),
 			value: formatPrecip(current.precipitationMm, units)
 		}
 	];
@@ -1007,7 +1032,7 @@ function CurrentPanel({ forecast, units }) {
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "mt-1 text-sm text-muted",
-				children: formatLongDate(current.time)
+				children: formatLongDate(current.time, locale)
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "mt-4 flex flex-wrap items-end gap-3 sm:gap-4",
@@ -1021,7 +1046,7 @@ function CurrentPanel({ forecast, units }) {
 					className: "mb-1 flex items-center gap-2 text-muted",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, { className: "size-5 sm:size-6" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 						className: "text-sm",
-						children: weatherLabel(current.weatherCode)
+						children: weatherLabel(current.weatherCode, locale)
 					})]
 				})]
 			}),
@@ -1061,11 +1086,12 @@ function WindArrow({ deg, className, wet = false }) {
 	});
 }
 function DailyList({ days, units }) {
+	const { locale, t } = useT();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		className: "min-w-0 rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
 			className: "mb-3 text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-			children: "Seven-day outlook"
+			children: t("sevenDay")
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
 			className: "divide-y divide-border",
 			children: days.map((d, i) => {
@@ -1076,23 +1102,20 @@ function DailyList({ days, units }) {
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "truncate text-sm font-medium text-fg",
-							children: i === 0 ? "Today" : formatWeekday(d.date)
+							children: i === 0 ? t("today") : formatWeekday(d.date, locale)
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, { className: "hidden size-4 text-muted sm:block" }),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							className: "min-w-0",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "truncate text-sm text-muted",
-								children: weatherLabel(d.weatherCode)
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+								children: weatherLabel(d.weatherCode, locale)
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "mt-0.5 hidden text-xs text-faint sm:block",
-								children: [
-									"Peak rain ",
-									d.rain.chance,
-									"% · ",
-									compassPoint(d.windDir),
-									" fetch"
-								]
+								children: t("peakRain", {
+									chance: d.rain.chance,
+									dir: compassPoint(d.windDir)
+								})
 							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -1125,7 +1148,11 @@ function DailyList({ days, units }) {
 								})]
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 								className: cn("mt-0.5 text-xs tabular-nums sm:hidden", wet ? "text-rain" : "text-muted"),
-								children: [d.rain.chance, "%"]
+								children: [
+									d.rain.chance,
+									"% · ",
+									formatPrecip(d.precipMm, units)
+								]
 							})]
 						})
 					]
@@ -1298,19 +1325,20 @@ function HScroll({ children, className, contentClassName, label = "More items", 
 	});
 }
 function HourlyStrip({ hours, units }) {
+	const { locale, t } = useT();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		className: "min-w-0 overflow-hidden rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 			className: "mb-3 flex items-baseline justify-between gap-2",
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
 				className: "text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-				children: "Next 24 hours"
+				children: t("next24")
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "text-xs text-muted",
-				children: "Swipe or drag"
+				children: t("swipeOrDrag")
 			})]
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HScroll, {
-			label: "Next 24 hours",
+			label: t("next24"),
 			children: hours.map((h, i) => {
 				const wet = h.rain.chance >= 40;
 				return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -1318,7 +1346,7 @@ function HourlyStrip({ hours, units }) {
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "text-[11px] font-medium text-muted",
-							children: i === 0 ? "Now" : formatHour(h.time)
+							children: i === 0 ? t("now") : formatHour(h.time, locale)
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(WindArrow, {
 							deg: h.windDir,
@@ -1430,11 +1458,11 @@ function loadImg(src) {
 	imgCache.set(src, pending);
 	return pending;
 }
-function hourStatus(h) {
-	if (h.hereMm >= .15) return "Raining";
-	if (h.arriving || h.fetchMm >= .12) return "On the way";
-	if (h.chance >= 45) return "Possible";
-	return "Dry";
+function hourStatus(h, raining, onTheWay, possible, dry) {
+	if (h.hereMm >= .15) return raining;
+	if (h.arriving || h.fetchMm >= .12) return onTheWay;
+	if (h.chance >= 45) return possible;
+	return dry;
 }
 function hash2(x, y) {
 	const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
@@ -1545,6 +1573,7 @@ function composeRadar(args) {
 	return off;
 }
 function RadarMap({ forecast, units }) {
+	const { locale, t } = useT();
 	const { place, current } = forecast;
 	const canvasRef = (0, import_react.useRef)(null);
 	const wrapRef = (0, import_react.useRef)(null);
@@ -1776,13 +1805,22 @@ function RadarMap({ forecast, units }) {
 		size.h,
 		frames
 	]);
-	const stamp = active ? new Intl.DateTimeFormat(void 0, {
+	const stamp = active ? new Intl.DateTimeFormat(localeTag(locale), {
 		hour: "numeric",
 		minute: "2-digit"
 	}).format(/* @__PURE__ */ new Date(active.time * 1e3)) : "—";
-	const from = windLong(current.windDir);
-	const headline = arrival ? arrival.minutes === 0 ? "Raining here now" : `Rain ${arrival.label}` : nowcast?.hours?.length ? "No rain headed this way" : `Watch the ${from}`;
-	const copy = arrival?.copy ?? `Wind is from the ${from}. Past 2 hours is live radar; the next 6 hours is a model forecast on the same map.`;
+	const from = fromThe(current.windDir, locale);
+	const fromWord = windLong(current.windDir, locale);
+	const etaLabel = arrival ? formatEta(arrival.minutes, locale) : "";
+	const headline = arrival ? arrival.minutes === 0 ? t("rainingNow") : t("rainEta", { label: etaLabel }) : nowcast?.hours?.length ? t("noRainHeaded") : t("watchThe", { from });
+	const copy = arrival ? arrivalCopy({
+		minutes: arrival.minutes,
+		km: arrival.km,
+		windDir: current.windDir,
+		windSpeedKmh: current.windSpeedKmh,
+		rainingHere: arrival.minutes === 0,
+		locale
+	}) : t("radarCopy", { from });
 	function closeView() {
 		if (document.fullscreenElement) document.exitFullscreen();
 		setMode("inline");
@@ -1797,7 +1835,7 @@ function RadarMap({ forecast, units }) {
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 							className: "flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Radar, { className: "size-3.5" }), "Rain radar"]
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Radar, { className: "size-3.5" }), t("radar")]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
 							className: "mt-1 font-display text-xl font-medium leading-tight text-fg",
@@ -1817,9 +1855,9 @@ function RadarMap({ forecast, units }) {
 							wet: (arrival?.precipMm ?? current.rain.chance) > 40
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							className: "min-w-0",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "text-xs font-medium text-fg",
-								children: ["From the ", from]
+								children: t("fromThe", { from: fromWord })
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "text-[11px] text-muted",
 								children: formatSpeed(current.windSpeedKmh, units)
@@ -1831,8 +1869,8 @@ function RadarMap({ forecast, units }) {
 						variant: "secondary",
 						className: "size-9",
 						onClick: () => setMode("page"),
-						"aria-label": "Fill page",
-						title: "Fill page",
+						"aria-label": t("fillPage"),
+						title: t("fillPage"),
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Maximize2, { className: "size-4" })
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 						type: "button",
@@ -1840,8 +1878,8 @@ function RadarMap({ forecast, units }) {
 						variant: "secondary",
 						className: "size-9",
 						onClick: () => setMode("os"),
-						"aria-label": "Fullscreen",
-						title: "Fullscreen",
+						"aria-label": t("fullscreen"),
+						title: t("fullscreen"),
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Expand, { className: "size-4" })
 					})] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [mode === "page" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 						type: "button",
@@ -1858,7 +1896,7 @@ function RadarMap({ forecast, units }) {
 						variant: "secondary",
 						className: "size-9",
 						onClick: closeView,
-						"aria-label": "Close",
+						"aria-label": t("close"),
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { className: "size-4" })
 					})] })]
 				})]
@@ -1871,12 +1909,12 @@ function RadarMap({ forecast, units }) {
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("canvas", {
 						ref: canvasRef,
 						className: "block h-full w-full",
-						"aria-label": `Precipitation radar for ${place.name}`
+						"aria-label": t("radarAria", { name: place.name })
 					}),
 					!ready && !catalogQuery.isError ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "absolute inset-0 animate-pulse bg-raised" }) : null,
 					catalogQuery.isError && !frames.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted",
-						children: "Radar is unavailable right now. The hourly estimate below still uses wind and the forecast model."
+						children: t("radarUnavailable")
 					}) : null,
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "pointer-events-none absolute left-3 top-3 flex flex-col gap-1",
@@ -1885,7 +1923,7 @@ function RadarMap({ forecast, units }) {
 							children: place.name
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: cn("rounded-md px-2 py-1 text-[11px] font-medium backdrop-blur-sm", isForecast ? "bg-accent text-accent-fg" : "bg-bg/75 text-muted"),
-							children: isForecast ? `Forecast · ${stamp}` : stamp
+							children: isForecast ? t("forecastStamp", { stamp }) : stamp
 						})]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -1897,7 +1935,7 @@ function RadarMap({ forecast, units }) {
 							className: "size-9",
 							disabled: zoom <= MIN_Z,
 							onClick: () => setZoom((z) => Math.max(MIN_Z, z - 1)),
-							"aria-label": "Zoom out",
+							"aria-label": t("zoomOut"),
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Minus, { className: "size-4" })
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 							type: "button",
@@ -1906,13 +1944,13 @@ function RadarMap({ forecast, units }) {
 							className: "size-9",
 							disabled: zoom >= MAX_Z,
 							onClick: () => setZoom((z) => Math.min(MAX_Z, z + 1)),
-							"aria-label": "Zoom in",
+							"aria-label": t("zoomIn"),
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { className: "size-4" })
 						})]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "pointer-events-none absolute bottom-3 right-3 rounded-md bg-bg/75 px-2 py-1 text-[11px] text-muted backdrop-blur-sm",
-						children: "You are here · dashed line is wind"
+						children: t("youAreHere")
 					})
 				]
 			}),
@@ -1923,7 +1961,7 @@ function RadarMap({ forecast, units }) {
 					variant: "secondary",
 					className: "shrink-0 px-3",
 					onClick: () => setPlaying((p) => !p),
-					children: [playing ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pause, { className: "size-4" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Play, { className: "size-4" }), playing ? "Pause" : "Play"]
+					children: [playing ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pause, { className: "size-4" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Play, { className: "size-4" }), playing ? t("pause") : t("play")]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "min-w-0 flex-1",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -1939,7 +1977,7 @@ function RadarMap({ forecast, units }) {
 								setFrame(Number(e.target.value));
 							},
 							className: "h-2 w-full accent-rain",
-							"aria-label": "Radar time, 30 minute steps"
+							"aria-label": t("radarTimeAria")
 						}), frames.length > 1 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 							className: "pointer-events-none absolute top-0 h-2 w-px bg-fg/70",
 							style: { left: `${nowIdx / Math.max(1, frames.length - 1) * 100}%` },
@@ -1955,7 +1993,7 @@ function RadarMap({ forecast, units }) {
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute -translate-x-1/2 text-muted",
 								style: { left: `${frames.length > 1 ? nowIdx / (frames.length - 1) * 100 : 50}%` },
-								children: "Now"
+								children: t("now")
 							}),
 							hasForecast ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute right-0",
@@ -1969,18 +2007,18 @@ function RadarMap({ forecast, units }) {
 				className: "border-t border-border px-4 py-3 sm:px-5",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-					children: "Next 6 hours"
+					children: t("next6")
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HScroll, {
-					label: "Next 6 hours",
+					label: t("next6"),
 					children: hours.map((h, i) => {
-						const status = hourStatus(h);
+						const status = hourStatus(h, t("statusRaining"), t("statusOnTheWay"), t("statusPossible"), t("statusDry"));
 						const wet = status !== "Dry";
 						return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							className: cn("flex w-[4.6rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1 py-2", i === 0 ? "bg-raised" : ""),
 							children: [
 								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 									className: "text-[11px] font-medium text-muted",
-									children: i === 0 ? "Now" : formatHour(h.time)
+									children: i === 0 ? t("now") : formatHour(h.time, locale)
 								}),
 								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 									className: cn("text-sm font-medium tabular-nums", wet ? "text-rain" : "text-fg"),
@@ -2020,9 +2058,25 @@ function Badge({ className, variant, ...props }) {
 	});
 }
 function RainBrief({ forecast }) {
-	const { current, nextRain, windShift } = forecast;
-	const rain = current.rain;
+	const { locale, t } = useT();
+	const { current, nextRain, windShift, place } = forecast;
+	const rain = (0, import_react.useMemo)(() => estimateRain({
+		modelProb: current.rain.modelChance,
+		rh: current.humidity,
+		tempC: current.temperatureC,
+		dewpointC: current.dewpointC,
+		windDir: current.windDir,
+		windSpeedKmh: current.windSpeedKmh,
+		cloudCover: current.cloudCover,
+		latitude: place.latitude,
+		locale
+	}), [
+		current,
+		place.latitude,
+		locale
+	]);
 	const tone = rain.chance >= 60 ? "wet" : rain.chance >= 30 ? "maybe" : "dry";
+	const from = fromThe(current.windDir, locale);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		className: "min-w-0 rounded-2xl bg-surface p-4 shadow-[var(--shadow-border)] sm:p-5",
 		children: [
@@ -2032,15 +2086,15 @@ function RainBrief({ forecast }) {
 					className: "min-w-0",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-						children: "Vane estimate"
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", {
+						children: t("estimate")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
 						className: "mt-1 font-display text-xl font-medium leading-tight text-fg sm:text-2xl",
-						children: ["Rain arriving from the ", rain.arrival]
+						children: t("rainFrom", { from })
 					})]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
 					className: "shrink-0",
 					variant: tone === "wet" ? "rain" : tone === "maybe" ? "warn" : "default",
-					children: tone === "wet" ? "Likely" : tone === "maybe" ? "Watch" : "Quiet"
+					children: tone === "wet" ? t("likely") : tone === "maybe" ? t("watch") : t("quiet")
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
@@ -2053,58 +2107,47 @@ function RainBrief({ forecast }) {
 					className: "flex items-start gap-2 rounded-xl bg-raised px-3 py-3",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CloudRain, { className: "mt-0.5 size-4 text-rain" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm font-medium text-fg",
-						children: "Next wet window"
+						children: t("nextWet")
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 						className: "text-sm text-muted",
 						children: [
-							formatClock(nextRain.time),
+							formatClock(nextRain.time, locale),
 							" · ",
 							nextRain.rain.chance,
-							"% from the",
-							" ",
-							nextRain.rain.arrival
+							"% ",
+							fromThe(nextRain.windDir, locale)
 						]
 					})] })]
 				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "flex items-start gap-2 rounded-xl bg-raised px-3 py-3",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CloudRain, { className: "mt-0.5 size-4 text-muted" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm font-medium text-fg",
-						children: "Next 24 hours"
+						children: t("next24short")
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm text-muted",
-						children: "No wet window on this fetch."
+						children: t("nextWetNone")
 					})] })]
 				}), windShift ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "flex items-start gap-2 rounded-xl bg-raised px-3 py-3",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Info, { className: "mt-0.5 size-4 text-accent" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm font-medium text-fg",
-						children: "Wind shift"
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						children: t("windShift")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm text-muted",
-						children: [
-							"Backing from the ",
-							windLong(windShift.from),
-							" toward the",
-							" ",
-							windLong(windShift.to),
-							" in about ",
-							windShift.hours,
-							"h. A front may be nearby."
-						]
+						children: t("windShiftCopy", {
+							from: fromThe(windShift.from, locale),
+							to: fromThe(windShift.to, locale),
+							hours: windShift.hours
+						})
 					})] })]
 				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "flex items-start gap-2 rounded-xl bg-raised px-3 py-3",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Info, { className: "mt-0.5 size-4 text-accent" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm font-medium text-fg",
-						children: "Steady fetch"
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						children: t("steadyFetch")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm text-muted",
-						children: [
-							"Direction holds. Rain will keep arriving from the ",
-							rain.arrival,
-							" ",
-							"if it develops."
-						]
+						children: t("steadyCopy", { from })
 					})] })]
 				})]
 			}),
@@ -2138,9 +2181,10 @@ function RainBrief({ forecast }) {
 	});
 }
 function SavedRow({ places, recent, onPick, onRemove }) {
+	const { t } = useT();
 	if (places.length === 0 && recent.length === 0) return null;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(HScroll, {
-		label: "Saved places",
+		label: t("savedPlaces"),
 		fadeFrom: "from-bg",
 		contentClassName: "gap-2 px-1",
 		children: [places.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
@@ -2153,7 +2197,7 @@ function SavedRow({ places, recent, onPick, onRemove }) {
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 				type: "button",
 				className: "grid size-7 place-items-center rounded-full text-faint hover:text-fg",
-				"aria-label": `Remove ${p.name}`,
+				"aria-label": t("removePlace", { name: p.name }),
 				onClick: () => onRemove(p.id),
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { className: "size-3" })
 			})]
@@ -2246,7 +2290,7 @@ function isInAppBrowser() {
 }
 function wrap(err) {
 	const code = err && typeof err === "object" && "code" in err ? Number(err.code) : 0;
-	if (isInAppBrowser()) return new GeoError("Open this page in Safari (not in-app), then tap locate.", "unavailable");
+	if (isInAppBrowser()) return new GeoError("Open this page in Safari (not in-app), then tap locate.", "inapp");
 	if (code === 1) return new GeoError("Location is blocked. iPhone: Settings → Privacy & Security → Location Services → Safari Websites → Allow, then reload.", "denied");
 	if (code === 3) return new GeoError("Location timed out. Turn on Location Services / Wi-Fi and try again.", "timeout");
 	return new GeoError("Could not read your location. Check Location Services is on for Safari.", "unavailable");
@@ -2303,6 +2347,7 @@ function readDevicePosition() {
 }
 function ForecastApp() {
 	const { user } = useCurrentUserState();
+	const { t } = useT();
 	const place = useWeatherStore((s) => s.place);
 	const units = useWeatherStore((s) => s.units);
 	const recent = useWeatherStore((s) => s.recent);
@@ -2329,17 +2374,18 @@ function ForecastApp() {
 	const savedPlaces = savedQuery.data ?? [];
 	const saved = Boolean(active) && savedPlaces.some((p) => Math.abs(p.latitude - active.latitude) < 8e-4 && Math.abs(p.longitude - active.longitude) < 8e-4);
 	function locate() {
-		if (isAppleTouch()) toast("Safari will ask for location — tap Allow at the top.");
+		if (isAppleTouch()) toast(t("toastLocateAllow"));
 		setLocating(true);
 		readDevicePosition().then((pos) => reversePlace({ data: {
 			latitude: pos.coords.latitude,
 			longitude: pos.coords.longitude
 		} }).then(setPlace).catch(() => setPlace({
-			name: "Your location",
+			name: t("yourLocation"),
 			latitude: pos.coords.latitude,
 			longitude: pos.coords.longitude
 		}))).catch((err) => {
-			toast(err instanceof GeoError ? err.message : "Could not read your location");
+			const kind = err instanceof GeoError ? err.kind : "unavailable";
+			toast(t(kind === "missing" ? "geoMissing" : kind === "denied" ? "geoDenied" : kind === "timeout" ? "geoTimeout" : kind === "inapp" ? "geoInApp" : "geoUnavailable"));
 		}).finally(() => setLocating(false));
 	}
 	async function onRemove(id) {
@@ -2347,7 +2393,7 @@ function ForecastApp() {
 			await removePlace({ data: { id } });
 			await savedQuery.refetch();
 		} catch {
-			toast("Could not remove that place");
+			toast(t("toastRemoveFail"));
 		}
 	}
 	const forecast = forecastQuery.data;
@@ -2375,7 +2421,7 @@ function ForecastApp() {
 				locating
 			}) : isLoading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, {}) : forecastQuery.isError ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
 				onRetry: () => void forecastQuery.refetch(),
-				message: forecastQuery.error instanceof Error ? forecastQuery.error.message : "Could not load the forecast."
+				message: forecastQuery.error instanceof Error ? forecastQuery.error.message : t("loadFail")
 			}) : forecast ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]",
 				children: [
@@ -2418,6 +2464,7 @@ function ForecastApp() {
 	});
 }
 function EmptyState({ onPick, onLocate, locating }) {
+	const { t } = useT();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "mx-auto max-w-xl py-4 text-center sm:py-12",
 		children: [
@@ -2427,7 +2474,7 @@ function EmptyState({ onPick, onLocate, locating }) {
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "mt-3 text-sm text-muted sm:text-base",
-				children: "Rain follows the wind. Search a place and the compass shows the bearing moisture is arriving from — then estimates rain from that fetch."
+				children: t("emptyLead")
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				className: "mt-6 hidden text-left sm:block",
@@ -2440,11 +2487,11 @@ function EmptyState({ onPick, onLocate, locating }) {
 				type: "button",
 				onClick: onLocate,
 				className: "mt-4 h-11 text-sm font-medium text-accent hover:underline",
-				children: locating ? "Locating…" : "Use my location"
+				children: locating ? t("locating") : t("locate")
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "mt-8 mb-3 text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-				children: "Try a city"
+				children: t("tryACity")
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SampleCities, { onPick }),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(HowItWorks, { compact: true })
@@ -2463,12 +2510,13 @@ function LoadingState() {
 	});
 }
 function ErrorState({ onRetry, message }) {
+	const { t } = useT();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "mx-auto max-w-md py-16 text-center",
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
 				className: "font-display text-2xl font-medium",
-				children: "Forecast unavailable"
+				children: t("forecastUnavailable")
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "mt-2 text-sm text-muted",
@@ -2478,20 +2526,21 @@ function ErrorState({ onRetry, message }) {
 				type: "button",
 				onClick: onRetry,
 				className: "mt-5 h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-fg",
-				children: "Try again"
+				children: t("tryAgain")
 			})
 		]
 	});
 }
 function HowItWorks({ compact = false }) {
+	const { t } = useT();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		className: compact ? "mt-8 text-left text-sm text-muted sm:mt-12" : "rounded-2xl bg-surface p-4 text-sm text-muted shadow-[var(--shadow-border)] sm:p-5 lg:col-span-2",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
 			className: "text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-			children: "How the estimate works"
+			children: t("howTitle")
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 			className: "mt-2 leading-relaxed",
-			children: "Weather vanes point into the wind — the direction rain is carried from. Vane blends the forecast model’s precipitation probability with how saturated the air is, how much cloud is overhead, and whether the wind is a moist equatorward fetch (southerly in the north, northerly in the south). Radar shows live rain. The dashed line is the wind — rain would be blown in from that direction. The six-hour strip times those cells against wind speed. The compass is the rain bearing. The percentage is that blend, not a guarantee."
+			children: t("howBody")
 		})]
 	});
 }

@@ -1,6 +1,7 @@
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 
 type FsNode = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -92,14 +93,15 @@ export function usePageFullscreen() {
 
 export function PageFullscreenButton() {
   const { on, toggle } = usePageFullscreen();
+  const { t } = useT();
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon"
-      aria-label={on ? "Exit fullscreen" : "Fullscreen page"}
+      aria-label={on ? t("exitFullscreen") : t("fullscreen")}
       aria-pressed={on}
-      title={on ? "Exit fullscreen" : "Fullscreen"}
+      title={on ? t("exitFullscreen") : t("fullscreen")}
       onClick={() => void toggle()}
     >
       {on ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}

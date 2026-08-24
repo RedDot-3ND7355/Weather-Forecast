@@ -7,8 +7,9 @@ import { PlaceSearch } from "@/components/place-search";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { UserButton } from "@/lib/auth/gates";
 import { signOut } from "@/lib/auth/client";
+import { useT } from "@/lib/i18n";
 import { savePlace } from "@/lib/places";
-import { useWeatherStore } from "@/lib/store";
+import { useWeatherStore, type Locale } from "@/lib/store";
 import type { Place } from "@/lib/weather/types";
 import { cn } from "@/lib/utils";
 
@@ -24,23 +25,26 @@ export function AppHeader({
   onSaved: () => void;
 }) {
   const { user, isPending } = useCurrentUserState();
+  const { t } = useT();
   const place = useWeatherStore((s) => s.place);
   const units = useWeatherStore((s) => s.units);
+  const locale = useWeatherStore((s) => s.locale);
   const setPlace = useWeatherStore((s) => s.setPlace);
   const setUnits = useWeatherStore((s) => s.setUnits);
+  const setLocale = useWeatherStore((s) => s.setLocale);
 
   async function onSave() {
     if (!place) return;
     if (!user) {
-      toast("Sign in to save places");
+      toast(t("toastSignInSave"));
       return;
     }
     try {
       await savePlace({ data: place });
       onSaved();
-      toast("Place saved");
+      toast(t("toastSaved"));
     } catch {
-      toast("Could not save this place");
+      toast(t("toastSaveFail"));
     }
   }
 
@@ -50,7 +54,7 @@ export function AppHeader({
         type="button"
         variant="ghost"
         size="icon"
-        aria-label="Use my location"
+        aria-label={t("locateAria")}
         onClick={onLocate}
         disabled={locating}
       >
@@ -61,7 +65,7 @@ export function AppHeader({
         type="button"
         variant="ghost"
         size="icon"
-        aria-label={saved ? "Saved" : "Save this place"}
+        aria-label={saved ? t("saved") : t("savePlace")}
         onClick={() => void onSave()}
         disabled={!place}
       >
@@ -71,6 +75,23 @@ export function AppHeader({
           <Bookmark className="size-4" />
         )}
       </Button>
+      <div className="flex rounded-full bg-raised p-0.5 shadow-[var(--shadow-border)]">
+        {(["en", "fr"] as const).map((l: Locale) => (
+          <button
+            key={l}
+            type="button"
+            onClick={() => setLocale(l)}
+            className={cn(
+              "h-10 min-w-8 rounded-full px-1.5 text-[11px] font-medium sm:min-w-9 sm:px-2",
+              locale === l ? "bg-accent text-accent-fg" : "text-muted",
+            )}
+            aria-pressed={locale === l}
+            aria-label={l === "fr" ? "Français" : "English"}
+          >
+            {l.toUpperCase()}
+          </button>
+        ))}
+      </div>
       <div className="flex rounded-full bg-raised p-0.5 shadow-[var(--shadow-border)]">
         {(["metric", "imperial"] as const).map((u) => (
           <button
@@ -98,7 +119,7 @@ export function AppHeader({
             variant="ghost"
             size="icon"
             className="sm:hidden"
-            aria-label="Sign out"
+            aria-label={t("signOut")}
             onClick={() => void signOut()}
           >
             <LogOut className="size-4" />
@@ -106,9 +127,9 @@ export function AppHeader({
         </>
       ) : (
         <Button variant="secondary" size="sm" asChild>
-          <Link to="/login" aria-label="Sign in">
+          <Link to="/login" aria-label={t("signIn")}>
             <LogIn className="size-4" />
-            <span className="hidden sm:inline">Sign in</span>
+            <span className="hidden sm:inline">{t("signIn")}</span>
           </Link>
         </Button>
       )}
@@ -124,7 +145,7 @@ export function AppHeader({
               Vane
             </span>
             <span className="hidden text-xs tracking-[0.14em] text-faint uppercase sm:inline">
-              Rain follows the wind
+              {t("tagline")}
             </span>
           </Link>
           <div className="ml-auto flex items-center gap-1 sm:hidden">{tools}</div>

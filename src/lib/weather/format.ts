@@ -1,3 +1,4 @@
+import { localeTag, type Locale } from "@/lib/i18n";
 import type { Units } from "./types";
 
 export function formatTemp(c: number, units: Units): string {
@@ -28,27 +29,27 @@ export function formatPrecip(mm: number, units: Units): string {
   return `${mm < 1 ? mm.toFixed(1) : Math.round(mm)} mm`;
 }
 
-export function formatHour(iso: string): string {
+export function formatHour(iso: string, locale: Locale = "en"): string {
   const d = new Date(iso);
-  return new Intl.DateTimeFormat(undefined, { hour: "numeric" }).format(d);
+  return new Intl.DateTimeFormat(localeTag(locale), { hour: "numeric" }).format(d);
 }
 
-export function formatWeekday(iso: string): string {
+export function formatWeekday(iso: string, locale: Locale = "en"): string {
   const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
-  return new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(d);
+  return new Intl.DateTimeFormat(localeTag(locale), { weekday: "short" }).format(d);
 }
 
-export function formatLongDate(iso: string): string {
+export function formatLongDate(iso: string, locale: Locale = "en"): string {
   const d = new Date(iso);
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(localeTag(locale), {
     weekday: "long",
     month: "short",
     day: "numeric",
   }).format(d);
 }
 
-export function formatClock(iso: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+export function formatClock(iso: string, locale: Locale = "en"): string {
+  return new Intl.DateTimeFormat(localeTag(locale), {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(iso));

@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
@@ -23,6 +24,7 @@ function brokerHost(): boolean {
 }
 
 function Login() {
+  const { t } = useT();
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +47,8 @@ function Login() {
       const message = showBroker
         ? err instanceof Error
           ? err.message
-          : "Sign-in failed. Try again."
-        : "Google and X are not available on this host. Use email instead.";
+          : t("signInFail")
+        : t("socialUnavailable");
       setError(message);
       toast(message);
     } finally {
@@ -71,7 +73,7 @@ function Login() {
               password,
             });
       if (result.error) {
-        const message = result.error.message || "Sign-in failed. Try again.";
+        const message = result.error.message || t("signInFail");
         setError(message);
         toast(message);
         return;
@@ -79,7 +81,7 @@ function Login() {
       await navigate({ to: "/" });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Sign-in failed. Try again.";
+        err instanceof Error ? err.message : t("signInFail");
       setError(message);
       toast(message);
     } finally {
@@ -97,7 +99,7 @@ function Login() {
             Vane
           </span>
           <span className="mt-1 text-sm text-muted">
-            Sign in to save places and their rain bearings.
+            {t("loginLead")}
           </span>
         </Link>
 
@@ -108,7 +110,7 @@ function Login() {
                 {mode === "signup" ? (
                   <Input
                     autoComplete="name"
-                    placeholder="Name"
+                    placeholder={t("name")}
                     value={name}
                     onChange={(ev) => setName(ev.target.value)}
                   />
@@ -117,7 +119,7 @@ function Login() {
                   type="email"
                   autoComplete="email"
                   required
-                  placeholder="Email"
+                  placeholder={t("email")}
                   value={email}
                   onChange={(ev) => setEmail(ev.target.value)}
                 />
@@ -126,7 +128,7 @@ function Login() {
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   required
                   minLength={8}
-                  placeholder="Password"
+                  placeholder={t("password")}
                   value={password}
                   onChange={(ev) => setPassword(ev.target.value)}
                 />
@@ -136,10 +138,10 @@ function Login() {
                   disabled={busy !== null}
                 >
                   {busy === "email"
-                    ? "Working…"
+                    ? t("working")
                     : mode === "signup"
-                      ? "Create account"
-                      : "Sign in"}
+                      ? t("createAccount")
+                      : t("signIn")}
                 </Button>
               </form>
               <button
@@ -151,14 +153,14 @@ function Login() {
                 }}
               >
                 {mode === "signup"
-                  ? "Already have an account? Sign in"
-                  : "Need an account? Create one"}
+                  ? t("haveAccount")
+                  : t("needAccount")}
               </button>
               {showBroker ? (
                 <>
                   <div className="flex items-center gap-3 pt-1">
                     <span className="h-px flex-1 bg-raised" />
-                    <span className="text-[11px] uppercase tracking-wide text-faint">or</span>
+                    <span className="text-[11px] uppercase tracking-wide text-faint">{t("or")}</span>
                     <span className="h-px flex-1 bg-raised" />
                   </div>
                   {GROK_PROVIDERS.map((p) => (
@@ -171,7 +173,7 @@ function Login() {
                       onClick={() => void onSocial(p.providerId)}
                     >
                       {p.label === "Google" ? <GoogleMark /> : <XMark />}
-                      {busy === p.providerId ? "Opening…" : `Continue with ${p.label}`}
+                      {busy === p.providerId ? t("opening") : t("continueWith", { label: p.label })}
                     </Button>
                   ))}
                 </>
@@ -183,19 +185,19 @@ function Login() {
               ) : (
                 <p className="pt-1 text-xs text-faint">
                   {showBroker
-                    ? "Allow pop-ups for this site."
-                    : "Use email on this host. Google and X are not available here."}
+                    ? t("allowPopups")
+                    : t("emailOnly")}
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted">Sign-in is disabled.</p>
+            <p className="text-sm text-muted">{t("signInDisabled")}</p>
           )}
         </div>
 
         <p className="mt-6 text-center">
           <Link to="/" className="text-sm text-muted hover:text-fg">
-            Continue without an account
+            {t("continueGuest")}
           </Link>
         </p>
       </div>

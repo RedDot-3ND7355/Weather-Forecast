@@ -1,5 +1,6 @@
-import { compassPoint, windLong } from "@/lib/weather/compass";
+import { compassPoint, fromThe, windLong } from "@/lib/weather/compass";
 import { useDeviceHeading } from "@/lib/weather/device-heading";
+import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -16,10 +17,12 @@ export function Compass({
   chance,
   className,
 }: CompassProps) {
+  const { locale, t } = useT();
   const wet = chance >= 35;
   const ticks = Array.from({ length: 72 }, (_, i) => i);
   const rainLines = Array.from({ length: 7 }, (_, i) => i - 3);
-  const from = windLong(windDir);
+  const from = fromThe(windDir, locale);
+  const fromWord = windLong(windDir, locale);
   const point = compassPoint(windDir);
   const { heading, status, accuracy, offer, hint, enable, disable } =
     useDeviceHeading();
@@ -37,8 +40,8 @@ export function Compass({
         role="img"
         aria-label={
           live
-            ? `You are facing ${facing}. Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`
-            : `Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`
+            ? t("compassLive", { facing: facing ?? "", from, speed: windSpeedLabel, chance })
+            : t("compassStatic", { from, speed: windSpeedLabel, chance })
         }
       >
         <defs>
@@ -117,6 +120,7 @@ export function Compass({
           })}
 
           {(["N", "E", "S", "W"] as const).map((label, i) => {
+            const shown = locale === "fr" && label === "W" ? "O" : label;
             const deg = i * 90;
             const a = ((deg - 90) * Math.PI) / 180;
             const r = 66;
@@ -135,7 +139,7 @@ export function Compass({
                 letterSpacing="0.08em"
                 transform={live ? `rotate(${hdg} ${x} ${y})` : undefined}
               >
-                {label}
+                {shown}
               </text>
             );
           })}
@@ -196,16 +200,16 @@ export function Compass({
           <span className="text-lg text-muted">%</span>
         </p>
         <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-          rain
+          {t("rainWord")}
         </p>
       </div>
 
       <div className="mt-3 flex items-end justify-between gap-3 text-sm">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-faint">
-            From
+            {t("from")}
           </p>
-          <p className="font-medium capitalize text-fg">{from}</p>
+          <p className="font-medium capitalize text-fg">{fromWord}</p>
         </div>
         <div className="text-right">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-faint">
@@ -221,21 +225,21 @@ export function Compass({
             <>
               <p className="text-xs text-muted">
                 {hint === "calibrate" || uncalibrated
-                  ? "Wave the phone in a figure-8"
+                  ? t("wavePhone")
                   : hint === "settings"
-                    ? "Safari Settings → Motion & Orientation Access"
+                    ? t("safariMotion")
                     : hint === "move"
-                      ? "Turn the phone to lock north"
+                      ? t("turnPhone")
                       : live
-                        ? `Facing ${facing}`
-                        : "Finding north…"}
+                        ? t("facing", { dir: facing ?? "" })
+                        : t("findingNorth")}
               </p>
               <Button type="button" size="sm" variant="ghost" onClick={disable}>
-                North up
+                {t("northUp")}
               </Button>
             </>
           ) : status === "denied" ? (
-            <p className="text-xs text-muted">Compass permission is off</p>
+            <p className="text-xs text-muted">{t("compassDenied")}</p>
           ) : (
             <Button
               type="button"
@@ -244,7 +248,7 @@ export function Compass({
               className="w-full"
               onClick={() => void enable()}
             >
-              Use phone compass
+              {t("useCompass")}
             </Button>
           )}
         </div>
