@@ -83,4 +83,5 @@ export type Forecast = {
   daily: DayPoint[];
   nextRain: HourPoint | null;
   windShift: { from: number; to: number; hours: number } | null;
+  fetchedAt: number;
 };

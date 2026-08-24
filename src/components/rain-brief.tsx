@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { CloudRain, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useT } from "@/lib/i18n";
+import { precipWordCap } from "@/lib/weather/codes";
 import { fromThe } from "@/lib/weather/compass";
 import { formatClock } from "@/lib/weather/format";
 import { estimateRain } from "@/lib/weather/rain";
@@ -23,6 +24,7 @@ export function RainBrief({ forecast }: { forecast: Forecast }) {
         cloudCover: current.cloudCover,
         latitude: place.latitude,
         locale,
+        weatherCode: current.weatherCode,
       }),
     [current, place.latitude, locale],
   );
@@ -38,7 +40,7 @@ export function RainBrief({ forecast }: { forecast: Forecast }) {
             {t("estimate")}
           </p>
           <h2 className="mt-1 font-display text-xl font-medium leading-tight text-fg sm:text-2xl">
-            {t("rainFrom", { from })}
+            {t("rainFrom", { from, kind: precipWordCap(current.weatherCode, locale) })}
           </h2>
         </div>
         <Badge

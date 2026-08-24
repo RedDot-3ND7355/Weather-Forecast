@@ -15,15 +15,15 @@ export function PlaceSearch({
   onSelect: (place: Place) => void;
   autoFocus?: boolean;
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const trimmed = q.trim();
 
   const { data, isFetching } = useQuery({
-    queryKey: ["places", trimmed],
-    queryFn: () => searchPlaces({ data: { q: trimmed } }),
+    queryKey: ["places", trimmed, locale],
+    queryFn: () => searchPlaces({ data: { q: trimmed, language: locale } }),
     enabled: trimmed.length >= 2,
     staleTime: 60_000,
   });

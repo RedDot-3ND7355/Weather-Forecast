@@ -86,7 +86,7 @@ type MeteoResponse = {
 };
 
 const forecastCache = new Map<string, { at: number; value: Forecast }>();
-const CACHE_MS = 10 * 60 * 1000;
+const CACHE_MS = 90 * 1000;
 
 function cacheKey(place: Place): string {
   return `${place.latitude.toFixed(3)},${place.longitude.toFixed(3)}`;
@@ -160,6 +160,7 @@ function mapHour(
       cloudCover,
       cape,
       latitude,
+      weatherCode: num(hourly.weather_code[i]),
     }),
   };
 }
@@ -192,6 +193,7 @@ function mapDay(
     cloudCover: sample?.cloudCover ?? 50,
     cape: sample?.cape ?? 0,
     latitude,
+    weatherCode: num(daily.weather_code[i]),
   });
   rain.chance = Math.round(0.7 * peak + 0.3 * rain.chance);
   return {
@@ -255,6 +257,7 @@ function mapOpenMeteo(json: MeteoResponse, data: Place): Forecast {
       cloudCover,
       cape: currentHour?.cape ?? 0,
       latitude: data.latitude,
+      weatherCode: num(json.current.weather_code),
     }),
   };
 
@@ -265,6 +268,7 @@ function mapOpenMeteo(json: MeteoResponse, data: Place): Forecast {
     daily,
     nextRain: nextRainWindow(hourly),
     windShift: detectWindShift(hourly),
+    fetchedAt: Date.now(),
   };
 }
 
@@ -330,11 +334,17 @@ async function fetchMetNo(data: Place): Promise<Forecast> {
 }
 
 export const searchPlaces = createServerFn({ method: "GET" })
-  .validator(z.object({ q: z.string().trim().min(1).max(80) }))
+  .validator(
+    z.object({
+      q: z.string().trim().min(1).max(80),
+      language: z.enum(["en", "fr"]).optional(),
+    }),
+  )
   .handler(async ({ data }): Promise<Place[]> => {
+    const lang = data.language === "fr" ? "fr" : "en";
     const url =
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(data.q)}` +
-      `&count=7&language=en&format=json`;
+      `&count=7&language=${lang}&format=json`;
     const json = await getJson<GeoResponse>(url);
     return (json.results ?? []).map((r) => ({
       name: r.name,

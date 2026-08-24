@@ -1,4 +1,4 @@
-import { localeTag, type Locale } from "@/lib/i18n";
+import { localeTag, t, type Locale } from "@/lib/i18n";
 import type { Units } from "./types";
 
 export function formatTemp(c: number, units: Units): string {
@@ -64,4 +64,11 @@ export function placeLabel(place: {
   if (place.admin && place.admin !== place.name) bits.push(place.admin);
   if (place.country) bits.push(place.country);
   return bits.join(", ");
+}
+
+export function formatUpdated(ts: number, locale: Locale): string {
+  const min = Math.max(0, Math.round((Date.now() - ts) / 60_000));
+  if (min < 1) return t(locale, "updatedJust");
+  if (min === 1) return t(locale, "updatedMin");
+  return t(locale, "updatedMins", { n: min });
 }

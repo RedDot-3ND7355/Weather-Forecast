@@ -1,5 +1,6 @@
 import { t, type Locale } from "@/lib/i18n";
 import { fromThe } from "./compass";
+import { precipKind } from "./codes";
 
 const EARTH_KM = 6371;
 export const FETCH_KM = [0, 25, 50, 90, 140, 200] as const;
@@ -49,18 +50,20 @@ export function arrivalCopy(args: {
   windSpeedKmh: number;
   rainingHere: boolean;
   locale?: Locale;
+  weatherCode?: number;
 }): string {
   const locale = args.locale ?? "en";
   const from = fromThe(args.windDir, locale);
+  const snow = precipKind(args.weatherCode ?? 61) === "snow";
   if (args.rainingHere) {
-    return t(locale, "rainNowCopy", { from });
+    return t(locale, snow ? "snowNowCopy" : "rainNowCopy", { from });
   }
   if (args.minutes > 12 * 60) {
-    return t(locale, "rainFarCopy");
+    return t(locale, snow ? "snowFarCopy" : "rainFarCopy");
   }
   const eta = formatEta(args.minutes, locale);
   const etaLabel = locale === "fr" ? eta.charAt(0).toUpperCase() + eta.slice(1) : capitalize(eta);
-  return t(locale, "rainComingCopy", {
+  return t(locale, snow ? "snowComingCopy" : "rainComingCopy", {
     km: Math.round(args.km),
     from,
     speed: Math.round(args.windSpeedKmh),

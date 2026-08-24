@@ -1,14 +1,14 @@
 import { o as __toESM } from "../_runtime.mjs";
 import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].mjs";
-import { _ as createRootRoute, b as useRouter, d as HeadContent, g as createFileRoute, h as lazyRouteComponent, m as Outlet, p as createRouter, u as Scripts } from "../_libs/@tanstack/react-router+[...].mjs";
+import { _ as createRootRoute, d as HeadContent, g as createFileRoute, h as lazyRouteComponent, m as Outlet, p as createRouter, u as Scripts, x as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { n as QueryClientProvider, r as require_jsx_runtime } from "../_libs/react+tanstack__react-query.mjs";
 import { a as getServerFnById, i as TSS_SERVER_FUNCTION, r as createServerFn, s as __exportAll } from "./ssr.mjs";
 import { fn as literal, hn as object, mn as number, vn as string, yn as union } from "../_libs/@better-auth/core+[...].mjs";
+import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
-import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-DnJ8qdD5.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-Bt8MOICo.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -62,7 +62,7 @@ function AuthProvider({ children }) {
 function AppProviders({ children }) {
 	const [queryClient] = (0, import_react.useState)(() => new QueryClient({ defaultOptions: { queries: {
 		retry: 1,
-		refetchOnWindowFocus: false,
+		refetchOnWindowFocus: true,
 		staleTime: 6e4
 	} } }));
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(QueryClientProvider, {
@@ -595,7 +595,7 @@ function SmoothScroll() {
 	}, []);
 	return null;
 }
-var styles_default = "/assets/styles-h0uT3VRJ.css";
+var styles_default = "/assets/styles-0xljf-1r.css";
 var APP_NAME = "Vane";
 var fetchSessionUser = createServerFn({ method: "GET" }).handler(createSsrRpc("2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26"));
 var Route$3 = createRootRoute({
@@ -717,9 +717,21 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-DvLDUFjD.mjs");
-var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
-var $$splitComponentImporter = () => import("./login-BsgabjBm.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-CU69GB_I.mjs");
+function num(v) {
+	const n = typeof v === "string" ? Number(v) : typeof v === "number" ? v : NaN;
+	return Number.isFinite(n) ? n : void 0;
+}
+var Route$2 = createFileRoute("/")({
+	validateSearch: (raw) => ({
+		q: typeof raw.q === "string" && raw.q.trim() ? raw.q.trim().slice(0, 80) : void 0,
+		lat: num(raw.lat),
+		lon: num(raw.lon),
+		n: typeof raw.n === "string" && raw.n.trim() ? raw.n.trim().slice(0, 80) : void 0
+	}),
+	component: lazyRouteComponent($$splitComponentImporter$1, "component")
+});
+var $$splitComponentImporter = () => import("./login-Do2M7-O4.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });
 var Route = createFileRoute("/api/auth/$")({ server: { handlers: {
 	GET: ({ request }) => auth.handler(request),

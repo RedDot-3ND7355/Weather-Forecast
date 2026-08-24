@@ -1,3 +1,4 @@
+import { precipWord } from "@/lib/weather/codes";
 import { compassPoint, fromThe, windLong } from "@/lib/weather/compass";
 import { useDeviceHeading } from "@/lib/weather/device-heading";
 import { useT } from "@/lib/i18n";
@@ -8,6 +9,7 @@ type CompassProps = {
   windDir: number;
   windSpeedLabel: string;
   chance: number;
+  weatherCode?: number;
   className?: string;
 };
 
@@ -15,6 +17,7 @@ export function Compass({
   windDir,
   windSpeedLabel,
   chance,
+  weatherCode = 61,
   className,
 }: CompassProps) {
   const { locale, t } = useT();
@@ -200,7 +203,7 @@ export function Compass({
           <span className="text-lg text-muted">%</span>
         </p>
         <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-          {t("rainWord")}
+          {precipWord(weatherCode, locale)}
         </p>
       </div>
 

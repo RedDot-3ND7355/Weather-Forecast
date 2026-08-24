@@ -1,4 +1,4 @@
-import { weatherIcon, weatherLabel } from "@/lib/weather/codes";
+import { precipWord, weatherIcon, weatherLabel } from "@/lib/weather/codes";
 import { formatPrecip, formatTemp, formatWeekday } from "@/lib/weather/format";
 import { compassPoint } from "@/lib/weather/compass";
 import { useT } from "@/lib/i18n";
@@ -29,7 +29,11 @@ export function DailyList({ days, units }: { days: DayPoint[]; units: Units }) {
               <div className="min-w-0">
                 <p className="truncate text-sm text-muted">{weatherLabel(d.weatherCode, locale)}</p>
                 <p className="mt-0.5 hidden text-xs text-faint sm:block">
-                  {t("peakRain", { chance: d.rain.chance, dir: compassPoint(d.windDir) })}
+                  {t("peakRain", {
+                    kind: precipWord(d.weatherCode, locale),
+                    chance: d.rain.chance,
+                    dir: compassPoint(d.windDir),
+                  })}
                 </p>
               </div>
               <div className="hidden items-center gap-1.5 text-xs tabular-nums text-muted sm:flex">

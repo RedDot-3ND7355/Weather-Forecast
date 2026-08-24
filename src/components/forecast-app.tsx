@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AlertBanner } from "@/components/alert-banner";
 import { AppHeader } from "@/components/app-header";
 import { ChanceChart } from "@/components/chance-chart";
 import { Compass } from "@/components/compass";
@@ -15,7 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { listPlaces, removePlace } from "@/lib/places";
 import { useWeatherStore } from "@/lib/store";
-import { fetchForecast, reversePlace } from "@/lib/weather/api";
+import { fetchAlerts } from "@/lib/weather/alerts";
+import { fetchForecast, reversePlace, searchPlaces } from "@/lib/weather/api";
 import { formatSpeed } from "@/lib/weather/format";
 import { GeoError, isAppleTouch, readDevicePosition } from "@/lib/geolocation";
 import { useT } from "@/lib/i18n";
@@ -29,17 +32,75 @@ export function ForecastApp() {
   const recent = useWeatherStore((s) => s.recent);
   const setPlace = useWeatherStore((s) => s.setPlace);
   const locale = useWeatherStore((s) => s.locale);
-  const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(
+    () => typeof window !== "undefined" && useWeatherStore.persist.hasHydrated(),
+  );
   const [locating, setLocating] = useState(false);
+  const search = useSearch({ from: "/" });
+  const navigate = useNavigate({ from: "/" });
+  const appliedUrl = useRef(false);
 
-  useEffect(() => setHydrated(true), []);
+  useEffect(() => {
+    const done = () => setHydrated(true);
+    if (useWeatherStore.persist.hasHydrated()) done();
+    return useWeatherStore.persist.onFinishHydration(done);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || appliedUrl.current) return;
+    appliedUrl.current = true;
+    if (typeof search.lat === "number" && typeof search.lon === "number") {
+      setPlace({
+        name: search.n || t("yourLocation"),
+        latitude: search.lat,
+        longitude: search.lon,
+      });
+      return;
+    }
+    if (search.q) {
+      void searchPlaces({ data: { q: search.q, language: locale } }).then((hits) => {
+        if (hits[0]) setPlace(hits[0]);
+      });
+    }
+  }, [hydrated, locale, search.lat, search.lon, search.n, search.q, setPlace, t]);
+
+  useEffect(() => {
+    if (!hydrated || !place) return;
+    void navigate({
+      search: {
+        q: undefined,
+        lat: Number(place.latitude.toFixed(4)),
+        lon: Number(place.longitude.toFixed(4)),
+        n: place.name,
+      },
+      replace: true,
+    });
+  }, [hydrated, navigate, place?.latitude, place?.longitude, place?.name]);
   const active = hydrated ? place : null;
 
   const forecastQuery = useQuery({
     queryKey: ["forecast", active?.latitude, active?.longitude],
     queryFn: () => fetchForecast({ data: active! }),
     enabled: Boolean(active),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+
+  const alertsQuery = useQuery({
+    queryKey: ["alerts", active?.latitude, active?.longitude, locale],
+    queryFn: () =>
+      fetchAlerts({
+        data: {
+          latitude: active!.latitude,
+          longitude: active!.longitude,
+          language: locale,
+        },
+      }),
+    enabled: Boolean(active),
+    staleTime: 3 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const savedQuery = useQuery({
@@ -107,7 +168,15 @@ export function ForecastApp() {
   }
 
   const forecast = forecastQuery.data;
-  const isLoading = Boolean(active) && forecastQuery.isLoading;
+  const isLoading = Boolean(active) && forecastQuery.isPending && !forecastQuery.data;
+
+  function onShare() {
+    const url = window.location.href;
+    void navigator.clipboard.writeText(url).then(
+      () => toast(t("toastLinkCopied")),
+      () => toast(t("toastLinkFail")),
+    );
+  }
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-bg text-fg">
@@ -116,8 +185,10 @@ export function ForecastApp() {
         locating={locating}
         saved={saved}
         onSaved={() => void savedQuery.refetch()}
+        onShare={place ? onShare : undefined}
       />
       <main className="mx-auto min-w-0 max-w-6xl overflow-x-clip px-3 py-4 sm:px-6 sm:py-8">
+        {alertsQuery.data?.length ? <AlertBanner alerts={alertsQuery.data} /> : null}
         {hydrated && (savedPlaces.length > 0 || recent.length > 0) ? (
           <div className="mb-4 min-w-0 sm:mb-6">
             <SavedRow
@@ -129,7 +200,9 @@ export function ForecastApp() {
           </div>
         ) : null}
 
-        {!active ? (
+        {!hydrated ? (
+          <LoadingState />
+        ) : !active ? (
           <EmptyState onPick={setPlace} onLocate={locate} locating={locating} />
         ) : isLoading ? (
           <LoadingState />
@@ -149,9 +222,15 @@ export function ForecastApp() {
                 windDir={forecast.current.windDir}
                 windSpeedLabel={formatSpeed(forecast.current.windSpeedKmh, units)}
                 chance={forecast.current.rain.chance}
+                weatherCode={forecast.current.weatherCode}
               />
             </div>
-            <CurrentPanel forecast={forecast} units={units} />
+            <CurrentPanel
+              forecast={forecast}
+              units={units}
+              updatedAt={forecastQuery.dataUpdatedAt || forecast.fetchedAt}
+              refreshing={forecastQuery.isFetching && !forecastQuery.isPending}
+            />
             <div className="min-w-0 lg:col-span-2">
               <HourlyStrip hours={forecast.hourly} units={units} />
             </div>

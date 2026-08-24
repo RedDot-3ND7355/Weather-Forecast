@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Bookmark, BookmarkCheck, Locate, LogIn, LogOut } from "lucide-react";
+import { Bookmark, BookmarkCheck, Link2, Locate, LogIn, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageFullscreenButton } from "@/components/page-fullscreen";
@@ -20,11 +20,13 @@ export function AppHeader({
   locating,
   saved,
   onSaved,
+  onShare,
 }: {
   onLocate: () => void;
   locating: boolean;
   saved: boolean;
   onSaved: () => void;
+  onShare?: () => void;
 }) {
   const { user, isPending } = useCurrentUserState();
   const { t } = useT();
@@ -127,6 +129,19 @@ export function AppHeader({
         <Locate className={cn("size-4", locating && "animate-pulse")} />
       </Button>
       <PageFullscreenButton />
+      {onShare ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={iconBtn}
+          aria-label={t("sharePlace")}
+          title={t("sharePlace")}
+          onClick={onShare}
+        >
+          <Link2 className="size-4" />
+        </Button>
+      ) : null}
       <Button
         type="button"
         variant="ghost"

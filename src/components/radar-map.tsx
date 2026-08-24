@@ -21,6 +21,7 @@ import {
 } from "@/lib/weather/radar";
 import { localeTag, useT } from "@/lib/i18n";
 import { arrivalCopy, formatEta } from "@/lib/weather/advection";
+import { precipKind, precipWordCap } from "@/lib/weather/codes";
 import { formatHour, formatSpeed } from "@/lib/weather/format";
 import { fromThe, windLong } from "@/lib/weather/compass";
 import type { Forecast, Units } from "@/lib/weather/types";
@@ -971,11 +972,15 @@ export function RadarMap({
     queryKey: ["radar-catalog"],
     queryFn: () => fetchRadarCatalog(),
     staleTime: 2 * 60 * 1000,
+    refetchInterval: 3 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
   const mscQuery = useQuery({
     queryKey: ["msc-radar"],
     queryFn: () => fetchMscRadar(),
     staleTime: 2 * 60 * 1000,
+    refetchInterval: 3 * 60 * 1000,
+    refetchOnWindowFocus: true,
     enabled: inMscDomain(place.latitude, place.longitude),
   });
   const nowcastQuery = useQuery({
@@ -1449,12 +1454,14 @@ export function RadarMap({
   const from = fromThe(current.windDir, locale);
   const fromWord = windLong(current.windDir, locale);
   const etaLabel = arrival ? formatEta(arrival.minutes, locale) : "";
+  const snow = precipKind(current.weatherCode) === "snow";
+  const kindCap = precipWordCap(current.weatherCode, locale);
   const headline = arrival
     ? arrival.minutes === 0
-      ? t("rainingNow")
-      : t("rainEta", { label: etaLabel })
+      ? t(snow ? "snowingNow" : "rainingNow")
+      : t("rainEta", { kind: kindCap, label: etaLabel })
     : nowcast?.hours?.length
-      ? t("noRainHeaded")
+      ? t(snow ? "noSnowHeaded" : "noRainHeaded")
       : t("watchThe", { from });
   const copy = arrival
     ? arrivalCopy({
@@ -1464,6 +1471,7 @@ export function RadarMap({
         windSpeedKmh: current.windSpeedKmh,
         rainingHere: arrival.minutes === 0,
         locale,
+        weatherCode: current.weatherCode,
       })
     : t("radarCopy", { from });
 
@@ -1621,6 +1629,17 @@ export function RadarMap({
         <p className="pointer-events-none absolute bottom-3 right-3 rounded-md bg-bg/75 px-2 py-1 text-[11px] text-muted backdrop-blur-sm">
           {t("youAreHere")}
         </p>
+        <div className="pointer-events-none absolute bottom-3 left-3 flex items-center gap-1.5 rounded-md bg-bg/75 px-2 py-1 text-[11px] text-muted backdrop-blur-sm">
+          <span>{t("radarLight")}</span>
+          <span
+            className="h-1.5 w-14 rounded-full sm:w-16"
+            style={{
+              background:
+                "linear-gradient(90deg,#7eb4c6 0%,#3dd68c 38%,#f5d76e 68%,#e07a3d 86%,#c17a6a 100%)",
+            }}
+          />
+          <span>{t("radarHeavy")}</span>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 px-4 py-3 sm:px-5">
@@ -1682,14 +1701,15 @@ export function RadarMap({
           </p>
           <HScroll label={t("next6")}>
             {hours.map((h, i) => {
+              const dryLabel = t("statusDry");
               const status = hourStatus(
                 h,
-                t("statusRaining"),
+                snow ? t("statusSnowing") : t("statusRaining"),
                 t("statusOnTheWay"),
                 t("statusPossible"),
-                t("statusDry"),
+                dryLabel,
               );
-              const wet = status !== "Dry";
+              const wet = status !== dryLabel;
               return (
                 <div
                   key={h.time}

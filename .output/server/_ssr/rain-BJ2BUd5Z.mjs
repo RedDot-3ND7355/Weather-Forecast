@@ -1,5 +1,44 @@
-import { n as t } from "./i18n-Bc8VAV5-.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/rain-DI9Gp3xH.js
+import { n as t } from "./i18n-F9-evSlQ.mjs";
+import { A as CloudSnow, M as CloudLightning, N as CloudFog, O as Cloud, P as CloudDrizzle, j as CloudRain, k as CloudSun, p as Moon, s as Sun } from "../_libs/lucide-react.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/rain-BJ2BUd5Z.js
+function precipKind(code) {
+	if (code >= 71 && code <= 77 || code === 85 || code === 86) return "snow";
+	return "rain";
+}
+function precipWord(code, locale = "en") {
+	return precipKind(code) === "snow" ? t(locale, "snowWord") : t(locale, "rainWord");
+}
+function precipWordCap(code, locale = "en") {
+	const w = precipWord(code, locale);
+	return w.charAt(0).toUpperCase() + w.slice(1);
+}
+function weatherLabel(code, locale = "en") {
+	if (code === 0) return t(locale, "wx0");
+	if (code === 1) return t(locale, "wx1");
+	if (code === 2) return t(locale, "wx2");
+	if (code === 3) return t(locale, "wx3");
+	if (code === 45 || code === 48) return t(locale, "wx45");
+	if (code >= 51 && code <= 57) return t(locale, "wx51");
+	if (code >= 61 && code <= 67) return t(locale, "wx61");
+	if (code >= 71 && code <= 77) return t(locale, "wx71");
+	if (code >= 80 && code <= 82) return t(locale, "wx80");
+	if (code === 85 || code === 86) return t(locale, "wx85");
+	if (code >= 95) return t(locale, "wx95");
+	return t(locale, "wxMix");
+}
+function weatherIcon(code, isDay) {
+	if (code === 0) return isDay ? Sun : Moon;
+	if (code === 1 || code === 2) return isDay ? CloudSun : Cloud;
+	if (code === 3) return Cloud;
+	if (code === 45 || code === 48) return CloudFog;
+	if (code >= 51 && code <= 57) return CloudDrizzle;
+	if (code >= 61 && code <= 67) return CloudRain;
+	if (code >= 71 && code <= 77) return CloudSnow;
+	if (code >= 80 && code <= 82) return CloudRain;
+	if (code === 85 || code === 86) return CloudSnow;
+	if (code >= 95) return CloudLightning;
+	return Cloud;
+}
 var POINTS = [
 	"N",
 	"NNE",
@@ -187,7 +226,8 @@ function estimateRain(input) {
 			moisture,
 			windSpeedKmh: input.windSpeedKmh,
 			depression,
-			locale
+			locale,
+			kind: precipWord(input.weatherCode ?? 61, locale)
 		}),
 		fetchLabel: locale === "fr" ? adverb : capitalize(adverb),
 		arrival: from,
@@ -198,23 +238,34 @@ function capitalize(s) {
 	return s.charAt(0).toUpperCase() + s.slice(1);
 }
 function buildHeadline(args) {
-	const { chance, adverb, fetch, moisture, windSpeedKmh, depression, locale } = args;
+	const { chance, adverb, fetch, moisture, windSpeedKmh, depression, locale, kind } = args;
 	const still = windSpeedKmh < 8;
 	const spread = depression.toFixed(1);
 	const sat = Math.round(moisture * 100);
-	if (chance >= 70 && fetch > .55) return t(locale, "headWetFetch", { adverb });
-	if (chance >= 70 && still) return t(locale, "headWetStill");
+	if (chance >= 70 && fetch > .55) return t(locale, "headWetFetch", {
+		adverb,
+		kind
+	});
+	if (chance >= 70 && still) return t(locale, "headWetStill", { kind });
 	if (chance >= 55) return t(locale, "headLikely", {
 		adverb: locale === "fr" ? adverb : capitalize(adverb),
-		spread
+		spread,
+		kind
 	});
-	if (chance >= 35 && fetch > .5) return t(locale, "headLoading", { adverb: locale === "fr" ? adverb : capitalize(adverb) });
-	if (chance >= 35 && still) return t(locale, "headLocal");
-	if (chance < 20 && fetch < .35 && moisture < .45) return t(locale, "headDraining", { adverb: locale === "fr" ? adverb : capitalize(adverb) });
+	if (chance >= 35 && fetch > .5) return t(locale, "headLoading", {
+		adverb: locale === "fr" ? adverb : capitalize(adverb),
+		kind
+	});
+	if (chance >= 35 && still) return t(locale, "headLocal", { kind });
+	if (chance < 20 && fetch < .35 && moisture < .45) return t(locale, "headDraining", {
+		adverb: locale === "fr" ? adverb : capitalize(adverb),
+		kind
+	});
 	if (chance < 25 && args.modelChance < 20) return t(locale, "headDry", { adverb });
 	return t(locale, "headWatch", {
 		adverb: locale === "fr" ? adverb : capitalize(adverb),
-		sat
+		sat,
+		kind
 	});
 }
 function detectWindShift(hours) {
@@ -235,4 +286,4 @@ function nextRainWindow(hours) {
 	return hours.find((h) => h.rain.chance >= 40 || h.precipMm >= .2) ?? null;
 }
 //#endregion
-export { fromThe as a, windLong as c, estimateRain as i, detectWindShift as n, nextRainWindow as o, dewpointFromRh as r, normalizeDeg as s, compassPoint as t };
+export { fromThe as a, precipKind as c, weatherIcon as d, weatherLabel as f, estimateRain as i, precipWord as l, detectWindShift as n, nextRainWindow as o, windLong as p, dewpointFromRh as r, normalizeDeg as s, compassPoint as t, precipWordCap as u };

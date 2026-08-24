@@ -1,4 +1,5 @@
 import { t, type Locale } from "@/lib/i18n";
+import { precipWord } from "./codes";
 import { angleDelta, windAdverb, windLong } from "./compass";
 import type { HourPoint, RainDriver, RainEstimate } from "./types";
 
@@ -25,6 +26,7 @@ export function estimateRain(input: {
   cape?: number;
   latitude: number;
   locale?: Locale;
+  weatherCode?: number;
 }): RainEstimate {
   const locale = input.locale ?? "en";
   const modelChance = clamp(Math.round(input.modelProb), 0, 100);
@@ -104,6 +106,7 @@ export function estimateRain(input: {
     windSpeedKmh: input.windSpeedKmh,
     depression,
     locale,
+    kind: precipWord(input.weatherCode ?? 61, locale),
   });
 
   return {
@@ -129,34 +132,35 @@ function buildHeadline(args: {
   windSpeedKmh: number;
   depression: number;
   locale: Locale;
+  kind: string;
 }): string {
-  const { chance, adverb, fetch, moisture, windSpeedKmh, depression, locale } = args;
+  const { chance, adverb, fetch, moisture, windSpeedKmh, depression, locale, kind } = args;
   const still = windSpeedKmh < 8;
   const spread = depression.toFixed(1);
   const sat = Math.round(moisture * 100);
 
   if (chance >= 70 && fetch > 0.55) {
-    return t(locale, "headWetFetch", { adverb });
+    return t(locale, "headWetFetch", { adverb, kind });
   }
   if (chance >= 70 && still) {
-    return t(locale, "headWetStill");
+    return t(locale, "headWetStill", { kind });
   }
   if (chance >= 55) {
-    return t(locale, "headLikely", { adverb: locale === "fr" ? adverb : capitalize(adverb), spread });
+    return t(locale, "headLikely", { adverb: locale === "fr" ? adverb : capitalize(adverb), spread, kind });
   }
   if (chance >= 35 && fetch > 0.5) {
-    return t(locale, "headLoading", { adverb: locale === "fr" ? adverb : capitalize(adverb) });
+    return t(locale, "headLoading", { adverb: locale === "fr" ? adverb : capitalize(adverb), kind });
   }
   if (chance >= 35 && still) {
-    return t(locale, "headLocal");
+    return t(locale, "headLocal", { kind });
   }
   if (chance < 20 && fetch < 0.35 && moisture < 0.45) {
-    return t(locale, "headDraining", { adverb: locale === "fr" ? adverb : capitalize(adverb) });
+    return t(locale, "headDraining", { adverb: locale === "fr" ? adverb : capitalize(adverb), kind });
   }
   if (chance < 25 && args.modelChance < 20) {
     return t(locale, "headDry", { adverb });
   }
-  return t(locale, "headWatch", { adverb: locale === "fr" ? adverb : capitalize(adverb), sat });
+  return t(locale, "headWatch", { adverb: locale === "fr" ? adverb : capitalize(adverb), sat, kind });
 }
 
 export function detectWindShift(

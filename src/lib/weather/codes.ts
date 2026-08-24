@@ -12,6 +12,20 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+export function precipKind(code: number): "rain" | "snow" {
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "snow";
+  return "rain";
+}
+
+export function precipWord(code: number, locale: Locale = "en"): string {
+  return precipKind(code) === "snow" ? t(locale, "snowWord") : t(locale, "rainWord");
+}
+
+export function precipWordCap(code: number, locale: Locale = "en"): string {
+  const w = precipWord(code, locale);
+  return w.charAt(0).toUpperCase() + w.slice(1);
+}
+
 export function weatherLabel(code: number, locale: Locale = "en"): string {
   if (code === 0) return t(locale, "wx0");
   if (code === 1) return t(locale, "wx1");

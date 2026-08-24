@@ -399,6 +399,29 @@ var Info = createLucideIcon("info", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Link2 = createLucideIcon("link-2", [
+	["path", {
+		d: "M9 17H7A5 5 0 0 1 7 7h2",
+		key: "8i5ue5"
+	}],
+	["path", {
+		d: "M15 7h2a5 5 0 1 1 0 10h-2",
+		key: "1b9ql8"
+	}],
+	["line", {
+		x1: "8",
+		x2: "16",
+		y1: "12",
+		y2: "12",
+		key: "1jonct"
+	}]
+]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var LoaderCircle = createLucideIcon("loader-circle", [["path", {
 	d: "M21 12a9 9 0 1 1-6.219-8.56",
 	key: "13zald"
@@ -739,6 +762,86 @@ var Sun = createLucideIcon("sun", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Sunrise = createLucideIcon("sunrise", [
+	["path", {
+		d: "M12 2v8",
+		key: "1q4o3n"
+	}],
+	["path", {
+		d: "m4.93 10.93 1.41 1.41",
+		key: "2a7f42"
+	}],
+	["path", {
+		d: "M2 18h2",
+		key: "j10viu"
+	}],
+	["path", {
+		d: "M20 18h2",
+		key: "wocana"
+	}],
+	["path", {
+		d: "m19.07 10.93-1.41 1.41",
+		key: "15zs5n"
+	}],
+	["path", {
+		d: "M22 22H2",
+		key: "19qnx5"
+	}],
+	["path", {
+		d: "m8 6 4-4 4 4",
+		key: "ybng9g"
+	}],
+	["path", {
+		d: "M16 18a4 4 0 0 0-8 0",
+		key: "1lzouq"
+	}]
+]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var Sunset = createLucideIcon("sunset", [
+	["path", {
+		d: "M12 10V2",
+		key: "16sf7g"
+	}],
+	["path", {
+		d: "m4.93 10.93 1.41 1.41",
+		key: "2a7f42"
+	}],
+	["path", {
+		d: "M2 18h2",
+		key: "j10viu"
+	}],
+	["path", {
+		d: "M20 18h2",
+		key: "wocana"
+	}],
+	["path", {
+		d: "m19.07 10.93-1.41 1.41",
+		key: "15zs5n"
+	}],
+	["path", {
+		d: "M22 22H2",
+		key: "19qnx5"
+	}],
+	["path", {
+		d: "m16 6-4 4-4-4",
+		key: "6wukr"
+	}],
+	["path", {
+		d: "M16 18a4 4 0 0 0-8 0",
+		key: "1lzouq"
+	}]
+]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Thermometer = createLucideIcon("thermometer", [["path", {
 	d: "M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z",
 	key: "17jzev"
@@ -797,4 +900,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { CloudFog as A, Expand as C, CloudSnow as D, CloudSun as E, BookmarkCheck as F, ChevronRight as M, ChevronLeft as N, CloudRain as O, Bookmark as P, Eye as S, Cloud as T, LogIn as _, Sun as a, Info as b, Plus as c, Moon as d, Minus as f, LogOut as g, MapPin as h, Thermometer as i, CloudDrizzle as j, CloudLightning as k, Play as l, Maximize2 as m, Wind as n, Search as o, Minimize2 as p, TriangleAlert as r, Radar as s, X as t, Pause as u, Locate as v, Droplets as w, Gauge as x, LoaderCircle as y };
+export { CloudSnow as A, Info as C, Droplets as D, Expand as E, ChevronRight as F, ChevronLeft as I, Bookmark as L, CloudLightning as M, CloudFog as N, Cloud as O, CloudDrizzle as P, BookmarkCheck as R, Link2 as S, Eye as T, MapPin as _, Sunset as a, Locate as b, Search as c, Play as d, Pause as f, Maximize2 as g, Minimize2 as h, Thermometer as i, CloudRain as j, CloudSun as k, Radar as l, Minus as m, Wind as n, Sunrise as o, Moon as p, TriangleAlert as r, Sun as s, X as t, Plus as u, LogOut as v, Gauge as w, LoaderCircle as x, LogIn as y };

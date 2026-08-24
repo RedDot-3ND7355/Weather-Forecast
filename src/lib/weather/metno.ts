@@ -175,6 +175,7 @@ export function mapMetNoForecast(
         cloudCover,
         cape: 0,
         latitude: place.latitude,
+        weatherCode: symbolToCode(symbol),
       }),
     };
   });
@@ -216,6 +217,7 @@ export function mapMetNoForecast(
       cloudCover,
       cape: 0,
       latitude: place.latitude,
+      weatherCode: symbolToCode(symbol),
     }),
   };
 
@@ -247,6 +249,7 @@ export function mapMetNoForecast(
       cloudCover: sample.cloudCover,
       cape: 0,
       latitude: place.latitude,
+      weatherCode: sample.weatherCode,
     });
     rain.chance = Math.round(0.7 * peak + 0.3 * rain.chance);
     return {
@@ -273,5 +276,6 @@ export function mapMetNoForecast(
     daily,
     nextRain: nextRainWindow(hourly),
     windShift: detectWindShift(hourly),
+    fetchedAt: Date.now(),
   };
 }

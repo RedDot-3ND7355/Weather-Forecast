@@ -1,8 +1,8 @@
 import { r as createServerFn } from "./ssr.mjs";
 import { t as createServerRpc } from "./createServerRpc-CcvdN_gc.mjs";
-import { i as estimateRain, n as detectWindShift, o as nextRainWindow, r as dewpointFromRh } from "./rain-DI9Gp3xH.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/api-D67n8hSQ.js
+import { i as estimateRain, n as detectWindShift, o as nextRainWindow, r as dewpointFromRh } from "./rain-BJ2BUd5Z.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/api-BH3p1vS9.js
 function num$1(v, fallback = 0) {
 	return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
@@ -119,7 +119,8 @@ function mapMetNoForecast(json, place) {
 				windSpeedKmh,
 				cloudCover,
 				cape: 0,
-				latitude: place.latitude
+				latitude: place.latitude,
+				weatherCode: symbolToCode(symbol)
 			})
 		};
 	});
@@ -158,7 +159,8 @@ function mapMetNoForecast(json, place) {
 			windSpeedKmh,
 			cloudCover,
 			cape: 0,
-			latitude: place.latitude
+			latitude: place.latitude,
+			weatherCode: symbolToCode(symbol)
 		})
 	};
 	const byDate = /* @__PURE__ */ new Map();
@@ -192,7 +194,8 @@ function mapMetNoForecast(json, place) {
 				windSpeedKmh: wind.windSpeedKmh,
 				cloudCover: sample.cloudCover,
 				cape: 0,
-				latitude: place.latitude
+				latitude: place.latitude,
+				weatherCode: sample.weatherCode
 			});
 			rain.chance = Math.round(.7 * peak + .3 * rain.chance);
 			return {
@@ -212,7 +215,8 @@ function mapMetNoForecast(json, place) {
 			};
 		}),
 		nextRain: nextRainWindow(hourly),
-		windShift: detectWindShift(hourly)
+		windShift: detectWindShift(hourly),
+		fetchedAt: Date.now()
 	};
 }
 var UA = "Vane/1.0 (wind-aware weather forecast)";
@@ -225,7 +229,7 @@ var placeSchema = object({
 	timezone: string().nullable().optional()
 });
 var forecastCache = /* @__PURE__ */ new Map();
-var CACHE_MS = 6e5;
+var CACHE_MS = 9e4;
 function cacheKey(place) {
 	return `${place.latitude.toFixed(3)},${place.longitude.toFixed(3)}`;
 }
@@ -283,7 +287,8 @@ function mapHour(hourly, i, latitude) {
 			windSpeedKmh,
 			cloudCover,
 			cape,
-			latitude
+			latitude,
+			weatherCode: num(hourly.weather_code[i])
 		})
 	};
 }
@@ -303,7 +308,8 @@ function mapDay(daily, i, hours, latitude) {
 		windSpeedKmh,
 		cloudCover: sample?.cloudCover ?? 50,
 		cape: sample?.cape ?? 0,
-		latitude
+		latitude,
+		weatherCode: num(daily.weather_code[i])
 	});
 	rain.chance = Math.round(.7 * peak + .3 * rain.chance);
 	return {
@@ -361,13 +367,15 @@ function mapOpenMeteo(json, data) {
 				windSpeedKmh,
 				cloudCover,
 				cape: currentHour?.cape ?? 0,
-				latitude: data.latitude
+				latitude: data.latitude,
+				weatherCode: num(json.current.weather_code)
 			})
 		},
 		hourly,
 		daily,
 		nextRain: nextRainWindow(hourly),
-		windShift: detectWindShift(hourly)
+		windShift: detectWindShift(hourly),
+		fetchedAt: Date.now()
 	};
 }
 async function fetchOpenMeteo(data) {
@@ -426,8 +434,12 @@ var searchPlaces_createServerFn_handler = createServerRpc({
 	name: "searchPlaces",
 	filename: "src/lib/weather/api.ts"
 }, (opts) => searchPlaces.__executeServer(opts));
-var searchPlaces = createServerFn({ method: "GET" }).validator(object({ q: string().trim().min(1).max(80) })).handler(searchPlaces_createServerFn_handler, async ({ data }) => {
-	return ((await getJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(data.q)}&count=7&language=en&format=json`)).results ?? []).map((r) => ({
+var searchPlaces = createServerFn({ method: "GET" }).validator(object({
+	q: string().trim().min(1).max(80),
+	language: _enum(["en", "fr"]).optional()
+})).handler(searchPlaces_createServerFn_handler, async ({ data }) => {
+	const lang = data.language === "fr" ? "fr" : "en";
+	return ((await getJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(data.q)}&count=7&language=${lang}&format=json`)).results ?? []).map((r) => ({
 		name: r.name,
 		latitude: r.latitude,
 		longitude: r.longitude,

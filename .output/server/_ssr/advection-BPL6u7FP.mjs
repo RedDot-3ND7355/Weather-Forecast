@@ -1,6 +1,6 @@
-import { n as t } from "./i18n-Bc8VAV5-.mjs";
-import { a as fromThe } from "./rain-DI9Gp3xH.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/advection-BYNWVcCP.js
+import { n as t } from "./i18n-F9-evSlQ.mjs";
+import { a as fromThe, c as precipKind } from "./rain-BJ2BUd5Z.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/advection-BPL6u7FP.js
 var EARTH_KM = 6371;
 var FETCH_KM = [
 	0,
@@ -39,11 +39,12 @@ function formatEta(minutes, locale = "en") {
 function arrivalCopy(args) {
 	const locale = args.locale ?? "en";
 	const from = fromThe(args.windDir, locale);
-	if (args.rainingHere) return t(locale, "rainNowCopy", { from });
-	if (args.minutes > 720) return t(locale, "rainFarCopy");
+	const snow = precipKind(args.weatherCode ?? 61) === "snow";
+	if (args.rainingHere) return t(locale, snow ? "snowNowCopy" : "rainNowCopy", { from });
+	if (args.minutes > 720) return t(locale, snow ? "snowFarCopy" : "rainFarCopy");
 	const eta = formatEta(args.minutes, locale);
 	const etaLabel = locale === "fr" ? eta.charAt(0).toUpperCase() + eta.slice(1) : capitalize(eta);
-	return t(locale, "rainComingCopy", {
+	return t(locale, snow ? "snowComingCopy" : "rainComingCopy", {
 		km: Math.round(args.km),
 		from,
 		speed: Math.round(args.windSpeedKmh),
