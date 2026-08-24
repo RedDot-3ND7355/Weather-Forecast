@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-AZd8h8AQ.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-D_dUlCZU.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "/workspace/src/routes/__root.tsx",
@@ -8,21 +8,21 @@ var tsrStartManifest = () => ({ routes: {
 			"/api/auth/$"
 		],
 		preloads: [
-			"/assets/index-BIo3T7Js.js",
+			"/assets/index-8I0CvT64.js",
 			"/assets/react-SIfiwpqq.js",
 			"/assets/dist-CP3jarzo.js"
 		],
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-BIo3T7Js.js"
+			src: "/assets/index-8I0CvT64.js"
 		} }]
 	},
 	"/": {
 		filePath: "/workspace/src/routes/index.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/routes-D47Qf24p.js",
+			"/assets/routes-Cg_Cd2R1.js",
 			"/assets/client-C6Z4iW4I.js",
 			"/assets/input-Yv3RKBcd.js"
 		]
@@ -31,7 +31,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/workspace/src/routes/login.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/login-BsVY0oVz.js",
+			"/assets/login-COZTU-54.js",
 			"/assets/client-C6Z4iW4I.js",
 			"/assets/input-Yv3RKBcd.js"
 		]

@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-eVrs--J1.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-D90c6B3c.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -77,6 +77,109 @@ function AppProviders({ children }) {
 			} }
 		})]
 	});
+}
+var CRITICAL_BOOT_CSS = `
+html{color-scheme:dark;background:#0b1014}
+html,body,#app{background:#0b1014;color:#e7eef4;margin:0}
+#vane-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#0b1014;color:#e7eef4;transition:opacity .45s cubic-bezier(.22,1,.36,1),visibility .45s}
+#vane-splash.is-out{opacity:0;visibility:hidden;pointer-events:none}
+#vane-splash .inner{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px}
+#vane-splash .mark{width:52px;height:52px}
+#vane-splash .needle{transform-origin:16px 16px;animation:vane-sweep 2.8s cubic-bezier(.22,1,.36,1) infinite}
+#vane-splash .word{margin:0;font:500 1.65rem/1 Georgia,ui-serif,serif;letter-spacing:-0.03em}
+#vane-splash .sub{margin:0;font:500 .68rem/1.4 system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#667380}
+@keyframes vane-sweep{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(22deg)}}
+@media (prefers-reduced-motion:reduce){#vane-splash .needle{animation:none}}
+`;
+function BootSplash() {
+	(0, import_react.useEffect)(() => {
+		const el = document.getElementById("vane-splash");
+		if (!el) return;
+		let hideTimer = 0;
+		let removeTimer = 0;
+		const hide = () => {
+			el.classList.add("is-out");
+			el.setAttribute("aria-busy", "false");
+			removeTimer = window.setTimeout(() => el.remove(), 480);
+		};
+		const start = () => {
+			hideTimer = window.setTimeout(hide, 280);
+		};
+		const pending = [...document.querySelectorAll("link[rel=\"stylesheet\"]")].filter((n) => {
+			return !n.sheet;
+		});
+		if (pending.length === 0) requestAnimationFrame(() => requestAnimationFrame(start));
+		else {
+			let left = pending.length;
+			const onOne = () => {
+				left -= 1;
+				if (left <= 0) start();
+			};
+			for (const n of pending) n.addEventListener("load", onOne, { once: true });
+			nError(pending, onOne);
+		}
+		const fallback = window.setTimeout(hide, 2200);
+		return () => {
+			window.clearTimeout(hideTimer);
+			window.clearTimeout(removeTimer);
+			window.clearTimeout(fallback);
+		};
+	}, []);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		id: "vane-splash",
+		role: "status",
+		"aria-live": "polite",
+		"aria-busy": "true",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "inner",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
+					className: "mark",
+					viewBox: "0 0 32 32",
+					"aria-hidden": "true",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+							cx: "16",
+							cy: "16",
+							r: "11.2",
+							fill: "none",
+							stroke: "#9bb8c4",
+							strokeWidth: "1.3"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", {
+							className: "needle",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+								d: "M16 5.6 L18.4 16 L16 14.4 L13.6 16 Z",
+								fill: "#e7eef4"
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+								d: "M16 26.4 L17.5 16.6 L16 17.6 L14.5 16.6 Z",
+								fill: "#9bb8c4"
+							})]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+							cx: "16",
+							cy: "16",
+							r: "1.7",
+							fill: "#0b1014",
+							stroke: "#9bb8c4",
+							strokeWidth: "1.1"
+						})
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "word",
+					children: "Vane"
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "sub",
+					children: "Rain follows the wind"
+				})
+			]
+		})
+	});
+}
+function nError(nodes, cb) {
+	for (const n of nodes) n.addEventListener("error", cb, { once: true });
 }
 function isGrokEmbedderOrigin(origin) {
 	try {
@@ -308,7 +411,7 @@ function PreviewHostBridge() {
 	}, [router]);
 	return null;
 }
-var styles_default = "/assets/styles-BSWB1Gld.css";
+var styles_default = "/assets/styles-CNArJN70.css";
 var APP_NAME = "Vane";
 var fetchSessionUser = createServerFn({ method: "GET" }).handler(createSsrRpc("2c4985e96c199268f7f639534cb5e8e31d6b19d43286bf77416413db60ffde26"));
 var Route$3 = createRootRoute({
@@ -370,9 +473,18 @@ function RootDocument() {
 		lang: "en",
 		className: "antialiased",
 		suppressHydrationWarning: true,
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("head", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HeadContent, {}) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("body", {
+		style: {
+			background: "#0b1014",
+			colorScheme: "dark"
+		},
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("head", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", { dangerouslySetInnerHTML: { __html: CRITICAL_BOOT_CSS } }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HeadContent, {})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("body", {
 			className: "min-h-dvh overflow-x-clip bg-bg text-fg",
+			style: {
+				background: "#0b1014",
+				color: "#e7eef4"
+			},
 			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BootSplash, {}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PreviewHostBridge, {}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AppProviders, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {}) }) }),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Scripts, {})
@@ -380,7 +492,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-CJge3iUk.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-CzuRgrUL.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-yRCMsAbs.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });

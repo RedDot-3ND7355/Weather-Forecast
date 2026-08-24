@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { AppProviders } from "@/components/app-providers";
+import { BootSplash, CRITICAL_BOOT_CSS } from "@/components/boot-splash";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
@@ -45,11 +46,21 @@ export const Route = createRootRoute({
 
 function RootDocument() {
   return (
-    <html lang="en" className="antialiased" suppressHydrationWarning>
+    <html
+      lang="en"
+      className="antialiased"
+      suppressHydrationWarning
+      style={{ background: "#0b1014", colorScheme: "dark" }}
+    >
       <head>
+        <style dangerouslySetInnerHTML={{ __html: CRITICAL_BOOT_CSS }} />
         <HeadContent />
       </head>
-      <body className="min-h-dvh overflow-x-clip bg-bg text-fg">
+      <body
+        className="min-h-dvh overflow-x-clip bg-bg text-fg"
+        style={{ background: "#0b1014", color: "#e7eef4" }}
+      >
+        <BootSplash />
         <PreviewHostBridge />
         <AuthProvider>
           <AppProviders>
