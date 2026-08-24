@@ -1,5 +1,5 @@
 import { n as create, t as persist } from "../_libs/zustand.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/i18n-Dc3QW1KM.js
+//#region node_modules/.nitro/vite/services/ssr/assets/i18n-B-eGWbYz.js
 function samePlace(a, b) {
 	return Math.abs(a.latitude - b.latitude) < 8e-4 && Math.abs(a.longitude - b.longitude) < 8e-4;
 }
@@ -126,7 +126,7 @@ var MESSAGES = {
 		rainEta: "Rain {label}",
 		noRainHeaded: "No rain headed this way",
 		watchThe: "Watch the {from}",
-		radarCopy: "Wind is {from}. Live radar plus Environment Canada’s 1 km nowcast for the next hour; after that we keep the motion going.",
+		radarCopy: "Wind is {from}. Live radar plus Environment Canada’s 1 km nowcast for the first hour; we keep that scan moving through +5h.",
 		fromThe: "From the {from}",
 		radarUnavailable: "Radar is unavailable right now. The hourly estimate below still uses wind and the forecast model.",
 		forecastStamp: "Forecast · {stamp}",
@@ -280,7 +280,7 @@ var MESSAGES = {
 		rainEta: "Pluie {label}",
 		noRainHeaded: "Pas de pluie en approche",
 		watchThe: "Surveiller {from}",
-		radarCopy: "Le vent est {from}. Radar en direct plus le nowcast 1 km d’Environnement Canada pour la prochaine heure ; ensuite on continue le mouvement.",
+		radarCopy: "Le vent est {from}. Radar en direct plus le nowcast 1 km d’Environnement Canada pour la première heure ; on fait glisser ce scan jusqu’à +5 h.",
 		fromThe: "Depuis {from}",
 		radarUnavailable: "Radar indisponible pour le moment. L’estimation horaire utilise encore le vent et le modèle.",
 		forecastStamp: "Prévision · {stamp}",

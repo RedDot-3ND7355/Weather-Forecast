@@ -190,6 +190,22 @@ function paintRainLayer(
   return c;
 }
 
+function paintOverlayImage(
+  img: HTMLImageElement,
+  cssW: number,
+  cssH: number,
+): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(cssW));
+  c.height = Math.max(1, Math.round(cssH));
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  if (ctx) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+  }
+  return c;
+}
+
 type FlowGrid = {
   bs: number;
   cols: number;
@@ -1015,6 +1031,7 @@ export function RadarMap({
           ? mscQuery.data
           : null,
         stepSec: 10 * 60,
+        futureHours: 5,
       }),
     [
       catalogQuery.data?.frames,
@@ -1200,7 +1217,23 @@ export function RadarMap({
         : "";
       const overlay = overlayUrl ? await loadImg(overlayUrl, false) : null;
       if (cancelled) return;
-      const skipTrack = Boolean(overlay);
+      const isFc = active.kind === "forecast";
+      const mscObsFrames = frames.filter((f) => f.overlay === "msc-obs");
+      const mscFcFrames = frames.filter((f) => f.overlay === "msc-fc");
+      const mscSource = mscFcFrames.at(-1) ?? mscObsFrames.at(-1);
+      const overlayFor = (f: RadarFrame | undefined, keep: boolean) => {
+        if (!f?.overlay) return Promise.resolve(null as HTMLImageElement | null);
+        return loadImg(
+          mscGetMapUrl({
+            layer: f.overlay === "msc-fc" ? "fc" : "obs",
+            time: f.time,
+            bbox,
+            width: cssW,
+            height: cssH,
+          }),
+          keep,
+        );
+      };
       const withTiles = frames.filter((f) => f.tileUrl);
       const nowSec = Date.now() / 1000;
       const catalogPast = (catalogQuery.data?.frames ?? [])
@@ -1208,35 +1241,39 @@ export function RadarMap({
         .slice()
         .sort((a, b) => a.time - b.time);
       const source = withTiles.at(-1);
-      const isFc = active.kind === "forecast";
       const nPast = catalogPast.length;
       const trackNow = catalogPast.at(-1);
       const trackMid =
         nPast >= 7 ? catalogPast[nPast - 7] : catalogPast.at(-Math.min(nPast, 4));
       const trackOld = nPast >= 3 ? catalogPast[0] : undefined;
+      const skipTrack = Boolean(overlay);
+      const useMsc = Boolean(!overlay && isFc && mscSource);
       const advectRain =
-        !skipTrack && isFc && source && source !== active
+        !skipTrack && !useMsc && isFc && source && source !== active
           ? await loadTiles(source)
           : undefined;
-      const [nowRain, midRain, oldRain] = skipTrack
-        ? [undefined, undefined, undefined]
-        : await Promise.all([
-            isFc && trackNow ? loadTiles(trackNow) : Promise.resolve(undefined),
-            isFc && trackMid && trackMid !== trackNow
-              ? loadTiles(trackMid)
-              : Promise.resolve(undefined),
-            isFc && trackOld && trackOld !== trackMid
-              ? loadTiles(trackOld)
-              : Promise.resolve(undefined),
-          ]);
+      const [nowRain, midRain, oldRain] =
+        skipTrack || useMsc
+          ? [undefined, undefined, undefined]
+          : await Promise.all([
+              isFc && trackNow ? loadTiles(trackNow) : Promise.resolve(undefined),
+              isFc && trackMid && trackMid !== trackNow
+                ? loadTiles(trackMid)
+                : Promise.resolve(undefined),
+              isFc && trackOld && trackOld !== trackMid
+                ? loadTiles(trackOld)
+                : Promise.resolve(undefined),
+            ]);
       if (cancelled) return;
 
       const hoursAhead =
         active.overlay === "msc-fc"
           ? 0
-          : isFc && source
-            ? Math.max(0, (active.time - source.time) / 3600)
-            : 0;
+          : useMsc && mscSource
+            ? Math.max(0, (active.time - mscSource.time) / 3600)
+            : isFc && source
+              ? Math.max(0, (active.time - source.time) / 3600)
+              : 0;
       const { ux, uy } = windAxes(current.windDir);
       const mpp = metersPerPixel(place.latitude, z) / Math.max(scale, 0.2);
       const steerKmh = Math.max(current.windSpeedKmh * 1.85, 18);
@@ -1245,7 +1282,40 @@ export function RadarMap({
       let vx = ux * steerPx;
       let vy = uy * steerPx;
       let evolvedRain: HTMLCanvasElement | null = null;
-      if (!overlay && nowRain && midRain && trackNow && trackMid && advectRain) {
+      if (useMsc && mscSource) {
+        const srcImg = await overlayFor(mscSource, true);
+        const trackB = mscObsFrames.at(-1);
+        const trackA =
+          mscObsFrames.length >= 8 ? mscObsFrames.at(-8) : mscObsFrames[0];
+        const [aImg, bImg] = await Promise.all([
+          overlayFor(trackA, true),
+          overlayFor(trackB, true),
+        ]);
+        if (cancelled) return;
+        if (srcImg && aImg && bImg && trackA && trackB && trackA !== trackB) {
+          const sourceC = paintOverlayImage(srcImg, cssW, cssH);
+          const earlierC = paintOverlayImage(aImg, cssW, cssH);
+          const laterC = paintOverlayImage(bImg, cssW, cssH);
+          const dtH = Math.max(0.25, (trackB.time - trackA.time) / 3600);
+          const flow = measureFlow(earlierC, laterC, dtH, ux, uy, cap);
+          if (flow) {
+            evolvedRain = evolveRain(sourceC, flow, hoursAhead, ux, uy, steerPx);
+            let mvx = 0;
+            let mvy = 0;
+            let n = 0;
+            for (let i = 0; i < flow.ok.length; i += 1) {
+              if (!flow.ok[i]) continue;
+              mvx += flow.vx[i];
+              mvy += flow.vy[i];
+              n += 1;
+            }
+            if (n) {
+              vx = mvx / n;
+              vy = mvy / n;
+            }
+          }
+        }
+      } else if (!overlay && nowRain && midRain && trackNow && trackMid && advectRain) {
         const laterC = paintRainLayer(
           nowRain,
           originX,
@@ -1617,7 +1687,7 @@ export function RadarMap({
             >
               {t("now")}
             </span>
-            {hasForecast ? <span className="absolute right-0">+6h</span> : null}
+            {hasForecast ? <span className="absolute right-0">+5h</span> : null}
           </div>
         </div>
       </div>

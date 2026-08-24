@@ -3,19 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-Dc3QW1KM.mjs";
-import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BS5ArbSx.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-B-eGWbYz.mjs";
+import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BuzFLAAb.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { n as arrivalCopy, r as formatEta } from "./advection-DJZa-R4a.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-CHvhfvGU.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-tdw537dR.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BET8oWxT.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BgUj9hGh.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CAz5BpCX.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1467,7 +1467,7 @@ function buildRadarTimeline(args) {
 	const now = args.now ?? Date.now() / 1e3;
 	const step = args.stepSec ?? 600;
 	const nowTick = Math.floor(now / step) * step;
-	const end = nowTick + (args.futureHours ?? 6) * 3600;
+	const end = nowTick + (args.futureHours ?? 5) * 3600;
 	const out = [];
 	const seen = /* @__PURE__ */ new Set();
 	const push = (f) => {
@@ -1646,6 +1646,17 @@ function paintRainLayer(tiles, originX, originY, tile, scale, cssW, cssH) {
 	for (const t of tiles) {
 		if (!t.rain) continue;
 		ctx.drawImage(t.rain, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
+	}
+	return c;
+}
+function paintOverlayImage(img, cssW, cssH) {
+	const c = document.createElement("canvas");
+	c.width = Math.max(1, Math.round(cssW));
+	c.height = Math.max(1, Math.round(cssH));
+	const ctx = c.getContext("2d", { willReadFrequently: true });
+	if (ctx) {
+		ctx.imageSmoothingEnabled = true;
+		ctx.drawImage(img, 0, 0, c.width, c.height);
 	}
 	return c;
 }
@@ -2254,7 +2265,8 @@ function RadarMap({ forecast, units }) {
 		catalog: catalogQuery.data?.frames ?? [],
 		grid: gridQuery.data ?? [],
 		msc: inMscDomain(place.latitude, place.longitude) ? mscQuery.data : null,
-		stepSec: 600
+		stepSec: 600,
+		futureHours: 5
 	}), [
 		catalogQuery.data?.frames,
 		gridQuery.data,
@@ -2415,18 +2427,31 @@ function RadarMap({ forecast, units }) {
 			}) : "";
 			const overlay = overlayUrl ? await loadImg(overlayUrl, false) : null;
 			if (cancelled) return;
-			const skipTrack = Boolean(overlay);
+			const isFc = active.kind === "forecast";
+			const mscObsFrames = frames.filter((f) => f.overlay === "msc-obs");
+			const mscSource = frames.filter((f) => f.overlay === "msc-fc").at(-1) ?? mscObsFrames.at(-1);
+			const overlayFor = (f, keep) => {
+				if (!f?.overlay) return Promise.resolve(null);
+				return loadImg(mscGetMapUrl({
+					layer: f.overlay === "msc-fc" ? "fc" : "obs",
+					time: f.time,
+					bbox,
+					width: cssW,
+					height: cssH
+				}), keep);
+			};
 			const withTiles = frames.filter((f) => f.tileUrl);
 			const nowSec = Date.now() / 1e3;
 			const catalogPast = (catalogQuery.data?.frames ?? []).filter((f) => f.tileUrl && f.time <= nowSec + 90).slice().sort((a, b) => a.time - b.time);
 			const source = withTiles.at(-1);
-			const isFc = active.kind === "forecast";
 			const nPast = catalogPast.length;
 			const trackNow = catalogPast.at(-1);
 			const trackMid = nPast >= 7 ? catalogPast[nPast - 7] : catalogPast.at(-Math.min(nPast, 4));
 			const trackOld = nPast >= 3 ? catalogPast[0] : void 0;
-			const advectRain = !skipTrack && isFc && source && source !== active ? await loadTiles(source) : void 0;
-			const [nowRain, midRain, oldRain] = skipTrack ? [
+			const skipTrack = Boolean(overlay);
+			const useMsc = Boolean(!overlay && isFc && mscSource);
+			const advectRain = !skipTrack && !useMsc && isFc && source && source !== active ? await loadTiles(source) : void 0;
+			const [nowRain, midRain, oldRain] = skipTrack || useMsc ? [
 				void 0,
 				void 0,
 				void 0
@@ -2436,7 +2461,7 @@ function RadarMap({ forecast, units }) {
 				isFc && trackOld && trackOld !== trackMid ? loadTiles(trackOld) : Promise.resolve(void 0)
 			]);
 			if (cancelled) return;
-			const hoursAhead = active.overlay === "msc-fc" ? 0 : isFc && source ? Math.max(0, (active.time - source.time) / 3600) : 0;
+			const hoursAhead = active.overlay === "msc-fc" ? 0 : useMsc && mscSource ? Math.max(0, (active.time - mscSource.time) / 3600) : isFc && source ? Math.max(0, (active.time - source.time) / 3600) : 0;
 			const { ux, uy } = windAxes(current.windDir);
 			const mpp = metersPerPixel(place.latitude, z) / Math.max(scale, .2);
 			const steerPx = Math.max(current.windSpeedKmh * 1.85, 18) * 1e3 / mpp;
@@ -2444,7 +2469,33 @@ function RadarMap({ forecast, units }) {
 			let vx = ux * steerPx;
 			let vy = uy * steerPx;
 			let evolvedRain = null;
-			if (!overlay && nowRain && midRain && trackNow && trackMid && advectRain) {
+			if (useMsc && mscSource) {
+				const srcImg = await overlayFor(mscSource, true);
+				const trackB = mscObsFrames.at(-1);
+				const trackA = mscObsFrames.length >= 8 ? mscObsFrames.at(-8) : mscObsFrames[0];
+				const [aImg, bImg] = await Promise.all([overlayFor(trackA, true), overlayFor(trackB, true)]);
+				if (cancelled) return;
+				if (srcImg && aImg && bImg && trackA && trackB && trackA !== trackB) {
+					const sourceC = paintOverlayImage(srcImg, cssW, cssH);
+					const flow = measureFlow(paintOverlayImage(aImg, cssW, cssH), paintOverlayImage(bImg, cssW, cssH), Math.max(.25, (trackB.time - trackA.time) / 3600), ux, uy, cap);
+					if (flow) {
+						evolvedRain = evolveRain(sourceC, flow, hoursAhead, ux, uy, steerPx);
+						let mvx = 0;
+						let mvy = 0;
+						let n = 0;
+						for (let i = 0; i < flow.ok.length; i += 1) {
+							if (!flow.ok[i]) continue;
+							mvx += flow.vx[i];
+							mvy += flow.vy[i];
+							n += 1;
+						}
+						if (n) {
+							vx = mvx / n;
+							vy = mvy / n;
+						}
+					}
+				}
+			} else if (!overlay && nowRain && midRain && trackNow && trackMid && advectRain) {
 				const laterC = paintRainLayer(nowRain, originX, originY, tile, scale, cssW, cssH);
 				const midC = paintRainLayer(midRain, originX, originY, tile, scale, cssW, cssH);
 				const sourceC = paintRainLayer(advectRain, originX, originY, tile, scale, cssW, cssH);
@@ -2753,7 +2804,7 @@ function RadarMap({ forecast, units }) {
 							}),
 							hasForecast ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute right-0",
-								children: "+6h"
+								children: "+5h"
 							}) : null
 						]
 					})]
