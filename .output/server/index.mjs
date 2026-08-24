@@ -14,126 +14,126 @@ var public_assets_data_default = {
 	"/favicon.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"1b0-eHuOw216fMR7/WJ+ghpCK8D56dM\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 432,
 		"path": "../public/favicon.svg"
 	},
 	"/og.jpg": {
 		"type": "image/jpeg",
 		"etag": "\"dd78-tS/M2+/U2KAZ9Gsp7T0dONcFL3Y\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 56696,
 		"path": "../public/og.jpg"
 	},
 	"/__grok/icon-180.png": {
 		"type": "image/png",
 		"etag": "\"834-Xk8vfS0DTFn7ggtkfEduWTcNWGE\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 2100,
 		"path": "../public/__grok/icon-180.png"
 	},
 	"/assets/client-C6Z4iW4I.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"7cbd-6zm1jyk5Cr1li5dyPTGan6qk0eY\"",
-		"mtime": "2026-08-24T02:19:34.285Z",
+		"mtime": "2026-08-24T02:21:55.281Z",
 		"size": 31933,
 		"path": "../public/assets/client-C6Z4iW4I.js"
 	},
 	"/assets/dist-CP3jarzo.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"e623-mbC738//PVw4VXrzbDmVftwbUjo\"",
-		"mtime": "2026-08-24T02:19:34.285Z",
+		"mtime": "2026-08-24T02:21:55.281Z",
 		"size": 58915,
 		"path": "../public/assets/dist-CP3jarzo.js"
 	},
-	"/assets/index-BbVAJ4xe.js": {
+	"/assets/index-BISLmzSG.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"5ea9f-o8YDPLhpJDL8Stby8ufbqdcAq+g\"",
-		"mtime": "2026-08-24T02:19:34.285Z",
+		"etag": "\"5ea9f-ikhEWfKOgFbh1KzNmCKDtvOPzFY\"",
+		"mtime": "2026-08-24T02:21:55.281Z",
 		"size": 387743,
-		"path": "../public/assets/index-BbVAJ4xe.js"
+		"path": "../public/assets/index-BISLmzSG.js"
 	},
 	"/assets/input-Yv3RKBcd.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"7dbb-nqyjPUlGLnrX9RUNUFoX6x45mGs\"",
-		"mtime": "2026-08-24T02:19:34.285Z",
+		"mtime": "2026-08-24T02:21:55.281Z",
 		"size": 32187,
 		"path": "../public/assets/input-Yv3RKBcd.js"
-	},
-	"/assets/login-DIsOQ5zm.js": {
-		"type": "text/javascript; charset=utf-8",
-		"etag": "\"16e0-XbwCMHV7E0JgkRJm/3L/T6ZFEH0\"",
-		"mtime": "2026-08-24T02:19:34.285Z",
-		"size": 5856,
-		"path": "../public/assets/login-DIsOQ5zm.js"
 	},
 	"/assets/react-SIfiwpqq.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"1ff9-FGVdof4/lFGmrdRsB9EIvuwBlYc\"",
-		"mtime": "2026-08-24T02:19:34.285Z",
+		"mtime": "2026-08-24T02:21:55.281Z",
 		"size": 8185,
 		"path": "../public/assets/react-SIfiwpqq.js"
 	},
-	"/assets/routes-5sE_6hO6.js": {
+	"/assets/login-BHxTEZax.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"6da14-msGBafYU0GHqLRvyc17sYYxFjzg\"",
-		"mtime": "2026-08-24T02:19:34.285Z",
-		"size": 449044,
-		"path": "../public/assets/routes-5sE_6hO6.js"
+		"etag": "\"16e0-R9Oa3N+cIE01/5twpAy0hUgAbAA\"",
+		"mtime": "2026-08-24T02:21:55.281Z",
+		"size": 5856,
+		"path": "../public/assets/login-BHxTEZax.js"
+	},
+	"/assets/routes-DG3uREcj.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"6dee0-xO3WzYFVfnhLd+LAH8EcWDJa2rI\"",
+		"mtime": "2026-08-24T02:21:55.281Z",
+		"size": 450272,
+		"path": "../public/assets/routes-DG3uREcj.js"
 	},
 	"/assets/styles-veQivvw8.css": {
 		"type": "text/css; charset=utf-8",
 		"etag": "\"a8f5-JUTrJ506TYku96Mg5ChP9gBZi7Q\"",
-		"mtime": "2026-08-24T02:19:34.285Z",
+		"mtime": "2026-08-24T02:21:55.281Z",
 		"size": 43253,
 		"path": "../public/assets/styles-veQivvw8.css"
 	},
 	"/__grok/install/styles.css": {
 		"type": "text/css; charset=utf-8",
 		"etag": "\"1a3d-VUsWOMAheo1/P30EqU5qaIkyvIQ\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 6717,
 		"path": "../public/__grok/install/styles.css"
 	},
 	"/__grok/install/assets/homescreen/glass-puzzle.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"713-AP2wG8KChAGjse1Fn+f/+vDN+sQ\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 1811,
 		"path": "../public/__grok/install/assets/homescreen/glass-puzzle.svg"
 	},
 	"/__grok/install/assets/homescreen/glass-share.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"954-jb3ATcKjqgMOYrA/4w1v21j0Jvg\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 2388,
 		"path": "../public/__grok/install/assets/homescreen/glass-share.svg"
 	},
 	"/__grok/install/assets/homescreen/logo-grok.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"423-5mXO+yh9KW40jM3to5JlWPhxNK8\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 1059,
 		"path": "../public/__grok/install/assets/homescreen/logo-grok.svg"
 	},
 	"/__grok/install/assets/homescreen/ob-ipad.png": {
 		"type": "image/png",
 		"etag": "\"18dd3-wlRwrpmBImStuiu+4poVz7ANin4\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 101843,
 		"path": "../public/__grok/install/assets/homescreen/ob-ipad.png"
 	},
 	"/__grok/install/assets/homescreen/ob-phone.png": {
 		"type": "image/png",
 		"etag": "\"194bc-oZradWHIHO68q2glHU0Gk5ttpWA\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 103612,
 		"path": "../public/__grok/install/assets/homescreen/ob-phone.png"
 	},
 	"/__grok/install/assets/homescreen/plus.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"961-sSBPunx/13vbMNAlPxb7UeO3l3A\"",
-		"mtime": "2026-08-24T02:19:35.253Z",
+		"mtime": "2026-08-24T02:21:56.045Z",
 		"size": 2401,
 		"path": "../public/__grok/install/assets/homescreen/plus.svg"
 	}
@@ -205,8 +205,8 @@ var static_default = defineHandler((event) => {
 });
 //#endregion
 //#region server/middleware/00-sensors.ts
-var SENSOR_POLICY = "accelerometer=(self), gyroscope=(self), magnetometer=(self)";
-var FEATURE_POLICY = "accelerometer 'self'; gyroscope 'self'; magnetometer 'self'";
+var SENSOR_POLICY = "accelerometer=(self), gyroscope=(self), magnetometer=(self), geolocation=(self)";
+var FEATURE_POLICY = "accelerometer 'self'; gyroscope 'self'; magnetometer 'self'; geolocation 'self'";
 async function sensorsPolicy(_event, next) {
 	const result = await next();
 	if (!(result instanceof Response)) return result;

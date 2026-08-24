@@ -12,10 +12,10 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { i as offsetKm } from "./advection-DzL6mFo8.mjs";
 import { A as CloudDrizzle, C as Droplets, D as CloudRain, E as CloudSnow, M as ChevronLeft, N as Bookmark, O as CloudLightning, P as BookmarkCheck, S as Expand, T as CloudSun, _ as Locate, a as Sun, b as Gauge, c as Plus, d as Moon, f as Minus, g as LogIn, h as LogOut, i as Thermometer, j as ChevronRight, k as CloudFog, l as Play, m as MapPin, n as Wind, o as Search, p as Maximize2, s as Radar, t as X, u as Pause, v as LoaderCircle, w as Cloud, x as Eye, y as Info } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-DfKFEsNe.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-B5p2VCbS.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-bHk5Jnvx.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-B3B78TMh.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -2173,6 +2173,73 @@ function Skeleton({ className, ...props }) {
 		...props
 	});
 }
+var GeoError = class extends Error {
+	kind;
+	constructor(message, kind) {
+		super(message);
+		this.kind = kind;
+		this.name = "GeoError";
+	}
+};
+function once(high, timeout, maximumAge) {
+	return new Promise((resolve, reject) => {
+		navigator.geolocation.getCurrentPosition(resolve, reject, {
+			enableHighAccuracy: high,
+			timeout,
+			maximumAge
+		});
+	});
+}
+function watchOnce(timeout) {
+	return new Promise((resolve, reject) => {
+		let settled = false;
+		const id = navigator.geolocation.watchPosition((pos) => {
+			if (settled) return;
+			settled = true;
+			navigator.geolocation.clearWatch(id);
+			resolve(pos);
+		}, (err) => {
+			if (settled) return;
+			settled = true;
+			navigator.geolocation.clearWatch(id);
+			reject(err);
+		}, {
+			enableHighAccuracy: true,
+			timeout,
+			maximumAge: 15e3
+		});
+		window.setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			navigator.geolocation.clearWatch(id);
+			reject(Object.assign(/* @__PURE__ */ new Error("timeout"), { code: 3 }));
+		}, timeout + 500);
+	});
+}
+function wrap(err) {
+	const code = err && typeof err === "object" && "code" in err ? Number(err.code) : 0;
+	if (code === 1) return new GeoError("Location is blocked. On iPhone: Settings → Safari → Location, then Allow.", "denied");
+	if (code === 3) return new GeoError("Location timed out. Try again outside or with Wi-Fi on.", "timeout");
+	return new GeoError("Could not read your location.", "unavailable");
+}
+async function readDevicePosition() {
+	if (typeof navigator === "undefined" || !navigator.geolocation) throw new GeoError("Location is not available in this browser.", "missing");
+	try {
+		return await once(true, 12e3, 3e4);
+	} catch (first) {
+		if ((first && typeof first === "object" && "code" in first ? Number(first.code) : 0) === 1) throw wrap(first);
+		try {
+			return await once(false, 14e3, 6e4);
+		} catch (second) {
+			if ((second && typeof second === "object" && "code" in second ? Number(second.code) : 0) === 1) throw wrap(second);
+			try {
+				return await watchOnce(16e3);
+			} catch (third) {
+				throw wrap(third);
+			}
+		}
+	}
+}
 function ForecastApp() {
 	const { user } = useCurrentUserState();
 	const place = useWeatherStore((s) => s.place);
@@ -2201,27 +2268,17 @@ function ForecastApp() {
 	const savedPlaces = savedQuery.data ?? [];
 	const saved = Boolean(active) && savedPlaces.some((p) => Math.abs(p.latitude - active.latitude) < 8e-4 && Math.abs(p.longitude - active.longitude) < 8e-4);
 	function locate() {
-		if (!navigator.geolocation) {
-			toast("Location is not available here");
-			return;
-		}
 		setLocating(true);
-		navigator.geolocation.getCurrentPosition((pos) => {
-			reversePlace({ data: {
-				latitude: pos.coords.latitude,
-				longitude: pos.coords.longitude
-			} }).then(setPlace).catch(() => setPlace({
-				name: "Your location",
-				latitude: pos.coords.latitude,
-				longitude: pos.coords.longitude
-			})).finally(() => setLocating(false));
-		}, () => {
-			toast("Could not read your location");
-			setLocating(false);
-		}, {
-			enableHighAccuracy: false,
-			timeout: 8e3
-		});
+		readDevicePosition().then((pos) => reversePlace({ data: {
+			latitude: pos.coords.latitude,
+			longitude: pos.coords.longitude
+		} }).then(setPlace).catch(() => setPlace({
+			name: "Your location",
+			latitude: pos.coords.latitude,
+			longitude: pos.coords.longitude
+		}))).catch((err) => {
+			toast(err instanceof GeoError ? err.message : "Could not read your location");
+		}).finally(() => setLocating(false));
 	}
 	async function onRemove(id) {
 		try {

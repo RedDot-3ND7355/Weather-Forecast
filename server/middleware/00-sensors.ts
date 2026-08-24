@@ -1,7 +1,7 @@
 const SENSOR_POLICY =
-  "accelerometer=(self), gyroscope=(self), magnetometer=(self)";
+  "accelerometer=(self), gyroscope=(self), magnetometer=(self), geolocation=(self)";
 const FEATURE_POLICY =
-  "accelerometer 'self'; gyroscope 'self'; magnetometer 'self'";
+  "accelerometer 'self'; gyroscope 'self'; magnetometer 'self'; geolocation 'self'";
 
 export default async function sensorsPolicy(
   _event: unknown,

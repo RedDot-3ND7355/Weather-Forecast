@@ -17,6 +17,7 @@ import { listPlaces, removePlace } from "@/lib/places";
 import { useWeatherStore } from "@/lib/store";
 import { fetchForecast, reversePlace } from "@/lib/weather/api";
 import { formatSpeed } from "@/lib/weather/format";
+import { GeoError, readDevicePosition } from "@/lib/geolocation";
 import type { Place } from "@/lib/weather/types";
 
 export function ForecastApp() {
@@ -54,14 +55,10 @@ export function ForecastApp() {
     );
 
   function locate() {
-    if (!navigator.geolocation) {
-      toast("Location is not available here");
-      return;
-    }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        void reversePlace({
+    void readDevicePosition()
+      .then((pos) =>
+        reversePlace({
           data: {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
@@ -74,15 +71,12 @@ export function ForecastApp() {
               latitude: pos.coords.latitude,
               longitude: pos.coords.longitude,
             }),
-          )
-          .finally(() => setLocating(false));
-      },
-      () => {
-        toast("Could not read your location");
-        setLocating(false);
-      },
-      { enableHighAccuracy: false, timeout: 8000 },
-    );
+          ),
+      )
+      .catch((err) => {
+        toast(err instanceof GeoError ? err.message : "Could not read your location");
+      })
+      .finally(() => setLocating(false));
   }
 
   async function onRemove(id: number) {

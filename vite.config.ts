@@ -133,7 +133,7 @@ export default defineConfig(({ command, isPreview }) => ({
     strictPort: true,
     headers: {
       "Permissions-Policy":
-        "accelerometer=(self), gyroscope=(self), magnetometer=(self)",
+        "accelerometer=(self), gyroscope=(self), magnetometer=(self), geolocation=(self)",
     },
   },
   preview: {
