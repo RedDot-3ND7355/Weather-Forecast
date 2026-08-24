@@ -13,9 +13,9 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { n as arrivalCopy, r as formatEta } from "./advection-CHvhfvGU.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-BET8oWxT.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-DrXJ02xb.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CAz5BpCX.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BxM1FHoG.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1843,23 +1843,33 @@ function lookupFlow(grid, x, y) {
 		g: grid.g[i]
 	};
 }
-function splat(data, w, h, x, y, r, g, b, a) {
-	const x0 = Math.round(x);
-	const y0 = Math.round(y);
-	for (let oy = 0; oy <= 1; oy += 1) for (let ox = 0; ox <= 1; ox += 1) {
-		const px = x0 + ox;
-		const py = y0 + oy;
-		if (px < 0 || py < 0 || px >= w || py >= h) continue;
-		const i = (py * w + px) * 4;
-		const aa = ox === 0 && oy === 0 ? a : a * .92;
-		if (aa <= data[i + 3]) continue;
-		data[i] = r;
-		data[i + 1] = g;
-		data[i + 2] = b;
-		data[i + 3] = Math.min(255, aa);
-	}
+function sampleBilinear(data, w, h, x, y) {
+	if (x < 0 || y < 0 || x >= w - 1 || y >= h - 1) return [
+		0,
+		0,
+		0,
+		0
+	];
+	const x0 = Math.floor(x);
+	const y0 = Math.floor(y);
+	const fx = x - x0;
+	const fy = y - y0;
+	const i00 = (y0 * w + x0) * 4;
+	const i10 = i00 + 4;
+	const i01 = i00 + w * 4;
+	const i11 = i01 + 4;
+	const w00 = (1 - fx) * (1 - fy);
+	const w10 = fx * (1 - fy);
+	const w01 = (1 - fx) * fy;
+	const w11 = fx * fy;
+	return [
+		data[i00] * w00 + data[i10] * w10 + data[i01] * w01 + data[i11] * w11,
+		data[i00 + 1] * w00 + data[i10 + 1] * w10 + data[i01 + 1] * w01 + data[i11 + 1] * w11,
+		data[i00 + 2] * w00 + data[i10 + 2] * w10 + data[i01 + 2] * w01 + data[i11 + 2] * w11,
+		data[i00 + 3] * w00 + data[i10 + 3] * w10 + data[i01 + 3] * w01 + data[i11 + 3] * w11
+	];
 }
-function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
+function evolveRain(source, grid, hours, _steerUx, _steerUy, _steerPx) {
 	const out = document.createElement("canvas");
 	out.width = source.width;
 	out.height = source.height;
@@ -1872,51 +1882,42 @@ function evolveRain(source, grid, hours, steerUx, steerUy, steerPx) {
 	const h = source.height;
 	const sd = src.data;
 	const dd = dst.data;
-	const step = 1;
-	for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) {
-		const i = (y * w + x) * 4;
-		const a0 = sd[i + 3];
-		if (a0 < 12) continue;
-		const f = lookupFlow(grid, x, y);
+	const steps = Math.max(2, Math.min(8, Math.ceil(hours / .28)));
+	const dt = hours / steps;
+	const fade = hours <= .75 ? 1 : Math.max(.42, 1 - (hours - .75) * .16);
+	for (let y = 0; y < h; y += 1) for (let x = 0; x < w; x += 1) {
 		let px = x;
 		let py = y;
-		const steps = Math.max(3, Math.ceil(hours / .18));
-		const dt = hours / steps;
-		let lastVx = f.vx;
-		let lastVy = f.vy;
-		let tAcc = 0;
+		let tAcc = hours;
 		for (let s = 0; s < steps; s += 1) {
 			const fl = lookupFlow(grid, px, py);
-			lastVx = fl.vx + fl.ax * tAcc;
-			lastVy = fl.vy + fl.ay * tAcc;
-			const ang = grid.omega * dt;
+			let vx = fl.vx + fl.ax * Math.max(0, tAcc - dt);
+			let vy = fl.vy + fl.ay * Math.max(0, tAcc - dt);
+			const ang = -grid.omega * dt;
 			if (Math.abs(ang) > 1e-5) {
 				const ca = Math.cos(ang);
 				const sa = Math.sin(ang);
-				const nvx = lastVx * ca - lastVy * sa;
-				const nvy = lastVx * sa + lastVy * ca;
-				lastVx = nvx;
-				lastVy = nvy;
+				const nvx = vx * ca - vy * sa;
+				const nvy = vx * sa + vy * ca;
+				vx = nvx;
+				vy = nvy;
 			}
-			px += lastVx * dt;
-			py += lastVy * dt;
-			tAcc += dt;
+			px -= vx * dt;
+			py -= vy * dt;
+			tAcc -= dt;
 		}
-		const jx = (fbm(x * .07, y * .07) - .5) * hours * 6;
-		const jy = (fbm(x * .07 + 4, y * .07) - .5) * hours * 6;
-		const destX = px + jx;
-		const destY = py + jy;
-		const grow = Math.max(.92, Math.min(1.28, 1 + f.g * hours * .4));
-		const aa = Math.min(255, a0 * grow);
-		splat(dd, w, h, destX, destY, sd[i], sd[i + 1], sd[i + 2], aa);
-		if (f.g > .12 && hours > .15) {
-			const sp = Math.hypot(lastVx, lastVy) || 1;
-			const lead = Math.min(22, (5 + f.g * 14) * hours);
-			splat(dd, w, h, destX + lastVx / sp * lead, destY + lastVy / sp * lead, sd[i], sd[i + 1], sd[i + 2], aa * Math.min(.55, .28 + f.g * .3));
-		}
+		const [r, g, b, a] = sampleBilinear(sd, w, h, px, py);
+		if (a < 10) continue;
+		const fl = lookupFlow(grid, x, y);
+		const grow = hours < .7 ? Math.max(.94, Math.min(1.12, 1 + fl.g * hours * .22)) : 1;
+		const i = (y * w + x) * 4;
+		dd[i] = r;
+		dd[i + 1] = g;
+		dd[i + 2] = b;
+		dd[i + 3] = Math.min(220, a * grow * fade);
 	}
 	octx.putImageData(dst, 0, 0);
-	return withSmoke(out);
+	return hours < .5 ? withSmoke(out) : out;
 }
 function blurAlpha(a, w, h, radius) {
 	const tmp = new Float32Array(w * h);
