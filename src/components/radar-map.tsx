@@ -1081,20 +1081,17 @@ export function RadarMap({
       if (cancelled) return;
       const withTiles = frames.filter((f) => f.tileUrl);
       const nowSec = Date.now() / 1000;
-      const pastScans = withTiles.filter((f) => f.time <= nowSec + 45);
+      const catalogPast = (catalogQuery.data?.frames ?? [])
+        .filter((f) => f.tileUrl && f.time <= nowSec + 90)
+        .slice()
+        .sort((a, b) => a.time - b.time);
       const source = withTiles.at(-1);
       const isFc = active.kind === "forecast";
-      const trackNow = pastScans.at(-1);
+      const nPast = catalogPast.length;
+      const trackNow = catalogPast.at(-1);
       const trackMid =
-        pastScans.length >= 5 ? pastScans.at(-3) : pastScans.at(-2);
-      const trackOld =
-        pastScans.length >= 7
-          ? pastScans.at(-5)
-          : pastScans.length >= 5
-            ? pastScans.at(-5)
-            : pastScans.length >= 4
-              ? pastScans.at(-4)
-              : undefined;
+        nPast >= 7 ? catalogPast[nPast - 7] : catalogPast.at(-Math.min(nPast, 4));
+      const trackOld = nPast >= 3 ? catalogPast[0] : undefined;
       const advectRain =
         isFc && source && source !== active ? await loadTiles(source) : undefined;
       const [nowRain, midRain, oldRain] = await Promise.all([
@@ -1254,7 +1251,7 @@ export function RadarMap({
       cancelled = true;
       cancelAnimationFrame(fadeRaf.current);
     };
-  }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames]);
+  }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames, catalogQuery.data?.frames]);
 
   const stamp = active
     ? new Intl.DateTimeFormat(localeTag(locale), {
@@ -1475,7 +1472,9 @@ export function RadarMap({
             ) : null}
           </div>
           <div className="relative mt-1 h-4 text-[11px] text-faint">
-            <span className="absolute left-0">-3h</span>
+            <span className="absolute left-0">
+              -{Math.max(1, Math.round(((frames[nowIdx]?.time ?? 0) - (frames[0]?.time ?? 0)) / 3600))}h
+            </span>
             <span
               className="absolute -translate-x-1/2 text-muted"
               style={{

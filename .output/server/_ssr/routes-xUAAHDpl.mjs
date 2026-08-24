@@ -3,19 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-DWV8FJ-7.mjs";
-import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-BWpW3PU7.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-GSFOlZhC.mjs";
+import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-CKPiIl_K.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { n as arrivalCopy, r as formatEta } from "./advection-DHwsWf1h.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-CZ7_SvZj.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CqLlwFXn.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CLSfO2xy.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-DCTtJfUP.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-xUAAHDpl.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1415,7 +1415,10 @@ function buildRadarTimeline(args) {
 	const now = args.now ?? Date.now() / 1e3;
 	const step = args.stepSec ?? 1800;
 	const nowTick = Math.floor(now / step) * step;
-	const start = nowTick - (args.pastHours ?? 3) * 3600;
+	const oldest = args.catalog.reduce((m, f) => Math.min(m, f.time), nowTick) || nowTick - 7200;
+	const wantStart = nowTick - (args.pastHours ?? 3) * 3600;
+	let start = Math.max(wantStart, Math.floor(oldest / step) * step);
+	if (!nearestFrame(args.catalog, start, 720)) start += step;
 	const end = nowTick + (args.futureHours ?? 6) * 3600;
 	const out = [];
 	for (let t = start; t <= end + 1; t += step) {
@@ -2233,12 +2236,13 @@ function RadarMap({ forecast, units }) {
 			if (cancelled) return;
 			const withTiles = frames.filter((f) => f.tileUrl);
 			const nowSec = Date.now() / 1e3;
-			const pastScans = withTiles.filter((f) => f.time <= nowSec + 45);
+			const catalogPast = (catalogQuery.data?.frames ?? []).filter((f) => f.tileUrl && f.time <= nowSec + 90).slice().sort((a, b) => a.time - b.time);
 			const source = withTiles.at(-1);
 			const isFc = active.kind === "forecast";
-			const trackNow = pastScans.at(-1);
-			const trackMid = pastScans.length >= 5 ? pastScans.at(-3) : pastScans.at(-2);
-			const trackOld = pastScans.length >= 7 ? pastScans.at(-5) : pastScans.length >= 5 ? pastScans.at(-5) : pastScans.length >= 4 ? pastScans.at(-4) : void 0;
+			const nPast = catalogPast.length;
+			const trackNow = catalogPast.at(-1);
+			const trackMid = nPast >= 7 ? catalogPast[nPast - 7] : catalogPast.at(-Math.min(nPast, 4));
+			const trackOld = nPast >= 3 ? catalogPast[0] : void 0;
 			const advectRain = isFc && source && source !== active ? await loadTiles(source) : void 0;
 			const [nowRain, midRain, oldRain] = await Promise.all([
 				isFc && trackNow ? loadTiles(trackNow) : Promise.resolve(void 0),
@@ -2356,7 +2360,8 @@ function RadarMap({ forecast, units }) {
 		place.latitude,
 		size.w,
 		size.h,
-		frames
+		frames,
+		catalogQuery.data?.frames
 	]);
 	const stamp = active ? new Intl.DateTimeFormat(localeTag(locale), {
 		hour: "numeric",
@@ -2539,9 +2544,13 @@ function RadarMap({ forecast, units }) {
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "relative mt-1 h-4 text-[11px] text-faint",
 						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 								className: "absolute left-0",
-								children: "-3h"
+								children: [
+									"-",
+									Math.max(1, Math.round(((frames[nowIdx]?.time ?? 0) - (frames[0]?.time ?? 0)) / 3600)),
+									"h"
+								]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute -translate-x-1/2 text-muted",

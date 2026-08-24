@@ -1,5 +1,5 @@
 import { n as create, t as persist } from "../_libs/zustand.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/i18n-DWV8FJ-7.js
+//#region node_modules/.nitro/vite/services/ssr/assets/i18n-GSFOlZhC.js
 function samePlace(a, b) {
 	return Math.abs(a.latitude - b.latitude) < 8e-4 && Math.abs(a.longitude - b.longitude) < 8e-4;
 }
@@ -126,7 +126,7 @@ var MESSAGES = {
 		rainEta: "Rain {label}",
 		noRainHeaded: "No rain headed this way",
 		watchThe: "Watch the {from}",
-		radarCopy: "Wind is {from}. Past 3 hours is live radar; the next 6 hours keeps that motion, including the curve.",
+		radarCopy: "Wind is {from}. Live radar is the past scans RainViewer still has; the next 6 hours keeps that motion, including the curve.",
 		fromThe: "From the {from}",
 		radarUnavailable: "Radar is unavailable right now. The hourly estimate below still uses wind and the forecast model.",
 		forecastStamp: "Forecast · {stamp}",
@@ -280,7 +280,7 @@ var MESSAGES = {
 		rainEta: "Pluie {label}",
 		noRainHeaded: "Pas de pluie en approche",
 		watchThe: "Surveiller {from}",
-		radarCopy: "Le vent est {from}. Les 3 dernières heures sont le radar en direct ; les 6 prochaines gardent ce mouvement, y compris la courbe.",
+		radarCopy: "Le vent est {from}. Le radar en direct, c’est les scans encore dispo chez RainViewer ; les 6 prochaines gardent ce mouvement, y compris la courbe.",
 		fromThe: "Depuis {from}",
 		radarUnavailable: "Radar indisponible pour le moment. L’estimation horaire utilise encore le vent et le modèle.",
 		forecastStamp: "Prévision · {stamp}",
