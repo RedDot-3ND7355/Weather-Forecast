@@ -82,7 +82,10 @@ export function WeatherScene({
 
   return (
     <div
-      className={cn("vane-wx pointer-events-none absolute inset-0", className)}
+      className={cn(
+        "vane-wx pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-full",
+        className,
+      )}
       aria-hidden
       style={
         {
@@ -91,7 +94,7 @@ export function WeatherScene({
         } as CSSProperties
       }
     >
-      <svg viewBox="0 0 240 240" className="size-full">
+      <svg viewBox="0 0 240 240" className="absolute inset-0 size-full" preserveAspectRatio="xMidYMid meet">
         <defs>
           <clipPath id="wx-clip">
             <circle cx="120" cy="120" r="110" />
@@ -100,9 +103,9 @@ export function WeatherScene({
             <stop offset="0%" stopColor={sky[0]} />
             <stop offset="100%" stopColor={sky[1]} />
           </radialGradient>
-          <radialGradient id="wx-scrim" cx="50%" cy="52%" r="42%">
+          <radialGradient id="wx-scrim" cx="50%" cy="50%" r="48%">
             <stop offset="0%" stopColor="#0b1014" stopOpacity="0.55" />
-            <stop offset="70%" stopColor="#0b1014" stopOpacity="0.12" />
+            <stop offset="65%" stopColor="#0b1014" stopOpacity="0.14" />
             <stop offset="100%" stopColor="#0b1014" stopOpacity="0" />
           </radialGradient>
         </defs>
@@ -122,7 +125,10 @@ export function WeatherScene({
                     r={r}
                     fill="#e7eef4"
                     className="vane-wx-twinkle"
-                    style={{ animationDelay: `${unit(i, 4) * 3}s`, animationDuration: `${2.4 + unit(i, 5) * 2.2}s` }}
+                    style={{
+                      animationDelay: `${unit(i, 4) * 3}s`,
+                      animationDuration: `${2.4 + unit(i, 5) * 2.2}s`,
+                    }}
                   />
                 );
               })
@@ -147,7 +153,14 @@ export function WeatherScene({
                 ))}
               </g>
               <circle cx="0" cy="0" r="16" fill="#f5d76e" opacity="0.95" />
-              <circle cx="0" cy="0" r="22" fill="#f5d76e" opacity="0.16" className="vane-wx-glow" />
+              <circle
+                cx="0"
+                cy="0"
+                r="22"
+                fill="#f5d76e"
+                opacity="0.16"
+                className="vane-wx-glow"
+              />
             </g>
           ) : null}
 
@@ -171,7 +184,8 @@ export function WeatherScene({
                       style={{
                         animationDuration: `${Math.max(9, dur)}s`,
                         animationDelay: `${-unit(i, 10) * 12}s`,
-                        opacity: scene === "fog" ? 0.35 : scene === "partly" ? 0.45 : 0.62,
+                        opacity:
+                          scene === "fog" ? 0.35 : scene === "partly" ? 0.45 : 0.62,
                       }}
                     >
                       <ellipse cx="28" cy="10" rx="28" ry="12" fill="#c5d0d8" />
@@ -281,7 +295,14 @@ export function WeatherScene({
 
           {scene === "thunder" ? (
             <g>
-              <rect x="0" y="0" width="240" height="240" fill="#e7eef4" className="vane-wx-flash" />
+              <rect
+                x="0"
+                y="0"
+                width="240"
+                height="240"
+                fill="#e7eef4"
+                className="vane-wx-flash"
+              />
               <path
                 d="M128 52 L108 108 L122 108 L112 164 L148 96 L130 96 L142 52 Z"
                 fill="#f5d76e"
