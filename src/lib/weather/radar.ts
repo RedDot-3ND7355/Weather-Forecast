@@ -91,7 +91,7 @@ export const fetchRadarCatalog = createServerFn({ method: "GET" }).handler(
     const times = [...(json.radar.past ?? []), ...(json.radar.nowcast ?? [])];
     const frames: RadarFrame[] = times.map((f) => ({
       time: f.time,
-      tileUrl: `${host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`,
+      tileUrl: `${host}${f.path}/256/{z}/{x}/{y}/6/1_1.png`,
     }));
     const value = { host, frames };
     catalogCache.at = Date.now();

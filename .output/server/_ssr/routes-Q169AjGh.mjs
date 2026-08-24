@@ -10,11 +10,11 @@ import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { C as CloudRain, D as Bookmark, E as CloudDrizzle, O as BookmarkCheck, S as CloudSnow, T as CloudFog, _ as Gauge, a as Sun, b as Cloud, c as Play, d as MapPin, f as LogOut, g as Info, h as LoaderCircle, i as Thermometer, l as Pause, m as Locate, n as Wind, o as Search, p as LogIn, s as Radar, t as X, u as Moon, v as Eye, w as CloudLightning, x as CloudSun, y as Droplets } from "../_libs/lucide-react.mjs";
-import { n as createSsrRpc } from "./router-lOHKtGvE.mjs";
+import { A as BookmarkCheck, C as CloudSun, D as CloudFog, E as CloudLightning, O as CloudDrizzle, S as Cloud, T as CloudRain, _ as LoaderCircle, a as Sun, b as Eye, c as Plus, d as Moon, f as Minus, g as Locate, h as LogIn, i as Thermometer, k as Bookmark, l as Play, m as LogOut, n as Wind, o as Search, p as MapPin, s as Radar, t as X, u as Pause, v as Info, w as CloudSnow, x as Droplets, y as Gauge } from "../_libs/lucide-react.mjs";
+import { n as createSsrRpc } from "./router-Z8o3WDjs.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-Bj123fP6.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-Q169AjGh.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var placeSchema = object({
@@ -919,6 +919,8 @@ var fetchRadarNowcast = createServerFn({ method: "GET" }).validator(object({
 	windSpeedKmh: number()
 })).handler(createSsrRpc("15e2b9a1b9e19d4fce08228a67e0ab8734cdef8facc9972da8cad05b3efcba82"));
 var BASE = "https://basemaps.cartocdn.com/dark_all";
+var MIN_Z = 5;
+var MAX_Z = 7;
 function lon2tile(lon, z) {
 	return (lon + 180) / 360 * 2 ** z;
 }
@@ -935,13 +937,24 @@ function loadImg(src) {
 		img.src = src;
 	});
 }
-function RadarMap({ forecast }) {
+function hourStatus(h) {
+	if (h.hereMm >= .15) return "Raining";
+	if (h.arriving || h.fetchMm >= .12) return "On the way";
+	if (h.chance >= 45) return "Possible";
+	return "Dry";
+}
+function RadarMap({ forecast, units }) {
 	const { place, current } = forecast;
 	const canvasRef = (0, import_react.useRef)(null);
 	const wrapRef = (0, import_react.useRef)(null);
 	const [frame, setFrame] = (0, import_react.useState)(0);
-	const [playing, setPlaying] = (0, import_react.useState)(true);
+	const [playing, setPlaying] = (0, import_react.useState)(false);
 	const [ready, setReady] = (0, import_react.useState)(false);
+	const [zoom, setZoom] = (0, import_react.useState)(6);
+	const [size, setSize] = (0, import_react.useState)({
+		w: 0,
+		h: 0
+	});
 	const catalogQuery = useQuery({
 		queryKey: ["radar-catalog"],
 		queryFn: () => fetchRadarCatalog(),
@@ -974,6 +987,18 @@ function RadarMap({ forecast }) {
 	const arrival = nowcast?.arrival ?? null;
 	const active = frames[Math.min(frame, Math.max(0, frames.length - 1))];
 	(0, import_react.useEffect)(() => {
+		const el = wrapRef.current;
+		if (!el) return;
+		const apply = () => setSize({
+			w: el.clientWidth,
+			h: el.clientHeight
+		});
+		apply();
+		const ro = new ResizeObserver(apply);
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, []);
+	(0, import_react.useEffect)(() => {
 		if (!frames.length) return;
 		setFrame(frames.length - 1);
 	}, [frames.length]);
@@ -981,24 +1006,26 @@ function RadarMap({ forecast }) {
 		if (!playing || frames.length < 2) return;
 		const id = window.setInterval(() => {
 			setFrame((i) => (i + 1) % frames.length);
-		}, 700);
+		}, 850);
 		return () => window.clearInterval(id);
 	}, [playing, frames.length]);
 	const tilePlan = (0, import_react.useMemo)(() => {
-		const z = 8;
+		const z = zoom;
 		return {
 			z,
 			cx: lon2tile(place.longitude, z),
 			cy: lat2tile(place.latitude, z)
 		};
-	}, [place.latitude, place.longitude]);
+	}, [
+		place.latitude,
+		place.longitude,
+		zoom
+	]);
 	(0, import_react.useEffect)(() => {
 		const canvas = canvasRef.current;
-		const wrap = wrapRef.current;
-		if (!canvas || !wrap || !active) return;
-		const cssW = wrap.clientWidth;
-		const cssH = wrap.clientHeight;
-		if (cssW < 8 || cssH < 8) return;
+		if (!canvas || !active || size.w < 8 || size.h < 8) return;
+		const cssW = size.w;
+		const cssH = size.h;
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
 		canvas.width = Math.round(cssW * dpr);
 		canvas.height = Math.round(cssH * dpr);
@@ -1006,9 +1033,10 @@ function RadarMap({ forecast }) {
 		if (!ctx) return;
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		let cancelled = false;
+		setReady(false);
 		const { z, cx, cy } = tilePlan;
 		const tile = 256;
-		const scale = cssW / 2.4 / tile;
+		const scale = cssW / 2.15 / tile;
 		const originX = cssW / 2 - (cx - Math.floor(cx - 1)) * tile * scale;
 		const originY = cssH / 2 - (cy - Math.floor(cy - 1)) * tile * scale;
 		const x0 = Math.floor(cx - 1);
@@ -1033,16 +1061,12 @@ function RadarMap({ forecast }) {
 			ctx.clearRect(0, 0, cssW, cssH);
 			for (const t of tiles) {
 				if (!t.base) continue;
-				const x = originX + t.dx * tile * scale;
-				const y = originY + t.dy * tile * scale;
-				ctx.drawImage(t.base, x, y, tile * scale, tile * scale);
+				ctx.drawImage(t.base, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
 			}
-			ctx.globalAlpha = .88;
+			ctx.globalAlpha = .9;
 			for (const t of tiles) {
 				if (!t.rain) continue;
-				const x = originX + t.dx * tile * scale;
-				const y = originY + t.dy * tile * scale;
-				ctx.drawImage(t.rain, x, y, tile * scale, tile * scale);
+				ctx.drawImage(t.rain, originX + t.dx * tile * scale, originY + t.dy * tile * scale, tile * scale, tile * scale);
 			}
 			ctx.globalAlpha = 1;
 			const root = getComputedStyle(document.documentElement);
@@ -1053,9 +1077,9 @@ function RadarMap({ forecast }) {
 			const rad = (current.windDir - 90) * Math.PI / 180;
 			ctx.save();
 			ctx.strokeStyle = rain;
-			ctx.globalAlpha = .65;
+			ctx.globalAlpha = .7;
 			ctx.lineWidth = 1.5;
-			ctx.setLineDash([5, 5]);
+			ctx.setLineDash([6, 5]);
 			ctx.beginPath();
 			ctx.moveTo(px - Math.cos(rad) * cssW, py - Math.sin(rad) * cssH);
 			ctx.lineTo(px + Math.cos(rad) * cssW, py + Math.sin(rad) * cssH);
@@ -1078,12 +1102,18 @@ function RadarMap({ forecast }) {
 	}, [
 		active,
 		tilePlan,
-		current.windDir
+		current.windDir,
+		size.w,
+		size.h
 	]);
 	const stamp = active ? new Intl.DateTimeFormat(void 0, {
 		hour: "numeric",
 		minute: "2-digit"
 	}).format(/* @__PURE__ */ new Date(active.time * 1e3)) : "—";
+	const isLatest = frames.length > 0 && frame >= frames.length - 1;
+	const from = windLong(current.windDir);
+	const headline = arrival ? arrival.minutes === 0 ? "Raining here now" : `Rain ${arrival.label}` : nowcast?.hours?.length ? "No rain headed this way" : `Watch the ${from}`;
+	const copy = arrival?.copy ?? `Wind is from the ${from}. Rain would arrive from that direction. The map shows the last two hours of radar.`;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		className: "min-w-0 overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-border)] lg:col-span-2",
 		children: [
@@ -1094,15 +1124,15 @@ function RadarMap({ forecast }) {
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 							className: "flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Radar, { className: "size-3.5" }), "Radar + wind fetch"]
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Radar, { className: "size-3.5" }), "Rain radar"]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
 							className: "mt-1 font-display text-xl font-medium leading-tight text-fg",
-							children: arrival ? arrival.minutes === 0 ? "Rain is on the vane" : `Rain ${arrival.label}` : nowcast?.hours?.length ? "No cells on this fetch" : `Watch the ${windLong(current.windDir)}`
+							children: headline
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "mt-1 max-w-prose text-sm text-muted",
-							children: arrival?.copy ?? `Looking ${windLong(current.windDir)} — the moist source for this bearing. Radar is the last two hours plus a short nowcast.`
+							children: copy
 						})
 					]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -1110,79 +1140,125 @@ function RadarMap({ forecast }) {
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(WindArrow, {
 						deg: current.windDir,
 						wet: (arrival?.precipMm ?? current.rain.chance) > 40
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-						className: "text-xs text-muted",
-						children: ["From the ", windLong(current.windDir)]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "min-w-0",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "text-xs font-medium text-fg",
+							children: ["From the ", from]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-[11px] text-muted",
+							children: formatSpeed(current.windSpeedKmh, units)
+						})]
 					})]
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				ref: wrapRef,
-				className: "relative mt-3 h-[220px] w-full overflow-hidden bg-raised sm:h-[280px]",
+				className: "relative mt-3 h-[240px] w-full overflow-hidden bg-raised sm:h-[300px]",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("canvas", {
 						ref: canvasRef,
 						className: "block h-full w-full",
-						"aria-label": "Precipitation radar"
+						"aria-label": `Precipitation radar for ${place.name}`
 					}),
 					!ready && !catalogQuery.isError ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "absolute inset-0 animate-pulse bg-raised" }) : null,
+					catalogQuery.isError ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted",
+						children: "Radar is unavailable right now. The hourly estimate below still uses wind and the forecast model."
+					}) : null,
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "pointer-events-none absolute left-3 top-3 rounded-md bg-bg/75 px-2 py-1 text-[11px] text-fg backdrop-blur-sm",
+						children: place.name
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "absolute right-3 top-3 flex gap-1",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+							type: "button",
+							size: "icon",
+							variant: "secondary",
+							className: "size-9",
+							disabled: zoom <= MIN_Z,
+							onClick: () => setZoom((z) => Math.max(MIN_Z, z - 1)),
+							"aria-label": "Zoom out",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Minus, { className: "size-4" })
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+							type: "button",
+							size: "icon",
+							variant: "secondary",
+							className: "size-9",
+							disabled: zoom >= MAX_Z,
+							onClick: () => setZoom((z) => Math.min(MAX_Z, z + 1)),
+							"aria-label": "Zoom in",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { className: "size-4" })
+						})]
+					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "rounded-md bg-bg/70 px-2 py-1 text-[11px] tabular-nums text-muted backdrop-blur-sm",
-							children: stamp
+							className: "rounded-md bg-bg/75 px-2 py-1 text-[11px] tabular-nums text-muted backdrop-blur-sm",
+							children: isLatest ? "Now" : stamp
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "rounded-md bg-bg/70 px-2 py-1 text-[11px] text-muted backdrop-blur-sm",
-							children: "Dashed line is the fetch"
+							className: "rounded-md bg-bg/75 px-2 py-1 text-[11px] text-muted backdrop-blur-sm",
+							children: "You are here · dashed line is wind"
 						})]
 					})
 				]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "flex items-center gap-3 px-4 py-3 sm:px-5",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 					type: "button",
-					className: "grid size-11 place-items-center rounded-xl bg-raised text-fg",
+					variant: "secondary",
+					className: "shrink-0 px-3",
 					onClick: () => setPlaying((p) => !p),
-					"aria-label": playing ? "Pause radar" : "Play radar",
-					children: playing ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pause, { className: "size-4" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Play, { className: "size-4" })
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-					type: "range",
-					min: 0,
-					max: Math.max(0, frames.length - 1),
-					value: Math.min(frame, Math.max(0, frames.length - 1)),
-					onChange: (e) => {
-						setPlaying(false);
-						setFrame(Number(e.target.value));
-					},
-					className: "h-2 min-w-0 flex-1 accent-rain",
-					"aria-label": "Radar time"
+					children: [playing ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pause, { className: "size-4" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Play, { className: "size-4" }), playing ? "Pause" : "Play"]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "min-w-0 flex-1",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+						type: "range",
+						min: 0,
+						max: Math.max(0, frames.length - 1),
+						value: Math.min(frame, Math.max(0, frames.length - 1)),
+						onChange: (e) => {
+							setPlaying(false);
+							setFrame(Number(e.target.value));
+						},
+						className: "h-2 w-full accent-rain",
+						"aria-label": "Radar time"
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "mt-1 flex justify-between text-[11px] text-faint",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "2 hours ago" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Now" })]
+					})]
 				})]
 			}),
 			hours.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "border-t border-border px-4 py-3 sm:px-5",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-faint",
-					children: "Next 6 hours on this fetch"
+					children: "Next 6 hours"
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 					className: "flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-					children: hours.map((h, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: cn("flex w-[4.4rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1 py-2", i === 0 ? "bg-raised" : ""),
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-[11px] font-medium text-muted",
-								children: i === 0 ? "Now" : formatHour(h.time)
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-								className: cn("text-sm font-medium tabular-nums", h.chance >= 40 ? "text-rain" : "text-fg"),
-								children: [h.chance, "%"]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-center text-[10px] leading-tight text-faint",
-								children: h.arriving ? "blowing in" : h.hereMm >= .15 ? "overhead" : "quiet"
-							})
-						]
-					}, h.time))
+					children: hours.map((h, i) => {
+						const status = hourStatus(h);
+						const wet = status !== "Dry";
+						return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: cn("flex w-[4.6rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1 py-2", i === 0 ? "bg-raised" : ""),
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+									className: "text-[11px] font-medium text-muted",
+									children: i === 0 ? "Now" : formatHour(h.time)
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+									className: cn("text-sm font-medium tabular-nums", wet ? "text-rain" : "text-fg"),
+									children: [h.chance, "%"]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+									className: "text-center text-[10px] leading-tight text-faint",
+									children: status
+								})
+							]
+						}, h.time);
+					})
 				})]
 			}) : null
 		]
@@ -1510,7 +1586,10 @@ function ForecastApp() {
 						className: "min-w-0 lg:col-span-2",
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RainBrief, { forecast })
 					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RadarMap, { forecast }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RadarMap, {
+						forecast,
+						units
+					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						className: "min-w-0 lg:col-span-2",
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HourlyStrip, {
@@ -1603,7 +1682,7 @@ function HowItWorks({ compact = false }) {
 			children: "How the estimate works"
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 			className: "mt-2 leading-relaxed",
-			children: "Weather vanes point into the wind — the direction rain is carried from. Vane blends the forecast model’s precipitation probability with how saturated the air is, how much cloud is overhead, and whether the wind is a moist equatorward fetch (southerly in the north, northerly in the south). Radar shows live precipitation; the fetch line is the bearing rain would be blown in from, and the six-hour strip times those cells against wind speed. The compass is the rain bearing. The percentage is that blend, not a guarantee."
+			children: "Weather vanes point into the wind — the direction rain is carried from. Vane blends the forecast model’s precipitation probability with how saturated the air is, how much cloud is overhead, and whether the wind is a moist equatorward fetch (southerly in the north, northerly in the south). Radar shows live rain. The dashed line is the wind — rain would be blown in from that direction. The six-hour strip times those cells against wind speed. The compass is the rain bearing. The percentage is that blend, not a guarantee."
 		})]
 	});
 }

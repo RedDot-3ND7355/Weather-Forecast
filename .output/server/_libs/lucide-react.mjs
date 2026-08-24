@@ -452,6 +452,16 @@ var MapPin = createLucideIcon("map-pin", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Minus = createLucideIcon("minus", [["path", {
+	d: "M5 12h14",
+	key: "1ays0h"
+}]]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Moon = createLucideIcon("moon", [["path", {
 	d: "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z",
 	key: "a7tn18"
@@ -486,6 +496,19 @@ var Pause = createLucideIcon("pause", [["rect", {
 var Play = createLucideIcon("play", [["polygon", {
 	points: "6 3 20 12 6 21 6 3",
 	key: "1oa8hb"
+}]]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var Plus = createLucideIcon("plus", [["path", {
+	d: "M5 12h14",
+	key: "1ays0h"
+}], ["path", {
+	d: "M12 5v14",
+	key: "s699le"
 }]]);
 /**
 * @license lucide-react v0.510.0 - ISC
@@ -654,4 +677,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { CloudRain as C, Bookmark as D, CloudDrizzle as E, BookmarkCheck as O, CloudSnow as S, CloudFog as T, Gauge as _, Sun as a, Cloud as b, Play as c, MapPin as d, LogOut as f, Info as g, LoaderCircle as h, Thermometer as i, Pause as l, Locate as m, Wind as n, Search as o, LogIn as p, TriangleAlert as r, Radar as s, X as t, Moon as u, Eye as v, CloudLightning as w, CloudSun as x, Droplets as y };
+export { BookmarkCheck as A, CloudSun as C, CloudFog as D, CloudLightning as E, CloudDrizzle as O, Cloud as S, CloudRain as T, LoaderCircle as _, Sun as a, Eye as b, Plus as c, Moon as d, Minus as f, Locate as g, LogIn as h, Thermometer as i, Bookmark as k, Play as l, LogOut as m, Wind as n, Search as o, MapPin as p, TriangleAlert as r, Radar as s, X as t, Pause as u, Info as v, CloudSnow as w, Droplets as x, Gauge as y };

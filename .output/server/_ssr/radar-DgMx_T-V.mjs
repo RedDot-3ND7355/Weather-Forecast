@@ -1,9 +1,9 @@
 import { r as createServerFn } from "./ssr.mjs";
 import { t as createServerRpc } from "./createServerRpc-CcvdN_gc.mjs";
-import { i as windLong, r as windAdverb } from "./compass-BtdnyLVS.mjs";
+import { i as windLong } from "./compass-BtdnyLVS.mjs";
 import { r as estimateRain } from "./rain-CGpVhUJn.mjs";
 import { mn as object, pn as number } from "../_libs/@better-auth/core+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/radar-D-xKEIAb.js
+//#region node_modules/.nitro/vite/services/ssr/assets/radar-DgMx_T-V.js
 var EARTH_KM = 6371;
 var FETCH_KM = [
 	0,
@@ -41,10 +41,9 @@ function formatEta(minutes) {
 }
 function arrivalCopy(args) {
 	const from = windLong(args.windDir);
-	const adverb = windAdverb(args.windDir);
-	if (args.rainingHere) return `Rain is already overhead. ${capitalize(adverb)} flow will keep feeding it from the ${from}.`;
-	if (args.minutes > 720) return `No wet cells on the ${adverb} fetch within 200 km. The next hours stay dry unless a new band forms.`;
-	return `A cell ${Math.round(args.km)} km upwind is riding ${Math.round(args.windSpeedKmh)} km/h ${adverb} air from the ${from}. ${capitalize(formatEta(args.minutes))} if the fetch holds.`;
+	if (args.rainingHere) return `It's raining here now. Wind from the ${from} is still feeding it.`;
+	if (args.minutes > 720) return `No rain showing upwind of you. The next few hours look dry unless a new band forms.`;
+	return `Rain about ${Math.round(args.km)} km away, coming from the ${from} at ${Math.round(args.windSpeedKmh)} km/h. ${capitalize(formatEta(args.minutes))} if the wind holds.`;
 }
 function capitalize(s) {
 	return s.charAt(0).toUpperCase() + s.slice(1);
@@ -76,7 +75,7 @@ var fetchRadarCatalog = createServerFn({ method: "GET" }).handler(fetchRadarCata
 		host,
 		frames: [...json.radar.past ?? [], ...json.radar.nowcast ?? []].map((f) => ({
 			time: f.time,
-			tileUrl: `${host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`
+			tileUrl: `${host}${f.path}/256/{z}/{x}/{y}/6/1_1.png`
 		}))
 	};
 	catalogCache.at = Date.now();

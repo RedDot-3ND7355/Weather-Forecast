@@ -1,14 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { Pause, Play, Radar } from "lucide-react";
+import { Minus, Pause, Play, Plus, Radar } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { WindArrow } from "@/components/wind-arrow";
 import { fetchRadarCatalog, fetchRadarNowcast } from "@/lib/weather/radar";
-import { formatHour } from "@/lib/weather/format";
+import { formatHour, formatSpeed } from "@/lib/weather/format";
 import { windLong } from "@/lib/weather/compass";
-import type { Forecast } from "@/lib/weather/types";
+import type { Forecast, Units } from "@/lib/weather/types";
 import { cn } from "@/lib/utils";
 
 const BASE = "https://basemaps.cartocdn.com/dark_all";
+const MIN_Z = 5;
+const MAX_Z = 7;
 
 function lon2tile(lon: number, z: number) {
   return ((lon + 180) / 360) * 2 ** z;
@@ -28,13 +31,33 @@ function loadImg(src: string): Promise<HTMLImageElement | null> {
   });
 }
 
-export function RadarMap({ forecast }: { forecast: Forecast }) {
+function hourStatus(h: {
+  hereMm: number;
+  fetchMm: number;
+  chance: number;
+  arriving: boolean;
+}): string {
+  if (h.hereMm >= 0.15) return "Raining";
+  if (h.arriving || h.fetchMm >= 0.12) return "On the way";
+  if (h.chance >= 45) return "Possible";
+  return "Dry";
+}
+
+export function RadarMap({
+  forecast,
+  units,
+}: {
+  forecast: Forecast;
+  units: Units;
+}) {
   const { place, current } = forecast;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
+  const [zoom, setZoom] = useState(6);
+  const [size, setSize] = useState({ w: 0, h: 0 });
 
   const catalogQuery = useQuery({
     queryKey: ["radar-catalog"],
@@ -79,6 +102,16 @@ export function RadarMap({ forecast }: { forecast: Forecast }) {
   const active = frames[Math.min(frame, Math.max(0, frames.length - 1))];
 
   useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const apply = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (!frames.length) return;
     setFrame(frames.length - 1);
   }, [frames.length]);
@@ -87,24 +120,20 @@ export function RadarMap({ forecast }: { forecast: Forecast }) {
     if (!playing || frames.length < 2) return;
     const id = window.setInterval(() => {
       setFrame((i) => (i + 1) % frames.length);
-    }, 700);
+    }, 850);
     return () => window.clearInterval(id);
   }, [playing, frames.length]);
 
   const tilePlan = useMemo(() => {
-    const z = 8;
-    const cx = lon2tile(place.longitude, z);
-    const cy = lat2tile(place.latitude, z);
-    return { z, cx, cy };
-  }, [place.latitude, place.longitude]);
+    const z = zoom;
+    return { z, cx: lon2tile(place.longitude, z), cy: lat2tile(place.latitude, z) };
+  }, [place.latitude, place.longitude, zoom]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const wrap = wrapRef.current;
-    if (!canvas || !wrap || !active) return;
-    const cssW = wrap.clientWidth;
-    const cssH = wrap.clientHeight;
-    if (cssW < 8 || cssH < 8) return;
+    if (!canvas || !active || size.w < 8 || size.h < 8) return;
+    const cssW = size.w;
+    const cssH = size.h;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
@@ -112,10 +141,11 @@ export function RadarMap({ forecast }: { forecast: Forecast }) {
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     let cancelled = false;
+    setReady(false);
 
     const { z, cx, cy } = tilePlan;
     const tile = 256;
-    const scale = cssW / 2.4 / tile;
+    const scale = cssW / 2.15 / tile;
     const originX = cssW / 2 - (cx - Math.floor(cx - 1)) * tile * scale;
     const originY = cssH / 2 - (cy - Math.floor(cy - 1)) * tile * scale;
     const x0 = Math.floor(cx - 1);
@@ -153,16 +183,24 @@ export function RadarMap({ forecast }: { forecast: Forecast }) {
       ctx.clearRect(0, 0, cssW, cssH);
       for (const t of tiles) {
         if (!t.base) continue;
-        const x = originX + t.dx * tile * scale;
-        const y = originY + t.dy * tile * scale;
-        ctx.drawImage(t.base, x, y, tile * scale, tile * scale);
+        ctx.drawImage(
+          t.base,
+          originX + t.dx * tile * scale,
+          originY + t.dy * tile * scale,
+          tile * scale,
+          tile * scale,
+        );
       }
-      ctx.globalAlpha = 0.88;
+      ctx.globalAlpha = 0.9;
       for (const t of tiles) {
         if (!t.rain) continue;
-        const x = originX + t.dx * tile * scale;
-        const y = originY + t.dy * tile * scale;
-        ctx.drawImage(t.rain, x, y, tile * scale, tile * scale);
+        ctx.drawImage(
+          t.rain,
+          originX + t.dx * tile * scale,
+          originY + t.dy * tile * scale,
+          tile * scale,
+          tile * scale,
+        );
       }
       ctx.globalAlpha = 1;
 
@@ -174,9 +212,9 @@ export function RadarMap({ forecast }: { forecast: Forecast }) {
       const rad = ((current.windDir - 90) * Math.PI) / 180;
       ctx.save();
       ctx.strokeStyle = rain;
-      ctx.globalAlpha = 0.65;
+      ctx.globalAlpha = 0.7;
       ctx.lineWidth = 1.5;
-      ctx.setLineDash([5, 5]);
+      ctx.setLineDash([6, 5]);
       ctx.beginPath();
       ctx.moveTo(px - Math.cos(rad) * cssW, py - Math.sin(rad) * cssH);
       ctx.lineTo(px + Math.cos(rad) * cssW, py + Math.sin(rad) * cssH);
@@ -198,7 +236,7 @@ export function RadarMap({ forecast }: { forecast: Forecast }) {
     return () => {
       cancelled = true;
     };
-  }, [active, tilePlan, current.windDir]);
+  }, [active, tilePlan, current.windDir, size.w, size.h]);
 
   const stamp = active
     ? new Intl.DateTimeFormat(undefined, {
@@ -206,6 +244,18 @@ export function RadarMap({ forecast }: { forecast: Forecast }) {
         minute: "2-digit",
       }).format(new Date(active.time * 1000))
     : "—";
+  const isLatest = frames.length > 0 && frame >= frames.length - 1;
+  const from = windLong(current.windDir);
+  const headline = arrival
+    ? arrival.minutes === 0
+      ? "Raining here now"
+      : `Rain ${arrival.label}`
+    : nowcast?.hours?.length
+      ? "No rain headed this way"
+      : `Watch the ${from}`;
+  const copy =
+    arrival?.copy ??
+    `Wind is from the ${from}. Rain would arrive from that direction. The map shows the last two hours of radar.`;
 
   return (
     <section className="min-w-0 overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-border)] lg:col-span-2">
@@ -213,109 +263,146 @@ export function RadarMap({ forecast }: { forecast: Forecast }) {
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
             <Radar className="size-3.5" />
-            Radar + wind fetch
+            Rain radar
           </p>
           <h2 className="mt-1 font-display text-xl font-medium leading-tight text-fg">
-            {arrival
-              ? arrival.minutes === 0
-                ? "Rain is on the vane"
-                : `Rain ${arrival.label}`
-              : nowcast?.hours?.length
-                ? "No cells on this fetch"
-                : `Watch the ${windLong(current.windDir)}`}
+            {headline}
           </h2>
-          <p className="mt-1 max-w-prose text-sm text-muted">
-            {arrival?.copy ??
-              `Looking ${windLong(current.windDir)} — the moist source for this bearing. Radar is the last two hours plus a short nowcast.`}
-          </p>
+          <p className="mt-1 max-w-prose text-sm text-muted">{copy}</p>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-raised px-3 py-2">
-          <WindArrow deg={current.windDir} wet={(arrival?.precipMm ?? current.rain.chance) > 40} />
-          <p className="text-xs text-muted">
-            From the {windLong(current.windDir)}
-          </p>
+          <WindArrow
+            deg={current.windDir}
+            wet={(arrival?.precipMm ?? current.rain.chance) > 40}
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-fg">From the {from}</p>
+            <p className="text-[11px] text-muted">
+              {formatSpeed(current.windSpeedKmh, units)}
+            </p>
+          </div>
         </div>
       </div>
 
       <div
         ref={wrapRef}
-        className="relative mt-3 h-[220px] w-full overflow-hidden bg-raised sm:h-[280px]"
+        className="relative mt-3 h-[240px] w-full overflow-hidden bg-raised sm:h-[300px]"
       >
         <canvas
           ref={canvasRef}
           className="block h-full w-full"
-          aria-label="Precipitation radar"
+          aria-label={`Precipitation radar for ${place.name}`}
         />
         {!ready && !catalogQuery.isError ? (
           <div className="absolute inset-0 animate-pulse bg-raised" />
         ) : null}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
-          <p className="rounded-md bg-bg/70 px-2 py-1 text-[11px] tabular-nums text-muted backdrop-blur-sm">
-            {stamp}
+        {catalogQuery.isError ? (
+          <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted">
+            Radar is unavailable right now. The hourly estimate below still uses
+            wind and the forecast model.
           </p>
-          <p className="rounded-md bg-bg/70 px-2 py-1 text-[11px] text-muted backdrop-blur-sm">
-            Dashed line is the fetch
+        ) : null}
+        <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-bg/75 px-2 py-1 text-[11px] text-fg backdrop-blur-sm">
+          {place.name}
+        </div>
+        <div className="absolute right-3 top-3 flex gap-1">
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            className="size-9"
+            disabled={zoom <= MIN_Z}
+            onClick={() => setZoom((z) => Math.max(MIN_Z, z - 1))}
+            aria-label="Zoom out"
+          >
+            <Minus className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            className="size-9"
+            disabled={zoom >= MAX_Z}
+            onClick={() => setZoom((z) => Math.min(MAX_Z, z + 1))}
+            aria-label="Zoom in"
+          >
+            <Plus className="size-4" />
+          </Button>
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
+          <p className="rounded-md bg-bg/75 px-2 py-1 text-[11px] tabular-nums text-muted backdrop-blur-sm">
+            {isLatest ? "Now" : stamp}
+          </p>
+          <p className="rounded-md bg-bg/75 px-2 py-1 text-[11px] text-muted backdrop-blur-sm">
+            You are here · dashed line is wind
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-3 px-4 py-3 sm:px-5">
-        <button
+        <Button
           type="button"
-          className="grid size-11 place-items-center rounded-xl bg-raised text-fg"
+          variant="secondary"
+          className="shrink-0 px-3"
           onClick={() => setPlaying((p) => !p)}
-          aria-label={playing ? "Pause radar" : "Play radar"}
         >
           {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-        </button>
-        <input
-          type="range"
-          min={0}
-          max={Math.max(0, frames.length - 1)}
-          value={Math.min(frame, Math.max(0, frames.length - 1))}
-          onChange={(e) => {
-            setPlaying(false);
-            setFrame(Number(e.target.value));
-          }}
-          className="h-2 min-w-0 flex-1 accent-rain"
-          aria-label="Radar time"
-        />
+          {playing ? "Pause" : "Play"}
+        </Button>
+        <div className="min-w-0 flex-1">
+          <input
+            type="range"
+            min={0}
+            max={Math.max(0, frames.length - 1)}
+            value={Math.min(frame, Math.max(0, frames.length - 1))}
+            onChange={(e) => {
+              setPlaying(false);
+              setFrame(Number(e.target.value));
+            }}
+            className="h-2 w-full accent-rain"
+            aria-label="Radar time"
+          />
+          <div className="mt-1 flex justify-between text-[11px] text-faint">
+            <span>2 hours ago</span>
+            <span>Now</span>
+          </div>
+        </div>
       </div>
 
       {hours.length ? (
         <div className="border-t border-border px-4 py-3 sm:px-5">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
-            Next 6 hours on this fetch
+            Next 6 hours
           </p>
           <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {hours.map((h, i) => (
-              <div
-                key={h.time}
-                className={cn(
-                  "flex w-[4.4rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1 py-2",
-                  i === 0 ? "bg-raised" : "",
-                )}
-              >
-                <p className="text-[11px] font-medium text-muted">
-                  {i === 0 ? "Now" : formatHour(h.time)}
-                </p>
-                <p
+            {hours.map((h, i) => {
+              const status = hourStatus(h);
+              const wet = status !== "Dry";
+              return (
+                <div
+                  key={h.time}
                   className={cn(
-                    "text-sm font-medium tabular-nums",
-                    h.chance >= 40 ? "text-rain" : "text-fg",
+                    "flex w-[4.6rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1 py-2",
+                    i === 0 ? "bg-raised" : "",
                   )}
                 >
-                  {h.chance}%
-                </p>
-                <p className="text-center text-[10px] leading-tight text-faint">
-                  {h.arriving
-                    ? "blowing in"
-                    : h.hereMm >= 0.15
-                      ? "overhead"
-                      : "quiet"}
-                </p>
-              </div>
-            ))}
+                  <p className="text-[11px] font-medium text-muted">
+                    {i === 0 ? "Now" : formatHour(h.time)}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-sm font-medium tabular-nums",
+                      wet ? "text-rain" : "text-fg",
+                    )}
+                  >
+                    {h.chance}%
+                  </p>
+                  <p className="text-center text-[10px] leading-tight text-faint">
+                    {status}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : null}

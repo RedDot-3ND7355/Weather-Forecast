@@ -1,4 +1,4 @@
-import { windAdverb, windLong } from "./compass";
+import { windLong } from "./compass";
 
 const EARTH_KM = 6371;
 export const FETCH_KM = [0, 25, 50, 90, 140, 200] as const;
@@ -49,14 +49,13 @@ export function arrivalCopy(args: {
   rainingHere: boolean;
 }): string {
   const from = windLong(args.windDir);
-  const adverb = windAdverb(args.windDir);
   if (args.rainingHere) {
-    return `Rain is already overhead. ${capitalize(adverb)} flow will keep feeding it from the ${from}.`;
+    return `It's raining here now. Wind from the ${from} is still feeding it.`;
   }
   if (args.minutes > 12 * 60) {
-    return `No wet cells on the ${adverb} fetch within 200 km. The next hours stay dry unless a new band forms.`;
+    return `No rain showing upwind of you. The next few hours look dry unless a new band forms.`;
   }
-  return `A cell ${Math.round(args.km)} km upwind is riding ${Math.round(args.windSpeedKmh)} km/h ${adverb} air from the ${from}. ${capitalize(formatEta(args.minutes))} if the fetch holds.`;
+  return `Rain about ${Math.round(args.km)} km away, coming from the ${from} at ${Math.round(args.windSpeedKmh)} km/h. ${capitalize(formatEta(args.minutes))} if the wind holds.`;
 }
 
 function capitalize(s: string): string {
