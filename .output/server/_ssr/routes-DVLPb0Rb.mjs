@@ -3,19 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { i as windLong, n as compassPoint } from "./compass-BtdnyLVS.mjs";
+import { a as windLong, n as compassPoint, r as normalizeDeg } from "./compass-DEB7xUAV.mjs";
 import { _n as string, mn as object, pn as number } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { i as offsetKm } from "./advection-Dpy-6hLP.mjs";
+import { i as offsetKm } from "./advection-DzL6mFo8.mjs";
 import { A as CloudDrizzle, C as Droplets, D as CloudRain, E as CloudSnow, M as ChevronLeft, N as Bookmark, O as CloudLightning, P as BookmarkCheck, S as Expand, T as CloudSun, _ as Locate, a as Sun, b as Gauge, c as Plus, d as Moon, f as Minus, g as LogIn, h as LogOut, i as Thermometer, j as ChevronRight, k as CloudFog, l as Play, m as MapPin, n as Wind, o as Search, p as Maximize2, s as Radar, t as X, u as Pause, v as LoaderCircle, w as Cloud, x as Eye, y as Info } from "../_libs/lucide-react.mjs";
-import { n as createSsrRpc } from "./router-CcE_2H7C.mjs";
+import { n as createSsrRpc } from "./router-CyqFuNzs.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BS7Z6A8f.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DVLPb0Rb.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -461,12 +461,126 @@ function ChanceChart({ hours }) {
 		})]
 	});
 }
+function screenAngle() {
+	const o = window.screen?.orientation?.angle;
+	if (typeof o === "number") return o;
+	const legacy = window.orientation;
+	return typeof legacy === "number" ? legacy : 0;
+}
+function readHeading(e) {
+	if (typeof e.webkitCompassHeading === "number" && Number.isFinite(e.webkitCompassHeading)) return normalizeDeg(e.webkitCompassHeading);
+	if (typeof e.alpha !== "number" || !Number.isFinite(e.alpha)) return null;
+	return normalizeDeg(-e.alpha + screenAngle());
+}
+function lerpAngle(from, to, t) {
+	const d = (to - from + 540) % 360 - 180;
+	return normalizeDeg(from + d * t);
+}
+function canRequest() {
+	return typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function";
+}
+function headingSupported() {
+	return typeof window !== "undefined" && (typeof DeviceOrientationEvent !== "undefined" || "ondeviceorientationabsolute" in window);
+}
+function useDeviceHeading() {
+	const [heading, setHeading] = (0, import_react.useState)(null);
+	const [status, setStatus] = (0, import_react.useState)("off");
+	const [accuracy, setAccuracy] = (0, import_react.useState)(null);
+	const [offer, setOffer] = (0, import_react.useState)(false);
+	const target = (0, import_react.useRef)(null);
+	const shown = (0, import_react.useRef)(null);
+	const absSeen = (0, import_react.useRef)(false);
+	(0, import_react.useEffect)(() => {
+		if (!headingSupported()) {
+			setStatus("missing");
+			return;
+		}
+		const ios = canRequest();
+		const coarse = window.matchMedia("(pointer: coarse)").matches;
+		if (ios) setStatus("need");
+		setOffer(ios || coarse);
+	}, []);
+	(0, import_react.useEffect)(() => {
+		if (status !== "live") return;
+		absSeen.current = false;
+		shown.current = null;
+		target.current = null;
+		const onOrient = (e, abs) => {
+			if (abs) absSeen.current = true;
+			else if (absSeen.current) return;
+			const ev = e;
+			const h = readHeading(ev);
+			if (h == null) return;
+			target.current = h;
+			if (typeof ev.webkitCompassAccuracy === "number") setAccuracy(ev.webkitCompassAccuracy);
+		};
+		const onAbs = (e) => onOrient(e, true);
+		const onRel = (e) => onOrient(e, false);
+		window.addEventListener("deviceorientationabsolute", onAbs);
+		window.addEventListener("deviceorientation", onRel);
+		let raf = 0;
+		const loop = () => {
+			const next = target.current;
+			if (next != null) {
+				shown.current = shown.current == null ? next : lerpAngle(shown.current, next, .22);
+				const s = shown.current;
+				setHeading((prev) => {
+					if (prev == null) return s;
+					return Math.abs((s - prev + 540) % 360 - 180) < .35 ? prev : s;
+				});
+			}
+			raf = requestAnimationFrame(loop);
+		};
+		raf = requestAnimationFrame(loop);
+		return () => {
+			window.removeEventListener("deviceorientationabsolute", onAbs);
+			window.removeEventListener("deviceorientation", onRel);
+			cancelAnimationFrame(raf);
+		};
+	}, [status]);
+	return {
+		heading,
+		status,
+		accuracy,
+		offer,
+		enable: (0, import_react.useCallback)(async () => {
+			if (!headingSupported()) {
+				setStatus("missing");
+				return;
+			}
+			try {
+				if (canRequest()) {
+					if (await DeviceOrientationEvent.requestPermission() !== "granted") {
+						setStatus("denied");
+						return;
+					}
+				}
+				setStatus("live");
+			} catch {
+				setStatus("denied");
+			}
+		}, []),
+		disable: (0, import_react.useCallback)(() => {
+			setHeading(null);
+			setAccuracy(null);
+			target.current = null;
+			shown.current = null;
+			setStatus(canRequest() ? "need" : "off");
+		}, [])
+	};
+}
 function Compass({ windDir, windSpeedLabel, chance, className }) {
 	const wet = chance >= 35;
 	const ticks = Array.from({ length: 72 }, (_, i) => i);
 	const rainLines = Array.from({ length: 7 }, (_, i) => i - 3);
 	const from = windLong(windDir);
 	const point = compassPoint(windDir);
+	const { heading, status, accuracy, offer, enable, disable } = useDeviceHeading();
+	const live = status === "live" && heading != null;
+	const rose = live ? -heading : 0;
+	const facing = live ? compassPoint(heading) : null;
+	const uncalibrated = live && accuracy != null && accuracy < 0;
+	const hdg = heading ?? 0;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: cn("relative mx-auto aspect-square w-full max-w-64 sm:max-w-80", className),
 		children: [
@@ -474,7 +588,7 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 				viewBox: "0 0 240 240",
 				className: "size-full",
 				role: "img",
-				"aria-label": `Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`,
+				"aria-label": live ? `You are facing ${facing}. Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.` : `Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`,
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("defs", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("radialGradient", {
 						id: "vane-disc",
@@ -524,93 +638,109 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 						stroke: "var(--color-border)",
 						strokeWidth: "1"
 					}),
-					wet ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
-						d: sectorPath(120, 120, 104, windDir - 18, windDir + 18),
-						fill: "var(--color-rain)",
-						opacity: "0.16"
-					}) : null,
-					ticks.map((i) => {
-						const deg = i * 5;
-						const major = deg % 30 === 0;
-						const card = deg % 90 === 0;
-						const inner = card ? 78 : major ? 80 : 83;
-						const outer = 104;
-						const a = (deg - 90) * Math.PI / 180;
-						const x1 = 120 + inner * Math.cos(a);
-						const y1 = 120 + inner * Math.sin(a);
-						const x2 = 120 + outer * Math.cos(a);
-						const y2 = 120 + outer * Math.sin(a);
-						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", {
-							x1,
-							y1,
-							x2,
-							y2,
-							stroke: "var(--color-muted)",
-							strokeWidth: card ? 1.8 : major ? 1.2 : .6,
-							opacity: card ? .9 : major ? .55 : .28
-						}, deg);
-					}),
-					[
-						"N",
-						"E",
-						"S",
-						"W"
-					].map((label, i) => {
-						const a = (i * 90 - 90) * Math.PI / 180;
-						const r = 66;
-						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("text", {
-							x: 120 + r * Math.cos(a),
-							y: 120 + r * Math.sin(a),
-							textAnchor: "middle",
-							dominantBaseline: "middle",
-							fill: "var(--color-fg)",
-							fontSize: "11",
-							fontWeight: "600",
-							letterSpacing: "0.08em",
-							children: label
-						}, label);
-					}),
-					wet ? rainLines.map((offset) => {
-						const a = (windDir + offset * 5.5 - 90) * Math.PI / 180;
-						const x1 = 120 + 100 * Math.cos(a);
-						const y1 = 120 + 100 * Math.sin(a);
-						const x2 = 120 + 38 * Math.cos(a);
-						const y2 = 120 + 38 * Math.sin(a);
-						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", {
-							x1,
-							y1,
-							x2,
-							y2,
-							stroke: "var(--color-rain)",
-							strokeWidth: offset === 0 ? 2 : 1.1,
-							strokeLinecap: "round",
-							opacity: offset === 0 ? .85 : .4,
-							strokeDasharray: "5 7",
-							className: "origin-center motion-safe:animate-pulse"
-						}, offset);
+					live ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("polygon", {
+						points: "120,6 126,18 114,18",
+						fill: "var(--color-accent)"
 					}) : null,
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", {
 						style: {
-							transform: `rotate(${windDir}deg)`,
+							transform: `rotate(${rose}deg)`,
 							transformOrigin: "120px 120px",
-							transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)"
+							transition: live ? void 0 : "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)"
 						},
 						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("polygon", {
-								points: "120,28 126,120 120,108 114,120",
-								fill: "url(#vane-needle)"
+							wet ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+								d: sectorPath(120, 120, 104, windDir - 18, windDir + 18),
+								fill: "var(--color-rain)",
+								opacity: "0.16"
+							}) : null,
+							ticks.map((i) => {
+								const deg = i * 5;
+								const major = deg % 30 === 0;
+								const card = deg % 90 === 0;
+								const inner = card ? 78 : major ? 80 : 83;
+								const outer = 104;
+								const a = (deg - 90) * Math.PI / 180;
+								const x1 = 120 + inner * Math.cos(a);
+								const y1 = 120 + inner * Math.sin(a);
+								const x2 = 120 + outer * Math.cos(a);
+								const y2 = 120 + outer * Math.sin(a);
+								return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", {
+									x1,
+									y1,
+									x2,
+									y2,
+									stroke: "var(--color-muted)",
+									strokeWidth: card ? 1.8 : major ? 1.2 : .6,
+									opacity: card ? .9 : major ? .55 : .28
+								}, deg);
 							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("polygon", {
-								points: "120,198 126.5,120 120,132 113.5,120",
-								fill: "var(--color-accent)"
+							[
+								"N",
+								"E",
+								"S",
+								"W"
+							].map((label, i) => {
+								const a = (i * 90 - 90) * Math.PI / 180;
+								const r = 66;
+								const x = 120 + r * Math.cos(a);
+								const y = 120 + r * Math.sin(a);
+								return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("text", {
+									x,
+									y,
+									textAnchor: "middle",
+									dominantBaseline: "middle",
+									fill: "var(--color-fg)",
+									fontSize: "11",
+									fontWeight: "600",
+									letterSpacing: "0.08em",
+									transform: live ? `rotate(${hdg} ${x} ${y})` : void 0,
+									children: label
+								}, label);
 							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
-								cx: "120",
-								cy: "120",
-								r: "7",
-								fill: "var(--color-bg)",
-								stroke: "var(--color-accent)",
-								strokeWidth: "2"
+							wet ? rainLines.map((offset) => {
+								const a = (windDir + offset * 5.5 - 90) * Math.PI / 180;
+								const x1 = 120 + 100 * Math.cos(a);
+								const y1 = 120 + 100 * Math.sin(a);
+								const x2 = 120 + 38 * Math.cos(a);
+								const y2 = 120 + 38 * Math.sin(a);
+								return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", {
+									x1,
+									y1,
+									x2,
+									y2,
+									stroke: "var(--color-rain)",
+									strokeWidth: offset === 0 ? 2 : 1.1,
+									strokeLinecap: "round",
+									opacity: offset === 0 ? .85 : .4,
+									strokeDasharray: "5 7",
+									className: "origin-center motion-safe:animate-pulse"
+								}, offset);
+							}) : null,
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", {
+								style: {
+									transform: `rotate(${windDir}deg)`,
+									transformOrigin: "120px 120px",
+									transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)"
+								},
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("polygon", {
+										points: "120,28 126,120 120,108 114,120",
+										fill: "url(#vane-needle)"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("polygon", {
+										points: "120,198 126.5,120 120,132 113.5,120",
+										fill: "var(--color-accent)"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+										cx: "120",
+										cy: "120",
+										r: "7",
+										fill: "var(--color-bg)",
+										stroke: "var(--color-accent)",
+										strokeWidth: "2"
+									})
+								]
 							})
 						]
 					})
@@ -630,7 +760,7 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "mt-3 flex items-center justify-between text-sm",
+				className: "mt-3 flex items-end justify-between gap-3 text-sm",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "text-[11px] font-medium uppercase tracking-[0.14em] text-faint",
 					children: "From"
@@ -647,7 +777,30 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 						children: windSpeedLabel
 					})]
 				})]
-			})
+			}),
+			offer || status === "live" || status === "denied" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mt-3 flex items-center justify-between gap-2",
+				children: status === "live" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-xs text-muted",
+					children: uncalibrated ? "Wave the phone in a figure-8" : live ? `Facing ${facing}` : "Finding north…"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+					type: "button",
+					size: "sm",
+					variant: "ghost",
+					onClick: disable,
+					children: "North up"
+				})] }) : status === "denied" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-xs text-muted",
+					children: "Compass permission is off"
+				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+					type: "button",
+					size: "sm",
+					variant: "secondary",
+					className: "w-full",
+					onClick: () => void enable(),
+					children: "Use phone compass"
+				})
+			}) : null
 		]
 	});
 }

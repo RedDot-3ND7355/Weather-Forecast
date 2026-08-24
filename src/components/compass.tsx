@@ -1,4 +1,6 @@
 import { compassPoint, windLong } from "@/lib/weather/compass";
+import { useDeviceHeading } from "@/lib/weather/device-heading";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type CompassProps = {
@@ -19,6 +21,12 @@ export function Compass({
   const rainLines = Array.from({ length: 7 }, (_, i) => i - 3);
   const from = windLong(windDir);
   const point = compassPoint(windDir);
+  const { heading, status, accuracy, offer, enable, disable } = useDeviceHeading();
+  const live = status === "live" && heading != null;
+  const rose = live ? -heading : 0;
+  const facing = live ? compassPoint(heading) : null;
+  const uncalibrated = live && accuracy != null && accuracy < 0;
+  const hdg = heading ?? 0;
 
   return (
     <div className={cn("relative mx-auto aspect-square w-full max-w-64 sm:max-w-80", className)}>
@@ -26,7 +34,11 @@ export function Compass({
         viewBox="0 0 240 240"
         className="size-full"
         role="img"
-        aria-label={`Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`}
+        aria-label={
+          live
+            ? `You are facing ${facing}. Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`
+            : `Wind from the ${from} at ${windSpeedLabel}. Rain chance ${chance} percent.`
+        }
       >
         <defs>
           <radialGradient id="vane-disc" cx="50%" cy="45%" r="55%">
@@ -57,106 +69,123 @@ export function Compass({
           strokeWidth="1"
         />
 
-        {wet ? (
-          <path
-            d={sectorPath(120, 120, 104, windDir - 18, windDir + 18)}
-            fill="var(--color-rain)"
-            opacity="0.16"
-          />
+        {live ? (
+          <polygon points="120,6 126,18 114,18" fill="var(--color-accent)" />
         ) : null}
-
-        {ticks.map((i) => {
-          const deg = i * 5;
-          const major = deg % 30 === 0;
-          const card = deg % 90 === 0;
-          const inner = card ? 78 : major ? 80 : 83;
-          const outer = 104;
-          const a = ((deg - 90) * Math.PI) / 180;
-          const x1 = 120 + inner * Math.cos(a);
-          const y1 = 120 + inner * Math.sin(a);
-          const x2 = 120 + outer * Math.cos(a);
-          const y2 = 120 + outer * Math.sin(a);
-          return (
-            <line
-              key={deg}
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke="var(--color-muted)"
-              strokeWidth={card ? 1.8 : major ? 1.2 : 0.6}
-              opacity={card ? 0.9 : major ? 0.55 : 0.28}
-            />
-          );
-        })}
-
-        {(["N", "E", "S", "W"] as const).map((label, i) => {
-          const deg = i * 90;
-          const a = ((deg - 90) * Math.PI) / 180;
-          const r = 66;
-          return (
-            <text
-              key={label}
-              x={120 + r * Math.cos(a)}
-              y={120 + r * Math.sin(a)}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="var(--color-fg)"
-              fontSize="11"
-              fontWeight="600"
-              letterSpacing="0.08em"
-            >
-              {label}
-            </text>
-          );
-        })}
-
-        {wet
-          ? rainLines.map((offset) => {
-              const deg = windDir + offset * 5.5;
-              const a = ((deg - 90) * Math.PI) / 180;
-              const x1 = 120 + 100 * Math.cos(a);
-              const y1 = 120 + 100 * Math.sin(a);
-              const x2 = 120 + 38 * Math.cos(a);
-              const y2 = 120 + 38 * Math.sin(a);
-              return (
-                <line
-                  key={offset}
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke="var(--color-rain)"
-                  strokeWidth={offset === 0 ? 2 : 1.1}
-                  strokeLinecap="round"
-                  opacity={offset === 0 ? 0.85 : 0.4}
-                  strokeDasharray="5 7"
-                  className="origin-center motion-safe:animate-pulse"
-                />
-              );
-            })
-          : null}
 
         <g
           style={{
-            transform: `rotate(${windDir}deg)`,
+            transform: `rotate(${rose}deg)`,
             transformOrigin: "120px 120px",
-            transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
+            transition: live
+              ? undefined
+              : "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
-          <polygon
-            points="120,28 126,120 120,108 114,120"
-            fill="url(#vane-needle)"
-          />
-          <polygon points="120,198 126.5,120 120,132 113.5,120" fill="var(--color-accent)" />
-          <circle
-            cx="120"
-            cy="120"
-            r="7"
-            fill="var(--color-bg)"
-            stroke="var(--color-accent)"
-            strokeWidth="2"
-          />
+          {wet ? (
+            <path
+              d={sectorPath(120, 120, 104, windDir - 18, windDir + 18)}
+              fill="var(--color-rain)"
+              opacity="0.16"
+            />
+          ) : null}
+
+          {ticks.map((i) => {
+            const deg = i * 5;
+            const major = deg % 30 === 0;
+            const card = deg % 90 === 0;
+            const inner = card ? 78 : major ? 80 : 83;
+            const outer = 104;
+            const a = ((deg - 90) * Math.PI) / 180;
+            const x1 = 120 + inner * Math.cos(a);
+            const y1 = 120 + inner * Math.sin(a);
+            const x2 = 120 + outer * Math.cos(a);
+            const y2 = 120 + outer * Math.sin(a);
+            return (
+              <line
+                key={deg}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="var(--color-muted)"
+                strokeWidth={card ? 1.8 : major ? 1.2 : 0.6}
+                opacity={card ? 0.9 : major ? 0.55 : 0.28}
+              />
+            );
+          })}
+
+          {(["N", "E", "S", "W"] as const).map((label, i) => {
+            const deg = i * 90;
+            const a = ((deg - 90) * Math.PI) / 180;
+            const r = 66;
+            const x = 120 + r * Math.cos(a);
+            const y = 120 + r * Math.sin(a);
+            return (
+              <text
+                key={label}
+                x={x}
+                y={y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="var(--color-fg)"
+                fontSize="11"
+                fontWeight="600"
+                letterSpacing="0.08em"
+                transform={live ? `rotate(${hdg} ${x} ${y})` : undefined}
+              >
+                {label}
+              </text>
+            );
+          })}
+
+          {wet
+            ? rainLines.map((offset) => {
+                const deg = windDir + offset * 5.5;
+                const a = ((deg - 90) * Math.PI) / 180;
+                const x1 = 120 + 100 * Math.cos(a);
+                const y1 = 120 + 100 * Math.sin(a);
+                const x2 = 120 + 38 * Math.cos(a);
+                const y2 = 120 + 38 * Math.sin(a);
+                return (
+                  <line
+                    key={offset}
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    stroke="var(--color-rain)"
+                    strokeWidth={offset === 0 ? 2 : 1.1}
+                    strokeLinecap="round"
+                    opacity={offset === 0 ? 0.85 : 0.4}
+                    strokeDasharray="5 7"
+                    className="origin-center motion-safe:animate-pulse"
+                  />
+                );
+              })
+            : null}
+
+          <g
+            style={{
+              transform: `rotate(${windDir}deg)`,
+              transformOrigin: "120px 120px",
+              transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
+            <polygon
+              points="120,28 126,120 120,108 114,120"
+              fill="url(#vane-needle)"
+            />
+            <polygon points="120,198 126.5,120 120,132 113.5,120" fill="var(--color-accent)" />
+            <circle
+              cx="120"
+              cy="120"
+              r="7"
+              fill="var(--color-bg)"
+              stroke="var(--color-accent)"
+              strokeWidth="2"
+            />
+          </g>
         </g>
       </svg>
 
@@ -170,7 +199,7 @@ export function Compass({
         </p>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-sm">
+      <div className="mt-3 flex items-end justify-between gap-3 text-sm">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-faint">
             From
@@ -184,6 +213,37 @@ export function Compass({
           <p className="font-medium tabular-nums text-fg">{windSpeedLabel}</p>
         </div>
       </div>
+
+      {offer || status === "live" || status === "denied" ? (
+        <div className="mt-3 flex items-center justify-between gap-2">
+          {status === "live" ? (
+            <>
+              <p className="text-xs text-muted">
+                {uncalibrated
+                  ? "Wave the phone in a figure-8"
+                  : live
+                    ? `Facing ${facing}`
+                    : "Finding north…"}
+              </p>
+              <Button type="button" size="sm" variant="ghost" onClick={disable}>
+                North up
+              </Button>
+            </>
+          ) : status === "denied" ? (
+            <p className="text-xs text-muted">Compass permission is off</p>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="w-full"
+              onClick={() => void enable()}
+            >
+              Use phone compass
+            </Button>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

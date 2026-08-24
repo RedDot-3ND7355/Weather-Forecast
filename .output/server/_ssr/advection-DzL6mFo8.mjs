@@ -1,5 +1,5 @@
-import { i as windLong } from "./compass-BtdnyLVS.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/advection-Dpy-6hLP.js
+import { a as windLong } from "./compass-DEB7xUAV.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/advection-DzL6mFo8.js
 var EARTH_KM = 6371;
 var FETCH_KM = [
 	0,

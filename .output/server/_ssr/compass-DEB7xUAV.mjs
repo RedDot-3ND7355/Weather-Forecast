@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/compass-BtdnyLVS.js
+//#region node_modules/.nitro/vite/services/ssr/assets/compass-DEB7xUAV.js
 var POINTS = [
 	"N",
 	"NNE",
@@ -70,4 +70,4 @@ function angleDelta(a, b) {
 	return Math.min(d, 360 - d);
 }
 //#endregion
-export { windLong as i, compassPoint as n, windAdverb as r, angleDelta as t };
+export { windLong as a, windAdverb as i, compassPoint as n, normalizeDeg as r, angleDelta as t };
