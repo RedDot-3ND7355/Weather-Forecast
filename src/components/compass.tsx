@@ -21,7 +21,8 @@ export function Compass({
   const rainLines = Array.from({ length: 7 }, (_, i) => i - 3);
   const from = windLong(windDir);
   const point = compassPoint(windDir);
-  const { heading, status, accuracy, offer, enable, disable } = useDeviceHeading();
+  const { heading, status, accuracy, offer, hint, enable, disable } =
+    useDeviceHeading();
   const live = status === "live" && heading != null;
   const rose = live ? -heading : 0;
   const facing = live ? compassPoint(heading) : null;
@@ -219,11 +220,15 @@ export function Compass({
           {status === "live" ? (
             <>
               <p className="text-xs text-muted">
-                {uncalibrated
+                {hint === "calibrate" || uncalibrated
                   ? "Wave the phone in a figure-8"
-                  : live
-                    ? `Facing ${facing}`
-                    : "Finding north…"}
+                  : hint === "settings"
+                    ? "Safari Settings → Motion & Orientation Access"
+                    : hint === "move"
+                      ? "Turn the phone to lock north"
+                      : live
+                        ? `Facing ${facing}`
+                        : "Finding north…"}
               </p>
               <Button type="button" size="sm" variant="ghost" onClick={disable}>
                 North up

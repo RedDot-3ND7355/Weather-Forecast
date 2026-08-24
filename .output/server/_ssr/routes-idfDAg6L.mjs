@@ -12,10 +12,10 @@ import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
 import { i as offsetKm } from "./advection-DzL6mFo8.mjs";
 import { A as CloudDrizzle, C as Droplets, D as CloudRain, E as CloudSnow, M as ChevronLeft, N as Bookmark, O as CloudLightning, P as BookmarkCheck, S as Expand, T as CloudSun, _ as Locate, a as Sun, b as Gauge, c as Plus, d as Moon, f as Minus, g as LogIn, h as LogOut, i as Thermometer, j as ChevronRight, k as CloudFog, l as Play, m as MapPin, n as Wind, o as Search, p as Maximize2, s as Radar, t as X, u as Pause, v as LoaderCircle, w as Cloud, x as Eye, y as Info } from "../_libs/lucide-react.mjs";
-import { n as createSsrRpc } from "./router-CyqFuNzs.mjs";
+import { n as createSsrRpc } from "./router-CRJzKULD.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-DVLPb0Rb.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-idfDAg6L.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -467,8 +467,17 @@ function screenAngle() {
 	const legacy = window.orientation;
 	return typeof legacy === "number" ? legacy : 0;
 }
-function readHeading(e) {
-	if (typeof e.webkitCompassHeading === "number" && Number.isFinite(e.webkitCompassHeading)) return normalizeDeg(e.webkitCompassHeading);
+function isAppleTouch() {
+	const ua = navigator.userAgent;
+	if (/iP(hone|od|ad)/.test(ua)) return true;
+	if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+	return navigator.vendor === "Apple Computer, Inc." && "ontouchend" in window;
+}
+function readHeading(e, apple) {
+	const webkit = e.webkitCompassHeading;
+	if (typeof webkit === "number" && Number.isFinite(webkit)) return normalizeDeg(webkit);
+	if (apple) return null;
+	if (e.absolute === false) return null;
 	if (typeof e.alpha !== "number" || !Number.isFinite(e.alpha)) return null;
 	return normalizeDeg(-e.alpha + screenAngle());
 }
@@ -482,47 +491,59 @@ function canRequest() {
 function headingSupported() {
 	return typeof window !== "undefined" && (typeof DeviceOrientationEvent !== "undefined" || "ondeviceorientationabsolute" in window);
 }
+async function requestMotion() {
+	const orient = DeviceOrientationEvent;
+	if (typeof orient.requestPermission !== "function") return true;
+	if (await orient.requestPermission() !== "granted") return false;
+	const motion = DeviceMotionEvent;
+	if (typeof motion.requestPermission === "function") try {
+		await motion.requestPermission();
+	} catch {}
+	return true;
+}
 function useDeviceHeading() {
 	const [heading, setHeading] = (0, import_react.useState)(null);
 	const [status, setStatus] = (0, import_react.useState)("off");
 	const [accuracy, setAccuracy] = (0, import_react.useState)(null);
 	const [offer, setOffer] = (0, import_react.useState)(false);
+	const [hint, setHint] = (0, import_react.useState)(null);
 	const target = (0, import_react.useRef)(null);
 	const shown = (0, import_react.useRef)(null);
-	const absSeen = (0, import_react.useRef)(false);
-	(0, import_react.useEffect)(() => {
-		if (!headingSupported()) {
-			setStatus("missing");
-			return;
-		}
-		const ios = canRequest();
-		const coarse = window.matchMedia("(pointer: coarse)").matches;
-		if (ios) setStatus("need");
-		setOffer(ios || coarse);
-	}, []);
-	(0, import_react.useEffect)(() => {
-		if (status !== "live") return;
-		absSeen.current = false;
+	const absOk = (0, import_react.useRef)(false);
+	const stop = (0, import_react.useRef)(null);
+	const startListening = (0, import_react.useCallback)(() => {
+		stop.current?.();
+		absOk.current = false;
 		shown.current = null;
 		target.current = null;
-		const onOrient = (e, abs) => {
-			if (abs) absSeen.current = true;
-			else if (absSeen.current) return;
+		setHint(null);
+		const appleNow = isAppleTouch();
+		const apply = (e, fromAbsolute) => {
 			const ev = e;
-			const h = readHeading(ev);
+			const h = readHeading(ev, appleNow);
 			if (h == null) return;
+			if (fromAbsolute) absOk.current = true;
+			else if (absOk.current && !appleNow) return;
 			target.current = h;
-			if (typeof ev.webkitCompassAccuracy === "number") setAccuracy(ev.webkitCompassAccuracy);
+			if (typeof ev.webkitCompassAccuracy === "number") {
+				setAccuracy(ev.webkitCompassAccuracy);
+				if (ev.webkitCompassAccuracy < 0) setHint("calibrate");
+			}
 		};
-		const onAbs = (e) => onOrient(e, true);
-		const onRel = (e) => onOrient(e, false);
-		window.addEventListener("deviceorientationabsolute", onAbs);
-		window.addEventListener("deviceorientation", onRel);
+		const onAbs = (e) => {
+			if (appleNow) return;
+			apply(e, true);
+		};
+		const onRel = (e) => apply(e, false);
+		const onCalibrate = () => setHint("calibrate");
+		window.addEventListener("deviceorientation", onRel, true);
+		if (!appleNow) window.addEventListener("deviceorientationabsolute", onAbs, true);
+		window.addEventListener("compassneedscalibration", onCalibrate);
 		let raf = 0;
 		const loop = () => {
 			const next = target.current;
 			if (next != null) {
-				shown.current = shown.current == null ? next : lerpAngle(shown.current, next, .22);
+				shown.current = shown.current == null ? next : lerpAngle(shown.current, next, .28);
 				const s = shown.current;
 				setHeading((prev) => {
 					if (prev == null) return s;
@@ -532,40 +553,64 @@ function useDeviceHeading() {
 			raf = requestAnimationFrame(loop);
 		};
 		raf = requestAnimationFrame(loop);
-		return () => {
-			window.removeEventListener("deviceorientationabsolute", onAbs);
-			window.removeEventListener("deviceorientation", onRel);
+		const silent = window.setTimeout(() => {
+			if (target.current == null) setHint("move");
+		}, 1600);
+		const stuck = window.setTimeout(() => {
+			if (target.current == null) setHint("settings");
+		}, 4500);
+		stop.current = () => {
+			window.removeEventListener("deviceorientation", onRel, true);
+			window.removeEventListener("deviceorientationabsolute", onAbs, true);
+			window.removeEventListener("compassneedscalibration", onCalibrate);
 			cancelAnimationFrame(raf);
+			window.clearTimeout(silent);
+			window.clearTimeout(stuck);
 		};
-	}, [status]);
+	}, []);
+	(0, import_react.useEffect)(() => {
+		if (!headingSupported()) {
+			setStatus("missing");
+			return;
+		}
+		const ios = canRequest() || isAppleTouch();
+		const coarse = window.matchMedia("(pointer: coarse)").matches;
+		if (ios) setStatus("need");
+		setOffer(ios || coarse);
+		return () => stop.current?.();
+	}, []);
 	return {
 		heading,
 		status,
 		accuracy,
 		offer,
+		hint,
 		enable: (0, import_react.useCallback)(async () => {
 			if (!headingSupported()) {
 				setStatus("missing");
 				return;
 			}
 			try {
-				if (canRequest()) {
-					if (await DeviceOrientationEvent.requestPermission() !== "granted") {
-						setStatus("denied");
-						return;
-					}
+				if (!await requestMotion()) {
+					setStatus("denied");
+					return;
 				}
+				startListening();
 				setStatus("live");
 			} catch {
 				setStatus("denied");
 			}
-		}, []),
+		}, [startListening]),
 		disable: (0, import_react.useCallback)(() => {
+			stop.current?.();
+			stop.current = null;
 			setHeading(null);
 			setAccuracy(null);
+			setHint(null);
 			target.current = null;
 			shown.current = null;
-			setStatus(canRequest() ? "need" : "off");
+			absOk.current = false;
+			setStatus(canRequest() || isAppleTouch() ? "need" : "off");
 		}, [])
 	};
 }
@@ -575,7 +620,7 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 	const rainLines = Array.from({ length: 7 }, (_, i) => i - 3);
 	const from = windLong(windDir);
 	const point = compassPoint(windDir);
-	const { heading, status, accuracy, offer, enable, disable } = useDeviceHeading();
+	const { heading, status, accuracy, offer, hint, enable, disable } = useDeviceHeading();
 	const live = status === "live" && heading != null;
 	const rose = live ? -heading : 0;
 	const facing = live ? compassPoint(heading) : null;
@@ -782,7 +827,7 @@ function Compass({ windDir, windSpeedLabel, chance, className }) {
 				className: "mt-3 flex items-center justify-between gap-2",
 				children: status === "live" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "text-xs text-muted",
-					children: uncalibrated ? "Wave the phone in a figure-8" : live ? `Facing ${facing}` : "Finding north…"
+					children: hint === "calibrate" || uncalibrated ? "Wave the phone in a figure-8" : hint === "settings" ? "Safari Settings → Motion & Orientation Access" : hint === "move" ? "Turn the phone to lock north" : live ? `Facing ${facing}` : "Finding north…"
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 					type: "button",
 					size: "sm",

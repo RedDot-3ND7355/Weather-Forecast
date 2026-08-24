@@ -11,131 +11,131 @@ var headers = ((m) => function headersRouteRule(event) {
 //#endregion
 //#region #nitro/virtual/public-assets-data
 var public_assets_data_default = {
+	"/favicon.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"1b0-eHuOw216fMR7/WJ+ghpCK8D56dM\"",
+		"mtime": "2026-08-24T02:08:30.417Z",
+		"size": 432,
+		"path": "../public/favicon.svg"
+	},
 	"/og.jpg": {
 		"type": "image/jpeg",
 		"etag": "\"dd78-tS/M2+/U2KAZ9Gsp7T0dONcFL3Y\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 56696,
 		"path": "../public/og.jpg"
 	},
 	"/__grok/icon-180.png": {
 		"type": "image/png",
 		"etag": "\"834-Xk8vfS0DTFn7ggtkfEduWTcNWGE\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 2100,
 		"path": "../public/__grok/icon-180.png"
 	},
 	"/assets/client-C6Z4iW4I.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"7cbd-6zm1jyk5Cr1li5dyPTGan6qk0eY\"",
-		"mtime": "2026-08-24T02:02:13.689Z",
+		"mtime": "2026-08-24T02:08:29.577Z",
 		"size": 31933,
 		"path": "../public/assets/client-C6Z4iW4I.js"
 	},
 	"/assets/dist-CP3jarzo.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"e623-mbC738//PVw4VXrzbDmVftwbUjo\"",
-		"mtime": "2026-08-24T02:02:13.689Z",
+		"mtime": "2026-08-24T02:08:29.577Z",
 		"size": 58915,
 		"path": "../public/assets/dist-CP3jarzo.js"
 	},
-	"/assets/index-B-n8PFGw.js": {
+	"/assets/index-WjcDQrMT.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"5e0f0-qF8rzAOxn06h7qz1AQai6bPYmmY\"",
-		"mtime": "2026-08-24T02:02:13.689Z",
+		"etag": "\"5e0f0-grIeL3uGRYCfSElqU+77TJlWYfY\"",
+		"mtime": "2026-08-24T02:08:29.577Z",
 		"size": 385264,
-		"path": "../public/assets/index-B-n8PFGw.js"
+		"path": "../public/assets/index-WjcDQrMT.js"
 	},
 	"/assets/input-Yv3RKBcd.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"7dbb-nqyjPUlGLnrX9RUNUFoX6x45mGs\"",
-		"mtime": "2026-08-24T02:02:13.689Z",
+		"mtime": "2026-08-24T02:08:29.577Z",
 		"size": 32187,
 		"path": "../public/assets/input-Yv3RKBcd.js"
+	},
+	"/assets/login-DdAwuigY.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"16e0-ebc0TSvMIl3aSuUhJVVAfNQk/10\"",
+		"mtime": "2026-08-24T02:08:29.577Z",
+		"size": 5856,
+		"path": "../public/assets/login-DdAwuigY.js"
 	},
 	"/assets/react-SIfiwpqq.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"1ff9-FGVdof4/lFGmrdRsB9EIvuwBlYc\"",
-		"mtime": "2026-08-24T02:02:13.689Z",
+		"mtime": "2026-08-24T02:08:29.577Z",
 		"size": 8185,
 		"path": "../public/assets/react-SIfiwpqq.js"
 	},
-	"/assets/login-3SO8Km-f.js": {
+	"/assets/routes-CRED9Dy0.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"16e0-sCgHmKfKw7e3n85108tPxuGrAgw\"",
-		"mtime": "2026-08-24T02:02:13.689Z",
-		"size": 5856,
-		"path": "../public/assets/login-3SO8Km-f.js"
-	},
-	"/assets/routes-DZawJ6IJ.js": {
-		"type": "text/javascript; charset=utf-8",
-		"etag": "\"6d5b4-4UC/GSQ1rVCntJE5lO6Wa673fL0\"",
-		"mtime": "2026-08-24T02:02:13.689Z",
-		"size": 447924,
-		"path": "../public/assets/routes-DZawJ6IJ.js"
+		"etag": "\"6d9d1-nvJJHjOnSzv76lToH/kPXuCSDEY\"",
+		"mtime": "2026-08-24T02:08:29.577Z",
+		"size": 448977,
+		"path": "../public/assets/routes-CRED9Dy0.js"
 	},
 	"/assets/styles-DYkETrdC.css": {
 		"type": "text/css; charset=utf-8",
 		"etag": "\"a9b1-4Lrlb2AB7nWFrsKGaNAi5m3wwno\"",
-		"mtime": "2026-08-24T02:02:13.689Z",
+		"mtime": "2026-08-24T02:08:29.577Z",
 		"size": 43441,
 		"path": "../public/assets/styles-DYkETrdC.css"
 	},
 	"/__grok/install/styles.css": {
 		"type": "text/css; charset=utf-8",
 		"etag": "\"1a3d-VUsWOMAheo1/P30EqU5qaIkyvIQ\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 6717,
 		"path": "../public/__grok/install/styles.css"
 	},
 	"/__grok/install/assets/homescreen/glass-puzzle.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"713-AP2wG8KChAGjse1Fn+f/+vDN+sQ\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 1811,
 		"path": "../public/__grok/install/assets/homescreen/glass-puzzle.svg"
 	},
 	"/__grok/install/assets/homescreen/glass-share.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"954-jb3ATcKjqgMOYrA/4w1v21j0Jvg\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 2388,
 		"path": "../public/__grok/install/assets/homescreen/glass-share.svg"
 	},
 	"/__grok/install/assets/homescreen/logo-grok.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"423-5mXO+yh9KW40jM3to5JlWPhxNK8\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 1059,
 		"path": "../public/__grok/install/assets/homescreen/logo-grok.svg"
 	},
 	"/__grok/install/assets/homescreen/ob-ipad.png": {
 		"type": "image/png",
 		"etag": "\"18dd3-wlRwrpmBImStuiu+4poVz7ANin4\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 101843,
 		"path": "../public/__grok/install/assets/homescreen/ob-ipad.png"
 	},
 	"/__grok/install/assets/homescreen/ob-phone.png": {
 		"type": "image/png",
 		"etag": "\"194bc-oZradWHIHO68q2glHU0Gk5ttpWA\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 103612,
 		"path": "../public/__grok/install/assets/homescreen/ob-phone.png"
 	},
 	"/__grok/install/assets/homescreen/plus.svg": {
 		"type": "image/svg+xml",
 		"etag": "\"961-sSBPunx/13vbMNAlPxb7UeO3l3A\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
+		"mtime": "2026-08-24T02:08:30.417Z",
 		"size": 2401,
 		"path": "../public/__grok/install/assets/homescreen/plus.svg"
-	},
-	"/favicon.svg": {
-		"type": "image/svg+xml",
-		"etag": "\"1b0-eHuOw216fMR7/WJ+ghpCK8D56dM\"",
-		"mtime": "2026-08-24T02:02:14.453Z",
-		"size": 432,
-		"path": "../public/favicon.svg"
 	}
 };
 //#endregion
@@ -203,6 +203,22 @@ var static_default = defineHandler((event) => {
 	if (asset.size > 0 && !event.res.headers.has("Content-Length")) event.res.headers.set("Content-Length", asset.size.toString());
 	return readAsset(id);
 });
+//#endregion
+//#region server/middleware/00-sensors.ts
+var SENSOR_POLICY = "accelerometer=(self), gyroscope=(self), magnetometer=(self)";
+var FEATURE_POLICY = "accelerometer 'self'; gyroscope 'self'; magnetometer 'self'";
+async function sensorsPolicy(_event, next) {
+	const result = await next();
+	if (!(result instanceof Response)) return result;
+	const headers = new Headers(result.headers);
+	if (!headers.has("Permissions-Policy")) headers.set("Permissions-Policy", SENSOR_POLICY);
+	if (!headers.has("Feature-Policy")) headers.set("Feature-Policy", FEATURE_POLICY);
+	return new Response(result.body, {
+		status: result.status,
+		statusText: result.statusText,
+		headers
+	});
+}
 //#endregion
 //#region scripts/install-page.html?raw
 var install_page_default = "<!DOCTYPE html>\n<html lang=\"en\" class=\"device-desktop\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta\n      name=\"viewport\"\n      content=\"width=device-width, initial-scale=1, viewport-fit=cover\"\n    />\n    <meta name=\"color-scheme\" content=\"dark\" />\n    <meta name=\"theme-color\" content=\"#000000\" />\n    <meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black\" />\n    <meta name=\"apple-mobile-web-app-title\" content=\"{{APP_NAME}}\" />\n    <title>Add {{APP_NAME}} to your Home Screen</title>\n    <link rel=\"manifest\" href=\"/__grok/manifest.webmanifest\" />\n    <link rel=\"apple-touch-icon\" href=\"/__grok/icon-180.png\" />\n    <link rel=\"stylesheet\" href=\"/__grok/install/styles.css\" />\n    <script>\n      (function () {\n        var ua = navigator.userAgent || \"\";\n        var touch = navigator.maxTouchPoints || 0;\n        var isiPad = /iPad/.test(ua) || (/Macintosh/.test(ua) && touch > 1);\n        var isiPhone = /iPhone|iPod/.test(ua);\n        var isIOS = isiPhone || isiPad;\n        var isAndroid = /Android/i.test(ua);\n        var isAndroidPhone = isAndroid && /Mobile/i.test(ua);\n        var isAndroidTablet = isAndroid && !/Mobile/i.test(ua);\n        var minSide = Math.min(screen.width || 0, screen.height || 0);\n        var maxSide = Math.max(screen.width || 0, screen.height || 0);\n\n        var type = \"desktop\";\n        if (isiPhone) type = \"phone\";\n        else if (isiPad || isAndroidTablet) type = \"tablet\";\n        else if (isAndroidPhone) type = \"phone\";\n        else if (touch > 0 && minSide > 0 && minSide <= 500) type = \"phone\";\n        else if (touch > 0 && minSide > 500 && maxSide <= 1400) type = \"tablet\";\n\n        var iosMajor = null;\n        var osToken = null;\n        var safariToken = null;\n        var iphoneOs = ua.match(/iPhone OS (\\d+)[._]/);\n        var ipadOs = ua.match(/CPU OS (\\d+)[._](\\d+) like Mac OS X/);\n        var safariVer = ua.match(/Version\\/(\\d+)[._]/);\n        if (iphoneOs) osToken = parseInt(iphoneOs[1], 10);\n        else if (ipadOs) osToken = parseInt(ipadOs[1], 10);\n        if (isIOS && safariVer) safariToken = parseInt(safariVer[1], 10);\n        if (osToken != null || safariToken != null) {\n          iosMajor = Math.max(osToken || 0, safariToken || 0);\n        }\n\n        var root = document.documentElement;\n        var classes = [\"device-\" + type];\n        if (iosMajor != null) {\n          root.dataset.ios = String(iosMajor);\n          classes.push(iosMajor >= 27 ? \"ios-27-plus\" : \"ios-below-27\");\n        }\n        root.className = classes.join(\" \");\n      })();\n    <\/script>\n  </head>\n  <body>\n    <div class=\"page\">\n      <header class=\"powered\" aria-label=\"Powered by Grok\">\n        <span class=\"powered-by\">Powered by</span>\n        <span class=\"powered-brand\">\n          <img\n            class=\"grok-logo\"\n            src=\"/__grok/install/assets/homescreen/logo-grok.svg\"\n            width=\"14\"\n            height=\"14\"\n            alt=\"\"\n          />\n          <span class=\"powered-grok\">Grok</span>\n        </span>\n      </header>\n\n      <main class=\"content\">\n        <div class=\"ob\" aria-hidden=\"true\">\n          <img\n            class=\"ob-img ob-phone\"\n            src=\"/__grok/install/assets/homescreen/ob-phone.png\"\n            width=\"338\"\n            height=\"294\"\n            alt=\"\"\n          />\n          <img\n            class=\"ob-img ob-ipad\"\n            src=\"/__grok/install/assets/homescreen/ob-ipad.png\"\n            width=\"634\"\n            height=\"294\"\n            alt=\"\"\n          />\n        </div>\n\n        <section class=\"copy\">\n          <h1>Add {{APP_NAME}} to your&nbsp;Home&nbsp;Screen</h1>\n\n          <div class=\"steps\">\n            <p class=\"step step-tap step-ios27\">\n              <span class=\"muted\">Tap</span>\n              <span class=\"glass glass--icon\" aria-hidden=\"true\">\n                <img src=\"/__grok/install/assets/homescreen/glass-puzzle.svg\" width=\"24\" height=\"24\" alt=\"\" />\n              </span>\n              <span class=\"muted loc loc-phone\">in the bottom bar, then</span>\n              <span class=\"muted loc loc-ipad\">in the tool bar, then</span>\n              <span class=\"glass glass--icon\" aria-hidden=\"true\">\n                <img src=\"/__grok/install/assets/homescreen/glass-share.svg\" width=\"24\" height=\"24\" alt=\"\" />\n              </span>\n            </p>\n\n            <p class=\"step step-tap step-ios-legacy\">\n              <span class=\"muted\">Tap</span>\n              <span class=\"glass glass--icon\" aria-hidden=\"true\">\n                <img src=\"/__grok/install/assets/homescreen/glass-share.svg\" width=\"24\" height=\"24\" alt=\"\" />\n              </span>\n              <span class=\"muted loc loc-phone\">in the bottom bar</span>\n              <span class=\"muted loc loc-ipad\">in the tool bar</span>\n            </p>\n\n            <p class=\"step step-select\">\n              <span class=\"muted\">Select</span>\n              <span class=\"add-label\">\n                <img\n                  class=\"plus-icon\"\n                  src=\"/__grok/install/assets/homescreen/plus.svg\"\n                  width=\"16\"\n                  height=\"16\"\n                  alt=\"\"\n                />\n                <span class=\"add-text\">Add to Home Screen</span>\n              </span>\n            </p>\n          </div>\n        </section>\n      </main>\n\n      <main class=\"content content-desktop\">\n        <section class=\"copy\">\n          <h1>Open this link on your iPhone&nbsp;or&nbsp;iPad</h1>\n          <p class=\"desktop-note\">\n            This page shows how to add {{APP_NAME}} to an iOS Home Screen.\n          </p>\n          <a class=\"desktop-open\" href=\"{{APP_URL}}\">Open {{APP_NAME}}</a>\n        </section>\n      </main>\n    </div>\n  </body>\n</html>\n";
@@ -669,7 +685,11 @@ var findRoute = /* @__PURE__ */ (() => {
 		};
 	});
 })();
-var globalMiddleware = [toEventHandler(static_default), toEventHandler(grokPwaMiddleware)].filter(Boolean);
+var globalMiddleware = [
+	toEventHandler(static_default),
+	toEventHandler(sensorsPolicy),
+	toEventHandler(grokPwaMiddleware)
+].filter(Boolean);
 //#endregion
 //#region node_modules/nitro/dist/runtime/internal/error/prod.mjs
 var errorHandler = (error, event) => {
