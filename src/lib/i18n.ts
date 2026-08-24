@@ -186,6 +186,12 @@ const EN = {
   alertAdvisory: "Advisory",
   alertStatement: "Statement",
   dismissAlert: "Dismiss alert",
+  incomingLead: "Next hour",
+  incomingNow: "{kind} is here now",
+  incomingSoon: "{kind} in {eta} · {from}",
+  incomingCopyNow: "It's {kind}ing here. Wind {from} is still feeding it.",
+  incomingCopyRadar: "Radar sees {kind} upwind, arriving {from} if the wind holds.",
+  incomingCopyHourly: "The hourly fetch puts {kind} in the next hour ({chance}%).",
 } as const;
 
 const FR: Record<keyof typeof EN, string> = {
@@ -375,6 +381,12 @@ const FR: Record<keyof typeof EN, string> = {
   alertAdvisory: "Avis",
   alertStatement: "Bulletin",
   dismissAlert: "Masquer l’alerte",
+  incomingLead: "Prochaine heure",
+  incomingNow: "{kind} en cours",
+  incomingSoon: "{kind} dans {eta} · {from}",
+  incomingCopyNow: "Il y a de la {kind} ici. Le vent {from} continue de l’alimenter.",
+  incomingCopyRadar: "Le radar voit de la {kind} au vent, qui arrive {from} si le flux tient.",
+  incomingCopyHourly: "Le flux horaire place de la {kind} dans l’heure ({chance} %).",
 };
 
 const MESSAGES: Record<Locale, Record<keyof typeof EN, string>> = { en: EN, fr: FR };

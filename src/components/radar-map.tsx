@@ -999,7 +999,9 @@ export function RadarMap({
           windSpeedKmh: current.windSpeedKmh,
         },
       }),
-    staleTime: 8 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
   const gridQuery = useQuery({
     queryKey: ["precip-grid", place.latitude.toFixed(2), place.longitude.toFixed(2)],

@@ -4,21 +4,76 @@ import { b as useSearch, l as require_react_dom, v as Link, y as useNavigate } f
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
-import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-F9-evSlQ.mjs";
-import { C as Info, D as Droplets, E as Expand, F as ChevronRight, I as ChevronLeft, L as Bookmark, R as BookmarkCheck, S as Link2, T as Eye, _ as MapPin, a as Sunset, b as Locate, c as Search, d as Play, f as Pause, g as Maximize2, h as Minimize2, i as Thermometer, j as CloudRain, l as Radar, m as Minus, n as Wind, o as Sunrise, r as TriangleAlert, t as X, u as Plus, v as LogOut, w as Gauge, x as LoaderCircle, y as LogIn } from "../_libs/lucide-react.mjs";
-import { a as fromThe, c as precipKind, d as weatherIcon, f as weatherLabel, i as estimateRain, l as precipWord, p as windLong, s as normalizeDeg, t as compassPoint, u as precipWordCap } from "./rain-BJ2BUd5Z.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-DOJG_y5Q.mjs";
+import { A as CloudSnow, C as Info, D as Droplets, E as Expand, F as ChevronRight, I as ChevronLeft, L as Bookmark, R as BookmarkCheck, S as Link2, T as Eye, _ as MapPin, a as Sunset, b as Locate, c as Search, d as Play, f as Pause, g as Maximize2, h as Minimize2, i as Thermometer, j as CloudRain, l as Radar, m as Minus, n as Wind, o as Sunrise, r as TriangleAlert, t as X, u as Plus, v as LogOut, w as Gauge, x as LoaderCircle, y as LogIn } from "../_libs/lucide-react.mjs";
+import { a as fromThe, c as precipKind, d as weatherIcon, f as weatherLabel, i as estimateRain, l as precipWord, p as windLong, s as normalizeDeg, t as compassPoint, u as precipWordCap } from "./rain-NNrdswi8.mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-B7ohLyZK.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { n as arrivalCopy, r as formatEta } from "./advection-BPL6u7FP.mjs";
-import { n as createSsrRpc } from "./router-B63YxUJ3.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-DNZmC55f.mjs";
+import { n as createSsrRpc } from "./router-D6C1V5P8.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-DX-kcsqj.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BuWDm4Hg.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
+function IncomingBanner({ incoming }) {
+	const { locale, t } = useT();
+	const [hidden, setHidden] = (0, import_react.useState)(false);
+	if (hidden) return null;
+	const kind = incoming.kind === "snow" ? t("snowWord") : t("rainWord");
+	const kindCap = kind.charAt(0).toUpperCase() + kind.slice(1);
+	const from = fromThe(incoming.fromDir, locale);
+	const eta = formatEta(incoming.minutes, locale);
+	const Icon = incoming.kind === "snow" ? CloudSnow : CloudRain;
+	const title = incoming.minutes <= 8 ? t("incomingNow", { kind: kindCap }) : t("incomingSoon", {
+		kind: kindCap,
+		eta,
+		from
+	});
+	const copy = incoming.source === "radar" ? t("incomingCopyRadar", {
+		kind,
+		from
+	}) : incoming.source === "now" ? t("incomingCopyNow", {
+		kind,
+		from
+	}) : t("incomingCopyHourly", {
+		kind,
+		chance: incoming.chance
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: cn("mb-4 flex items-start gap-2 rounded-2xl px-3 py-3 shadow-[var(--shadow-border)] sm:px-4", incoming.minutes <= 8 ? "bg-rain/18" : "bg-warn/16"),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, { className: "mt-0.5 size-4 shrink-0 text-rain" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "min-w-0 flex-1",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-[11px] font-medium uppercase tracking-[0.14em] text-faint",
+						children: t("incomingLead")
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mt-0.5 text-sm font-medium text-fg",
+						children: title
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mt-1 text-sm leading-relaxed text-muted",
+						children: copy
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				type: "button",
+				className: "shrink-0 rounded-md p-1 text-muted hover:text-fg",
+				"aria-label": t("dismissAlert"),
+				onClick: () => setHidden(true),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { className: "size-4" })
+			})
+		]
+	});
+}
 function typeLabel(type, t) {
 	if (type === "warning") return t("alertWarning");
 	if (type === "watch") return t("alertWatch");
@@ -2327,7 +2382,9 @@ function RadarMap({ forecast, units }) {
 			windDir: current.windDir,
 			windSpeedKmh: current.windSpeedKmh
 		} }),
-		staleTime: 48e4
+		staleTime: 3e5,
+		refetchInterval: 3e5,
+		refetchOnWindowFocus: true
 	});
 	const gridQuery = useQuery({
 		queryKey: [
@@ -3183,6 +3240,38 @@ var fetchAlerts = createServerFn({ method: "GET" }).validator(object({
 	longitude: number(),
 	language: _enum(["en", "fr"]).optional()
 })).handler(createSsrRpc("3bbc7d5fe7f101521c0524ab69abb21e3d70468eaa12be8cee8eee7731ec8064"));
+var HOUR_MIN = 75;
+function incomingPrecip(forecast, nowcast) {
+	const next = forecast.nextRain;
+	const code = next?.weatherCode ?? forecast.current.weatherCode;
+	const kind = precipKind(code);
+	if (forecast.current.precipitationMm >= .15) return {
+		kind: precipKind(forecast.current.weatherCode),
+		minutes: 0,
+		chance: Math.max(forecast.current.rain.chance, 70),
+		fromDir: forecast.current.windDir,
+		source: "now"
+	};
+	const radar = nowcast?.arrival;
+	if (radar && radar.minutes > 0 && radar.minutes <= HOUR_MIN && radar.precipMm >= .12) return {
+		kind,
+		minutes: radar.minutes,
+		chance: Math.min(95, Math.round(50 + radar.precipMm * 40)),
+		fromDir: forecast.current.windDir,
+		source: "radar"
+	};
+	if (!next) return null;
+	const mins = Math.round((new Date(next.time).getTime() - Date.now()) / 6e4);
+	if (mins > HOUR_MIN || mins < -5) return null;
+	if (next.rain.chance < 40 && next.precipMm < .2) return null;
+	return {
+		kind: precipKind(next.weatherCode),
+		minutes: Math.max(0, mins),
+		chance: next.rain.chance,
+		fromDir: next.windDir,
+		source: "hourly"
+	};
+}
 var GeoError = class extends Error {
 	kind;
 	constructor(message, kind) {
@@ -3259,6 +3348,10 @@ function readDevicePosition() {
 		}, 45e3);
 	});
 }
+var consumedUrl = false;
+function sameCoords(a, lat, lon) {
+	return Math.abs(a.latitude - lat) < 8e-4 && Math.abs(a.longitude - lon) < 8e-4;
+}
 function ForecastApp() {
 	const { user } = useCurrentUserState();
 	const { t } = useT();
@@ -3271,17 +3364,17 @@ function ForecastApp() {
 	const [locating, setLocating] = (0, import_react.useState)(false);
 	const search = useSearch({ from: "/" });
 	const navigate = useNavigate({ from: "/" });
-	const appliedUrl = (0, import_react.useRef)(false);
 	(0, import_react.useEffect)(() => {
 		const done = () => setHydrated(true);
 		if (useWeatherStore.persist.hasHydrated()) done();
 		return useWeatherStore.persist.onFinishHydration(done);
 	}, []);
 	(0, import_react.useEffect)(() => {
-		if (!hydrated || appliedUrl.current) return;
-		appliedUrl.current = true;
+		if (!hydrated || consumedUrl) return;
+		consumedUrl = true;
+		const persisted = useWeatherStore.getState().place;
 		if (typeof search.lat === "number" && typeof search.lon === "number") {
-			setPlace({
+			if (!persisted || !sameCoords(persisted, search.lat, search.lon)) setPlace({
 				name: search.n || t("yourLocation"),
 				latitude: search.lat,
 				longitude: search.lon
@@ -3306,11 +3399,14 @@ function ForecastApp() {
 	]);
 	(0, import_react.useEffect)(() => {
 		if (!hydrated || !place) return;
+		const lat = Number(place.latitude.toFixed(5));
+		const lon = Number(place.longitude.toFixed(5));
+		if (search.lat === lat && search.lon === lon && search.n === place.name && search.q === void 0) return;
 		navigate({
 			search: {
 				q: void 0,
-				lat: Number(place.latitude.toFixed(4)),
-				lon: Number(place.longitude.toFixed(4)),
+				lat,
+				lon,
 				n: place.name
 			},
 			replace: true
@@ -3318,9 +3414,11 @@ function ForecastApp() {
 	}, [
 		hydrated,
 		navigate,
-		place?.latitude,
-		place?.longitude,
-		place?.name
+		place,
+		search.lat,
+		search.lon,
+		search.n,
+		search.q
 	]);
 	const active = hydrated ? place : null;
 	const forecastQuery = useQuery({
@@ -3352,6 +3450,24 @@ function ForecastApp() {
 		refetchInterval: 3e5,
 		refetchOnWindowFocus: true
 	});
+	const nowcastQuery = useQuery({
+		queryKey: [
+			"radar-nowcast",
+			active?.latitude,
+			active?.longitude,
+			Math.round(forecastQuery.data?.current.windDir ?? 0)
+		],
+		queryFn: () => fetchRadarNowcast({ data: {
+			latitude: active.latitude,
+			longitude: active.longitude,
+			windDir: forecastQuery.data.current.windDir,
+			windSpeedKmh: forecastQuery.data.current.windSpeedKmh
+		} }),
+		enabled: Boolean(active && forecastQuery.data),
+		staleTime: 3e5,
+		refetchInterval: 3e5,
+		refetchOnWindowFocus: true
+	});
 	const savedQuery = useQuery({
 		queryKey: ["saved-places", user?.id],
 		queryFn: () => listPlaces(),
@@ -3362,15 +3478,22 @@ function ForecastApp() {
 	function locate() {
 		if (isAppleTouch()) toast(t("toastLocateAllow"));
 		setLocating(true);
-		readDevicePosition().then((pos) => reversePlace({ data: {
-			latitude: pos.coords.latitude,
-			longitude: pos.coords.longitude,
-			language: locale
-		} }).then(setPlace).catch(() => setPlace({
-			name: t("yourLocation"),
-			latitude: pos.coords.latitude,
-			longitude: pos.coords.longitude
-		}))).catch((err) => {
+		readDevicePosition().then((pos) => {
+			const here = {
+				name: t("yourLocation"),
+				latitude: pos.coords.latitude,
+				longitude: pos.coords.longitude
+			};
+			setPlace(here);
+			return reversePlace({ data: {
+				latitude: here.latitude,
+				longitude: here.longitude,
+				language: locale
+			} }).then((named) => {
+				const current = useWeatherStore.getState().place;
+				if (current && sameCoords(current, here.latitude, here.longitude)) setPlace(named);
+			}).catch(() => {});
+		}).catch((err) => {
 			const kind = err instanceof GeoError ? err.kind : "unavailable";
 			toast(t(kind === "missing" ? "geoMissing" : kind === "denied" ? "geoDenied" : kind === "timeout" ? "geoTimeout" : kind === "inapp" ? "geoInApp" : "geoUnavailable"));
 		}).finally(() => setLocating(false));
@@ -3384,6 +3507,7 @@ function ForecastApp() {
 		}
 	}
 	const forecast = forecastQuery.data;
+	const incoming = forecast ? incomingPrecip(forecast, nowcastQuery.data) : null;
 	const isLoading = Boolean(active) && forecastQuery.isPending && !forecastQuery.data;
 	function onShare() {
 		const url = window.location.href;
@@ -3400,6 +3524,7 @@ function ForecastApp() {
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("main", {
 			className: "mx-auto min-w-0 max-w-6xl overflow-x-clip px-3 py-4 sm:px-6 sm:py-8",
 			children: [
+				incoming ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IncomingBanner, { incoming }, `${incoming.kind}-${incoming.source}`) : null,
 				alertsQuery.data?.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertBanner, { alerts: alertsQuery.data }) : null,
 				hydrated && (savedPlaces.length > 0 || recent.length > 0) ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 					className: "mb-4 min-w-0 sm:mb-6",

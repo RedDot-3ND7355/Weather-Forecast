@@ -1,6 +1,6 @@
-import { n as t } from "./i18n-F9-evSlQ.mjs";
+import { n as t } from "./i18n-DOJG_y5Q.mjs";
 import { A as CloudSnow, M as CloudLightning, N as CloudFog, O as Cloud, P as CloudDrizzle, j as CloudRain, k as CloudSun, p as Moon, s as Sun } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/rain-BJ2BUd5Z.js
+//#region node_modules/.nitro/vite/services/ssr/assets/rain-NNrdswi8.js
 function precipKind(code) {
 	if (code >= 71 && code <= 77 || code === 85 || code === 86) return "snow";
 	return "rain";

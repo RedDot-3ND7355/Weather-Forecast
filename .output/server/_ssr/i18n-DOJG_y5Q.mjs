@@ -1,5 +1,5 @@
 import { n as create, t as persist } from "../_libs/zustand.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/i18n-F9-evSlQ.js
+//#region node_modules/.nitro/vite/services/ssr/assets/i18n-DOJG_y5Q.js
 function samePlace(a, b) {
 	return Math.abs(a.latitude - b.latitude) < 8e-4 && Math.abs(a.longitude - b.longitude) < 8e-4;
 }
@@ -210,7 +210,13 @@ var MESSAGES = {
 		alertWatch: "Watch",
 		alertAdvisory: "Advisory",
 		alertStatement: "Statement",
-		dismissAlert: "Dismiss alert"
+		dismissAlert: "Dismiss alert",
+		incomingLead: "Next hour",
+		incomingNow: "{kind} is here now",
+		incomingSoon: "{kind} in {eta} · {from}",
+		incomingCopyNow: "It's {kind}ing here. Wind {from} is still feeding it.",
+		incomingCopyRadar: "Radar sees {kind} upwind, arriving {from} if the wind holds.",
+		incomingCopyHourly: "The hourly fetch puts {kind} in the next hour ({chance}%)."
 	},
 	fr: {
 		tagline: "La pluie suit le vent",
@@ -387,7 +393,13 @@ var MESSAGES = {
 		alertWatch: "Veille",
 		alertAdvisory: "Avis",
 		alertStatement: "Bulletin",
-		dismissAlert: "Masquer l’alerte"
+		dismissAlert: "Masquer l’alerte",
+		incomingLead: "Prochaine heure",
+		incomingNow: "{kind} en cours",
+		incomingSoon: "{kind} dans {eta} · {from}",
+		incomingCopyNow: "Il y a de la {kind} ici. Le vent {from} continue de l’alimenter.",
+		incomingCopyRadar: "Le radar voit de la {kind} au vent, qui arrive {from} si le flux tient.",
+		incomingCopyHourly: "Le flux horaire place de la {kind} dans l’heure ({chance} %)."
 	}
 };
 function localeTag(locale) {

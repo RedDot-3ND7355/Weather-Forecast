@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { IncomingBanner } from "@/components/incoming-banner";
 import { AlertBanner } from "@/components/alert-banner";
 import { AppHeader } from "@/components/app-header";
 import { ChanceChart } from "@/components/chance-chart";
@@ -19,10 +20,18 @@ import { listPlaces, removePlace } from "@/lib/places";
 import { useWeatherStore } from "@/lib/store";
 import { fetchAlerts } from "@/lib/weather/alerts";
 import { fetchForecast, reversePlace, searchPlaces } from "@/lib/weather/api";
+import { incomingPrecip } from "@/lib/weather/incoming";
+import { fetchRadarNowcast } from "@/lib/weather/radar";
 import { formatSpeed } from "@/lib/weather/format";
 import { GeoError, isAppleTouch, readDevicePosition } from "@/lib/geolocation";
 import { useT } from "@/lib/i18n";
 import type { Place } from "@/lib/weather/types";
+
+let consumedUrl = false;
+
+function sameCoords(a: { latitude: number; longitude: number }, lat: number, lon: number) {
+  return Math.abs(a.latitude - lat) < 0.0008 && Math.abs(a.longitude - lon) < 0.0008;
+}
 
 export function ForecastApp() {
   const { user } = useCurrentUserState();
@@ -38,7 +47,6 @@ export function ForecastApp() {
   const [locating, setLocating] = useState(false);
   const search = useSearch({ from: "/" });
   const navigate = useNavigate({ from: "/" });
-  const appliedUrl = useRef(false);
 
   useEffect(() => {
     const done = () => setHydrated(true);
@@ -47,14 +55,17 @@ export function ForecastApp() {
   }, []);
 
   useEffect(() => {
-    if (!hydrated || appliedUrl.current) return;
-    appliedUrl.current = true;
+    if (!hydrated || consumedUrl) return;
+    consumedUrl = true;
+    const persisted = useWeatherStore.getState().place;
     if (typeof search.lat === "number" && typeof search.lon === "number") {
-      setPlace({
-        name: search.n || t("yourLocation"),
-        latitude: search.lat,
-        longitude: search.lon,
-      });
+      if (!persisted || !sameCoords(persisted, search.lat, search.lon)) {
+        setPlace({
+          name: search.n || t("yourLocation"),
+          latitude: search.lat,
+          longitude: search.lon,
+        });
+      }
       return;
     }
     if (search.q) {
@@ -66,16 +77,21 @@ export function ForecastApp() {
 
   useEffect(() => {
     if (!hydrated || !place) return;
+    const lat = Number(place.latitude.toFixed(5));
+    const lon = Number(place.longitude.toFixed(5));
+    if (
+      search.lat === lat &&
+      search.lon === lon &&
+      search.n === place.name &&
+      search.q === undefined
+    ) {
+      return;
+    }
     void navigate({
-      search: {
-        q: undefined,
-        lat: Number(place.latitude.toFixed(4)),
-        lon: Number(place.longitude.toFixed(4)),
-        n: place.name,
-      },
+      search: { q: undefined, lat, lon, n: place.name },
       replace: true,
     });
-  }, [hydrated, navigate, place?.latitude, place?.longitude, place?.name]);
+  }, [hydrated, navigate, place, search.lat, search.lon, search.n, search.q]);
   const active = hydrated ? place : null;
 
   const forecastQuery = useQuery({
@@ -103,6 +119,28 @@ export function ForecastApp() {
     refetchOnWindowFocus: true,
   });
 
+  const nowcastQuery = useQuery({
+    queryKey: [
+      "radar-nowcast",
+      active?.latitude,
+      active?.longitude,
+      Math.round(forecastQuery.data?.current.windDir ?? 0),
+    ],
+    queryFn: () =>
+      fetchRadarNowcast({
+        data: {
+          latitude: active!.latitude,
+          longitude: active!.longitude,
+          windDir: forecastQuery.data!.current.windDir,
+          windSpeedKmh: forecastQuery.data!.current.windSpeedKmh,
+        },
+      }),
+    enabled: Boolean(active && forecastQuery.data),
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+
   const savedQuery = useQuery({
     queryKey: ["saved-places", user?.id],
     queryFn: () => listPlaces(),
@@ -124,23 +162,28 @@ export function ForecastApp() {
     }
     setLocating(true);
     void readDevicePosition()
-      .then((pos) =>
-        reversePlace({
+      .then((pos) => {
+        const here: Place = {
+          name: t("yourLocation"),
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        };
+        setPlace(here);
+        return reversePlace({
           data: {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
+            latitude: here.latitude,
+            longitude: here.longitude,
             language: locale,
           },
         })
-          .then(setPlace)
-          .catch(() =>
-            setPlace({
-              name: t("yourLocation"),
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            }),
-          ),
-      )
+          .then((named) => {
+            const current = useWeatherStore.getState().place;
+            if (current && sameCoords(current, here.latitude, here.longitude)) {
+              setPlace(named);
+            }
+          })
+          .catch(() => {});
+      })
       .catch((err) => {
         const kind = err instanceof GeoError ? err.kind : "unavailable";
         const key =
@@ -168,6 +211,7 @@ export function ForecastApp() {
   }
 
   const forecast = forecastQuery.data;
+  const incoming = forecast ? incomingPrecip(forecast, nowcastQuery.data) : null;
   const isLoading = Boolean(active) && forecastQuery.isPending && !forecastQuery.data;
 
   function onShare() {
@@ -188,6 +232,9 @@ export function ForecastApp() {
         onShare={place ? onShare : undefined}
       />
       <main className="mx-auto min-w-0 max-w-6xl overflow-x-clip px-3 py-4 sm:px-6 sm:py-8">
+        {incoming ? (
+          <IncomingBanner key={`${incoming.kind}-${incoming.source}`} incoming={incoming} />
+        ) : null}
         {alertsQuery.data?.length ? <AlertBanner alerts={alertsQuery.data} /> : null}
         {hydrated && (savedPlaces.length > 0 || recent.length > 0) ? (
           <div className="mb-4 min-w-0 sm:mb-6">
