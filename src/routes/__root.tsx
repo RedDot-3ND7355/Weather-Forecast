@@ -23,6 +23,8 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { httpEquiv: "Permissions-Policy", content: "geolocation=*, accelerometer=(self), gyroscope=(self), magnetometer=(self)" },
       { title: APP_NAME },
+      { name: "application-name", content: APP_NAME },
+      { name: "apple-mobile-web-app-title", content: APP_NAME },
       { name: "theme-color", content: "#0b1014" },
       {
         name: "description",
@@ -35,6 +37,7 @@ export const Route = createRootRoute({
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/__grok/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

@@ -8,7 +8,7 @@ import { n as auth } from "./server-C7Y7B70S.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-rkcyqe0V.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-CLY4Lf7S.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -608,6 +608,14 @@ var Route$3 = createRootRoute({
 			},
 			{ title: APP_NAME },
 			{
+				name: "application-name",
+				content: APP_NAME
+			},
+			{
+				name: "apple-mobile-web-app-title",
+				content: APP_NAME
+			},
+			{
 				name: "theme-color",
 				content: "#0b1014"
 			},
@@ -633,6 +641,12 @@ var Route$3 = createRootRoute({
 			{
 				rel: "apple-touch-icon",
 				href: "/__grok/icon-180.png"
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				sizes: "192x192",
+				href: "/icon-192.png"
 			},
 			{
 				rel: "preconnect",
@@ -676,7 +690,7 @@ function RootDocument() {
 		})]
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-WbFEBOad.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-BlbaHEU1.mjs");
 var Route$2 = createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var $$splitComponentImporter = () => import("./login-BsgabjBm.mjs");
 var Route$1 = createFileRoute("/login")({ component: lazyRouteComponent($$splitComponentImporter, "component") });
