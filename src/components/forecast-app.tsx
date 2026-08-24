@@ -141,14 +141,14 @@ export function ForecastApp() {
             </div>
             <CurrentPanel forecast={forecast} units={units} />
             <div className="min-w-0 lg:col-span-2">
-              <RainBrief forecast={forecast} />
-            </div>
-            <RadarMap forecast={forecast} units={units} />
-            <div className="min-w-0 lg:col-span-2">
               <HourlyStrip hours={forecast.hourly} units={units} />
             </div>
             <ChanceChart hours={forecast.hourly} />
             <DailyList days={forecast.daily} units={units} />
+            <RadarMap forecast={forecast} units={units} />
+            <div className="min-w-0 lg:col-span-2">
+              <RainBrief forecast={forecast} />
+            </div>
             <HowItWorks />
           </div>
         ) : null}

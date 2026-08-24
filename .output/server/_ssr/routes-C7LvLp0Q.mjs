@@ -10,11 +10,12 @@ import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
+import { i as offsetKm } from "./advection-Dpy-6hLP.mjs";
 import { A as CloudDrizzle, C as Droplets, D as CloudRain, E as CloudSnow, M as BookmarkCheck, O as CloudLightning, S as Expand, T as CloudSun, _ as Locate, a as Sun, b as Gauge, c as Plus, d as Moon, f as Minus, g as LogIn, h as LogOut, i as Thermometer, j as Bookmark, k as CloudFog, l as Play, m as MapPin, n as Wind, o as Search, p as Maximize2, s as Radar, t as X, u as Pause, v as LoaderCircle, w as Cloud, x as Eye, y as Info } from "../_libs/lucide-react.mjs";
-import { n as createSsrRpc } from "./router-zSenLGRb.mjs";
+import { n as createSsrRpc } from "./router-DUwAuQHu.mjs";
 import { n as create, t as persist } from "../_libs/zustand.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-Djqh_PFV.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-C7LvLp0Q.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -938,6 +939,52 @@ function pickHalfHourFrames(frames, spanSec = 7200, stepSec = 1800) {
 	}
 	return picked;
 }
+function buildAdvectionFrames(args) {
+	const { latitude, longitude, hours } = args;
+	if (hours.length < 2) return [];
+	const frames = [];
+	const steps = Math.min(6, hours.length - 1);
+	for (let i = 1; i <= steps; i += 1) for (const half of [0, .5]) {
+		if (i === steps && half === .5) continue;
+		const frac = i + half;
+		const cells = [];
+		for (let j = 0; j < hours.length && j <= i + 5; j += 1) {
+			const h = hours[j];
+			const offsetH = j - frac;
+			const intensity = Math.max(h.precipMm, h.rain.chance / 40);
+			if (h.rain.chance < 14 && h.precipMm < .08) continue;
+			const dist = Math.abs(offsetH) * Math.max(h.windSpeedKmh, 14);
+			const bearing = offsetH >= 0 ? h.windDir : (h.windDir + 180) % 360;
+			const pos = offsetKm(latitude, longitude, bearing, dist);
+			cells.push({
+				latitude: pos.latitude,
+				longitude: pos.longitude,
+				precipMm: intensity,
+				chance: h.rain.chance
+			});
+			if (intensity >= .45 && dist > 8) {
+				const left = offsetKm(pos.latitude, pos.longitude, h.windDir + 90, 22);
+				const right = offsetKm(pos.latitude, pos.longitude, h.windDir - 90, 22);
+				cells.push({
+					...left,
+					precipMm: intensity * .55,
+					chance: h.rain.chance
+				}, {
+					...right,
+					precipMm: intensity * .55,
+					chance: h.rain.chance
+				});
+			}
+		}
+		const base = Math.floor(new Date(hours[i].time).getTime() / 1e3);
+		frames.push({
+			time: base + half * 1800,
+			kind: "forecast",
+			cells
+		});
+	}
+	return frames;
+}
 var fetchRadarCatalog = createServerFn({ method: "GET" }).handler(createSsrRpc("863a609e34c3563b807d29e784e5f4e9472c3185c8b5b5cffc6ffdc4f3f304e9"));
 var fetchPrecipGrid = createServerFn({ method: "GET" }).validator(object({
 	latitude: number().min(-90).max(90),
@@ -1010,12 +1057,13 @@ function composeRadar(args) {
 	}
 	ctx.globalAlpha = 1;
 	if (cells?.length) {
-		const radius = Math.max(36, tile * scale * .38);
+		const radius = Math.max(52, tile * scale * .48);
 		for (const cell of cells) {
-			if (cell.precipMm < .08) continue;
+			const intensity = cell.precipMm + (cell.chance ?? 0) / 55;
+			if (intensity < .14) continue;
 			const x = originX + (lon2tile(cell.longitude, z) - x0) * tile * scale;
 			const y = originY + (lat2tile(cell.latitude, z) - y0) * tile * scale;
-			const a = Math.min(.82, .18 + cell.precipMm * .28);
+			const a = Math.min(.88, .28 + intensity * .32);
 			const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
 			g.addColorStop(0, `rgba(${rainRgb}, ${a})`);
 			g.addColorStop(.55, `rgba(${rainRgb}, ${a * .45})`);
@@ -1104,17 +1152,24 @@ function RadarMap({ forecast, units }) {
 	const frames = (0, import_react.useMemo)(() => {
 		const past = pickHalfHourFrames(catalogQuery.data?.frames ?? []);
 		const lastPast = past.at(-1)?.time ?? Math.floor(Date.now() / 1e3);
-		let future = (gridQuery.data ?? []).filter((f) => f.time > lastPast + 600);
-		if (!future.length) future = forecast.hourly.slice(1, 7).map((h) => ({
-			time: Math.floor(new Date(h.time).getTime() / 1e3),
-			kind: "forecast",
-			cells: [{
-				latitude: place.latitude,
-				longitude: place.longitude,
-				precipMm: h.precipMm
-			}]
-		}));
-		return [...past, ...future.filter((f) => f.time > lastPast + 600)];
+		const advected = buildAdvectionFrames({
+			latitude: place.latitude,
+			longitude: place.longitude,
+			hours: forecast.hourly
+		});
+		const grid = (gridQuery.data ?? []).filter((f) => f.time > lastPast + 600);
+		const byTime = /* @__PURE__ */ new Map();
+		for (const f of advected) if (f.time > lastPast + 600) byTime.set(f.time, f);
+		for (const f of grid) {
+			const hit = byTime.get(f.time);
+			if (hit) byTime.set(f.time, {
+				...hit,
+				cells: [...hit.cells ?? [], ...f.cells ?? []]
+			});
+			else byTime.set(f.time, f);
+		}
+		const future = [...byTime.values()].sort((a, b) => a.time - b.time);
+		return [...past, ...future];
 	}, [
 		catalogQuery.data?.frames,
 		gridQuery.data,
@@ -1831,14 +1886,6 @@ function ForecastApp() {
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						className: "min-w-0 lg:col-span-2",
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RainBrief, { forecast })
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RadarMap, {
-						forecast,
-						units
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						className: "min-w-0 lg:col-span-2",
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HourlyStrip, {
 							hours: forecast.hourly,
 							units
@@ -1848,6 +1895,14 @@ function ForecastApp() {
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DailyList, {
 						days: forecast.daily,
 						units
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RadarMap, {
+						forecast,
+						units
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "min-w-0 lg:col-span-2",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RainBrief, { forecast })
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(HowItWorks, {})
 				]

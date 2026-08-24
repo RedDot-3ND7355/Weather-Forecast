@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { WindArrow } from "@/components/wind-arrow";
 import {
+  buildAdvectionFrames,
   fetchPrecipGrid,
   fetchRadarCatalog,
   fetchRadarNowcast,
@@ -135,12 +136,13 @@ function composeRadar(args: {
   }
   ctx.globalAlpha = 1;
   if (cells?.length) {
-    const radius = Math.max(36, tile * scale * 0.38);
+    const radius = Math.max(52, tile * scale * 0.48);
     for (const cell of cells) {
-      if (cell.precipMm < 0.08) continue;
+      const intensity = cell.precipMm + (cell.chance ?? 0) / 55;
+      if (intensity < 0.14) continue;
       const x = originX + (lon2tile(cell.longitude, z) - x0) * tile * scale;
       const y = originY + (lat2tile(cell.latitude, z) - y0) * tile * scale;
-      const a = Math.min(0.82, 0.18 + cell.precipMm * 0.28);
+      const a = Math.min(0.88, 0.28 + intensity * 0.32);
       const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
       g.addColorStop(0, `rgba(${rainRgb}, ${a})`);
       g.addColorStop(0.55, `rgba(${rainRgb}, ${a * 0.45})`);
@@ -236,21 +238,29 @@ export function RadarMap({
   const frames = useMemo(() => {
     const past = pickHalfHourFrames(catalogQuery.data?.frames ?? []);
     const lastPast = past.at(-1)?.time ?? Math.floor(Date.now() / 1000);
-    let future = (gridQuery.data ?? []).filter((f) => f.time > lastPast + 600);
-    if (!future.length) {
-      future = forecast.hourly.slice(1, 7).map((h) => ({
-        time: Math.floor(new Date(h.time).getTime() / 1000),
-        kind: "forecast" as const,
-        cells: [
-          {
-            latitude: place.latitude,
-            longitude: place.longitude,
-            precipMm: h.precipMm,
-          },
-        ],
-      }));
+    const advected = buildAdvectionFrames({
+      latitude: place.latitude,
+      longitude: place.longitude,
+      hours: forecast.hourly,
+    });
+    const grid = (gridQuery.data ?? []).filter((f) => f.time > lastPast + 600);
+    const byTime = new Map<number, RadarFrame>();
+    for (const f of advected) {
+      if (f.time > lastPast + 600) byTime.set(f.time, f);
     }
-    return [...past, ...future.filter((f) => f.time > lastPast + 600)];
+    for (const f of grid) {
+      const hit = byTime.get(f.time);
+      if (hit) {
+        byTime.set(f.time, {
+          ...hit,
+          cells: [...(hit.cells ?? []), ...(f.cells ?? [])],
+        });
+      } else {
+        byTime.set(f.time, f);
+      }
+    }
+    const future = [...byTime.values()].sort((a, b) => a.time - b.time);
+    return [...past, ...future];
   }, [
     catalogQuery.data?.frames,
     gridQuery.data,

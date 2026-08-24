@@ -8,6 +8,7 @@ import {
   travelHours,
 } from "./advection";
 import { estimateRain } from "./rain";
+import type { HourPoint } from "./types";
 
 const UA = "Vane/1.0 (wind-aware weather forecast)";
 
@@ -15,6 +16,7 @@ export type PrecipCell = {
   latitude: number;
   longitude: number;
   precipMm: number;
+  chance?: number;
 };
 
 export type RadarFrame = {
@@ -58,6 +60,54 @@ export function pickHalfHourFrames(
     }
   }
   return picked;
+}
+
+export function buildAdvectionFrames(args: {
+  latitude: number;
+  longitude: number;
+  hours: HourPoint[];
+}): RadarFrame[] {
+  const { latitude, longitude, hours } = args;
+  if (hours.length < 2) return [];
+  const frames: RadarFrame[] = [];
+  const steps = Math.min(6, hours.length - 1);
+  for (let i = 1; i <= steps; i += 1) {
+    for (const half of [0, 0.5]) {
+      if (i === steps && half === 0.5) continue;
+      const frac = i + half;
+      const cells: PrecipCell[] = [];
+      for (let j = 0; j < hours.length && j <= i + 5; j += 1) {
+        const h = hours[j];
+        const offsetH = j - frac;
+        const intensity = Math.max(h.precipMm, h.rain.chance / 40);
+        if (h.rain.chance < 14 && h.precipMm < 0.08) continue;
+        const dist = Math.abs(offsetH) * Math.max(h.windSpeedKmh, 14);
+        const bearing = offsetH >= 0 ? h.windDir : (h.windDir + 180) % 360;
+        const pos = offsetKm(latitude, longitude, bearing, dist);
+        cells.push({
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          precipMm: intensity,
+          chance: h.rain.chance,
+        });
+        if (intensity >= 0.45 && dist > 8) {
+          const left = offsetKm(pos.latitude, pos.longitude, h.windDir + 90, 22);
+          const right = offsetKm(pos.latitude, pos.longitude, h.windDir - 90, 22);
+          cells.push(
+            { ...left, precipMm: intensity * 0.55, chance: h.rain.chance },
+            { ...right, precipMm: intensity * 0.55, chance: h.rain.chance },
+          );
+        }
+      }
+      const base = Math.floor(new Date(hours[i].time).getTime() / 1000);
+      frames.push({
+        time: base + half * 1800,
+        kind: "forecast",
+        cells,
+      });
+    }
+  }
+  return frames;
 }
 
 export type RadarCatalog = {
@@ -147,7 +197,7 @@ export const fetchRadarCatalog = createServerFn({ method: "GET" }).handler(
 
 const gridCache = new Map<string, { at: number; value: RadarFrame[] }>();
 
-function makeGrid(lat: number, lon: number, n = 5): { latitude: number; longitude: number }[] {
+function makeGrid(lat: number, lon: number, n = 4): { latitude: number; longitude: number }[] {
   const dLat = 1.35;
   const dLon = 1.35 / Math.max(0.35, Math.cos((lat * Math.PI) / 180));
   const pts: { latitude: number; longitude: number }[] = [];
@@ -179,20 +229,29 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
       latitude: points.map((p) => p.latitude.toFixed(4)).join(","),
       longitude: points.map((p) => p.longitude.toFixed(4)).join(","),
       timezone: "GMT",
-      forecast_days: "1",
-      forecast_minutely_15: "24",
-      minutely_15: "precipitation",
+      forecast_hours: "12",
+      hourly: "precipitation,precipitation_probability",
     });
-    let raw: MinuteLoc | MinuteLoc[];
+    type HourLoc = {
+      latitude?: number;
+      longitude?: number;
+      hourly?: {
+        time: string[];
+        precipitation: number[];
+        precipitation_probability: number[];
+      };
+      error?: boolean;
+    };
+    let raw: HourLoc | HourLoc[];
     try {
-      raw = await getJson<MinuteLoc | MinuteLoc[]>(
+      raw = await getJson<HourLoc | HourLoc[]>(
         `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
       );
     } catch {
       gridCache.set(key, { at: Date.now(), value: [] });
       return [];
     }
-    if (raw && typeof raw === "object" && !Array.isArray(raw) && "error" in raw) {
+    if (raw && typeof raw === "object" && !Array.isArray(raw) && raw.error) {
       gridCache.set(key, { at: Date.now(), value: [] });
       return [];
     }
@@ -201,31 +260,32 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
     locs.forEach((loc, i) => {
       const pt = points[i];
       if (!pt) return;
-      const times = loc.minutely_15?.time ?? [];
-      const precip = loc.minutely_15?.precipitation ?? [];
+      const times = loc.hourly?.time ?? [];
+      const precip = loc.hourly?.precipitation ?? [];
+      const chance = loc.hourly?.precipitation_probability ?? [];
       times.forEach((iso, t) => {
         const unix = Math.floor(new Date(iso).getTime() / 1000);
         if (!Number.isFinite(unix)) return;
-        const bucket = Math.round(unix / 1800) * 1800;
-        let grid = buckets.get(bucket);
+        let grid = buckets.get(unix);
         if (!grid) {
           grid = new Map();
-          buckets.set(bucket, grid);
+          buckets.set(unix, grid);
         }
         const id = `${pt.latitude.toFixed(3)},${pt.longitude.toFixed(3)}`;
         const mm = num(precip[t]);
-        const prev = grid.get(id);
+        const pct = num(chance[t]);
         grid.set(id, {
           latitude: pt.latitude,
           longitude: pt.longitude,
-          precipMm: Math.max(prev?.precipMm ?? 0, mm),
+          precipMm: Math.max(mm, pct / 40),
+          chance: pct,
         });
       });
     });
     const now = Math.floor(Date.now() / 1000);
     const frames: RadarFrame[] = [...buckets.entries()]
       .sort((a, b) => a[0] - b[0])
-      .filter(([time]) => time > now + 8 * 60 && time <= now + 6 * 3600 + 60)
+      .filter(([time]) => time > now + 8 * 60 && time <= now + 6 * 3600 + 120)
       .map(([time, grid]) => ({
         time,
         kind: "forecast" as const,
