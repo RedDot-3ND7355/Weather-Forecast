@@ -78,7 +78,7 @@ export const fetchMscRadar = createServerFn({ method: "GET" }).handler(
     }
     const empty: MscRadar = { observed: [], forecast: [], model: [] };
     try {
-      const [obsXml, fcXml, modelXml] = await Promise.all([
+      const [obsXml, fcXml] = await Promise.all([
         fetch(
           "https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RADAR_1KM_RRAI",
           { headers: { accept: "application/xml", "user-agent": UA } },
@@ -87,15 +87,11 @@ export const fetchMscRadar = createServerFn({ method: "GET" }).handler(
           "https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=Radar_1km_RainPrecipRate-Extrapolation",
           { headers: { accept: "application/xml", "user-agent": UA } },
         ).then((r) => r.text()),
-        fetch(
-          "https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetCapabilities&layer=RDPS_10km_Precip-Accum1h",
-          { headers: { accept: "application/xml", "user-agent": UA } },
-        ).then((r) => r.text()),
       ]);
       const value: MscRadar = {
         observed: timeDimFromCaps(obsXml),
         forecast: timeDimFromCaps(fcXml),
-        model: timeDimFromCaps(modelXml),
+        model: [],
       };
       mscCache.at = Date.now();
       mscCache.value = value;
@@ -231,7 +227,7 @@ export function buildRadarTimeline(args: {
   const now = args.now ?? Date.now() / 1000;
   const step = args.stepSec ?? 10 * 60;
   const nowTick = Math.floor(now / step) * step;
-  const end = nowTick + (args.futureHours ?? 6) * 3600;
+  const end = nowTick + (args.futureHours ?? 1) * 3600;
   const out: RadarFrame[] = [];
   const seen = new Set<number>();
   const push = (f: RadarFrame) => {
@@ -243,7 +239,6 @@ export function buildRadarTimeline(args: {
 
   const mscObs = args.msc?.observed ?? [];
   const mscFc = args.msc?.forecast ?? [];
-  const mscModel = args.msc?.model ?? [];
   if (mscObs.length) {
     for (const t of mscObs) {
       if (t > now + 90) continue;
@@ -257,29 +252,11 @@ export function buildRadarTimeline(args: {
     }
   }
 
-  let lastCovered = out.at(-1)?.time ?? nowTick;
   if (mscFc.length) {
     for (const t of mscFc) {
       if (t <= now + 60) continue;
+      if (t > end + 90) continue;
       push({ time: t, kind: "forecast", overlay: "msc-fc" });
-      lastCovered = Math.max(lastCovered, t);
-    }
-  }
-  if (mscModel.length) {
-    for (const t of mscModel) {
-      if (t <= lastCovered + 10 * 60) continue;
-      if (t > end + 1) break;
-      push({ time: t, kind: "forecast", overlay: "rdps" });
-    }
-  } else {
-    for (let t = Math.floor(lastCovered / step) * step + step; t <= end + 1; t += step) {
-      const rv = nearestFrame(args.catalog, t, 8 * 60);
-      if (rv && rv.time > now) {
-        push({ ...rv, time: t });
-        continue;
-      }
-      const model = nearestFrame(args.grid, t, 25 * 60);
-      push(model ? { ...model, time: t } : { time: t, kind: "forecast", cells: [] });
     }
   }
   return out;

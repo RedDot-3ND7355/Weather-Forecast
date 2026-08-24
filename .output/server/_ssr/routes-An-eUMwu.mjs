@@ -3,19 +3,19 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { l as require_react_dom, v as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { r as require_jsx_runtime, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
 import { r as createServerFn } from "./ssr.mjs";
-import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-Dp4pSiB7.mjs";
-import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-Dzmg0Cbp.mjs";
+import { i as useWeatherStore, n as t, r as useT, t as localeTag } from "./i18n-Bc8VAV5-.mjs";
+import { a as fromThe, c as windLong, i as estimateRain, s as normalizeDeg, t as compassPoint } from "./rain-DI9Gp3xH.mjs";
 import { hn as object, mn as number, sn as _enum, vn as string } from "../_libs/@better-auth/core+[...].mjs";
 import { i as signOut, t as authClient } from "./client-CZ8k68j8.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { n as Input, r as cn, t as Button } from "./input-CkQnuPTQ.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as authMiddleware } from "./middleware-IMSN0vNn.mjs";
-import { n as arrivalCopy, r as formatEta } from "./advection-DOw1cUNi.mjs";
+import { n as arrivalCopy, r as formatEta } from "./advection-BYNWVcCP.mjs";
 import { A as CloudFog, C as Expand, D as CloudSnow, E as CloudSun, F as BookmarkCheck, M as ChevronRight, N as ChevronLeft, O as CloudRain, P as Bookmark, S as Eye, T as Cloud, _ as LogIn, a as Sun, b as Info, c as Plus, d as Moon, f as Minus, g as LogOut, h as MapPin, i as Thermometer, j as CloudDrizzle, k as CloudLightning, l as Play, m as Maximize2, n as Wind, o as Search, p as Minimize2, s as Radar, t as X, u as Pause, v as Locate, w as Droplets, x as Gauge, y as LoaderCircle } from "../_libs/lucide-react.mjs";
-import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-CofTRlxo.mjs";
+import { i as createSsrRpc, n as flickVelocity, r as pushFlick } from "./router-B6XITq1o.mjs";
 import { a as CartesianGrid, i as Area, n as YAxis, o as ResponsiveContainer, r as XAxis, s as Tooltip, t as AreaChart } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CC0tEgaB.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-An-eUMwu.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom());
@@ -1451,18 +1451,6 @@ function viewBBox3857(args) {
 	const south = tile2lat(y1);
 	return `${lon2x(west)},${lat2y(south)},${lon2x(east)},${lat2y(north)}`;
 }
-function nearestFrame(frames, t, maxDelta) {
-	let best;
-	let bestD = Infinity;
-	for (const f of frames) {
-		const d = Math.abs(f.time - t);
-		if (d < bestD) {
-			best = f;
-			bestD = d;
-		}
-	}
-	return best && bestD <= maxDelta ? best : void 0;
-}
 /** Last slice that is not in the future — the proper "now" radar frame. */
 function nowFrameIndex(frames, now = Date.now() / 1e3) {
 	let idx = 0;
@@ -1472,8 +1460,7 @@ function nowFrameIndex(frames, now = Date.now() / 1e3) {
 function buildRadarTimeline(args) {
 	const now = args.now ?? Date.now() / 1e3;
 	const step = args.stepSec ?? 600;
-	const nowTick = Math.floor(now / step) * step;
-	const end = nowTick + (args.futureHours ?? 6) * 3600;
+	const end = Math.floor(now / step) * step + (args.futureHours ?? 1) * 3600;
 	const out = [];
 	const seen = /* @__PURE__ */ new Set();
 	const push = (f) => {
@@ -1484,7 +1471,6 @@ function buildRadarTimeline(args) {
 	};
 	const mscObs = args.msc?.observed ?? [];
 	const mscFc = args.msc?.forecast ?? [];
-	const mscModel = args.msc?.model ?? [];
 	if (mscObs.length) for (const t of mscObs) {
 		if (t > now + 90) continue;
 		push({
@@ -1500,42 +1486,13 @@ function buildRadarTimeline(args) {
 			push({ ...f });
 		}
 	}
-	let lastCovered = out.at(-1)?.time ?? nowTick;
 	if (mscFc.length) for (const t of mscFc) {
 		if (t <= now + 60) continue;
+		if (t > end + 90) continue;
 		push({
 			time: t,
 			kind: "forecast",
 			overlay: "msc-fc"
-		});
-		lastCovered = Math.max(lastCovered, t);
-	}
-	if (mscModel.length) for (const t of mscModel) {
-		if (t <= lastCovered + 600) continue;
-		if (t > end + 1) break;
-		push({
-			time: t,
-			kind: "forecast",
-			overlay: "rdps"
-		});
-	}
-	else for (let t = Math.floor(lastCovered / step) * step + step; t <= end + 1; t += step) {
-		const rv = nearestFrame(args.catalog, t, 480);
-		if (rv && rv.time > now) {
-			push({
-				...rv,
-				time: t
-			});
-			continue;
-		}
-		const model = nearestFrame(args.grid, t, 1500);
-		push(model ? {
-			...model,
-			time: t
-		} : {
-			time: t,
-			kind: "forecast",
-			cells: []
 		});
 	}
 	return out;
@@ -2283,7 +2240,7 @@ function RadarMap({ forecast, units }) {
 		grid: gridQuery.data ?? [],
 		msc: inMscDomain(place.latitude, place.longitude) ? mscQuery.data : null,
 		stepSec: 600,
-		futureHours: 6
+		futureHours: 1
 	}), [
 		catalogQuery.data?.frames,
 		gridQuery.data,
@@ -2821,7 +2778,7 @@ function RadarMap({ forecast, units }) {
 							}),
 							hasForecast ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "absolute right-0",
-								children: "+6h"
+								children: "+1h"
 							}) : null
 						]
 					})]
