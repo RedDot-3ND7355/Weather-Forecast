@@ -28,8 +28,84 @@ import { cn } from "@/lib/utils";
 const BASE = "https://basemaps.cartocdn.com/dark_all";
 const MIN_Z = 5;
 const MAX_Z = 7;
-const imgCache = new Map<string, Promise<HTMLImageElement | null>>();
-const loadGate = { active: 0, max: 4, q: [] as Array<() => void> };
+const okImg = new Map<string, HTMLImageElement>();
+
+type ImgJob = {
+  src: string;
+  keep: boolean;
+  cancelled: boolean;
+  done: boolean;
+  img: HTMLImageElement | null;
+  resolve: (value: HTMLImageElement | null) => void;
+};
+
+const imgJobs = {
+  inflight: new Set<ImgJob>(),
+  queued: [] as ImgJob[],
+  max: 2,
+};
+
+function pumpImgJobs() {
+  while (imgJobs.inflight.size < imgJobs.max && imgJobs.queued.length) {
+    const job = imgJobs.queued.shift();
+    if (!job) break;
+    if (job.cancelled) {
+      job.resolve(null);
+      continue;
+    }
+    const cached = okImg.get(job.src);
+    if (cached) {
+      job.resolve(cached);
+      continue;
+    }
+    const img = new Image();
+    job.img = img;
+    imgJobs.inflight.add(job);
+    img.crossOrigin = "anonymous";
+    const finish = (value: HTMLImageElement | null) => {
+      if (job.done) return;
+      job.done = true;
+      imgJobs.inflight.delete(job);
+      if (!job.cancelled && value) okImg.set(job.src, value);
+      job.resolve(job.cancelled ? null : value);
+      pumpImgJobs();
+    };
+    img.onload = () => finish(img);
+    img.onerror = () => finish(null);
+    img.src = job.src;
+  }
+}
+
+function cancelRadarLoads() {
+  for (const job of imgJobs.queued) {
+    if (job.keep) continue;
+    job.cancelled = true;
+  }
+  imgJobs.queued = imgJobs.queued.filter((job) => job.keep && !job.cancelled);
+  for (const job of imgJobs.inflight) {
+    if (job.keep) continue;
+    job.cancelled = true;
+    if (job.img) job.img.src = "";
+  }
+}
+
+function loadImg(src: string, keep = false): Promise<HTMLImageElement | null> {
+  const cached = okImg.get(src);
+  if (cached) return Promise.resolve(cached);
+  return new Promise((resolve) => {
+    const job: ImgJob = {
+      src,
+      keep,
+      cancelled: false,
+      done: false,
+      img: null,
+      resolve,
+    };
+    if (keep) imgJobs.queued.push(job);
+    else imgJobs.queued.unshift(job);
+    pumpImgJobs();
+  });
+}
 
 function lon2tile(lon: number, z: number) {
   return ((lon + 180) / 360) * 2 ** z;
@@ -37,31 +113,6 @@ function lon2tile(lon: number, z: number) {
 function lat2tile(lat: number, z: number) {
   const s = Math.sin((lat * Math.PI) / 180);
   return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 2 ** z;
-}
-
-function loadImg(src: string): Promise<HTMLImageElement | null> {
-  const hit = imgCache.get(src);
-  if (hit) return hit;
-  const pending = new Promise<HTMLImageElement | null>((resolve) => {
-    const run = () => {
-      loadGate.active += 1;
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      const done = (value: HTMLImageElement | null) => {
-        loadGate.active = Math.max(0, loadGate.active - 1);
-        resolve(value);
-        const next = loadGate.q.shift();
-        if (next) next();
-      };
-      img.onload = () => done(img);
-      img.onerror = () => done(null);
-      img.src = src;
-    };
-    if (loadGate.active >= loadGate.max) loadGate.q.push(run);
-    else run();
-  });
-  imgCache.set(src, pending);
-  return pending;
 }
 
 function hourStatus(
@@ -907,7 +958,6 @@ export function RadarMap({
   const wrapRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState(0);
-  const [drawIdx, setDrawIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(6);
@@ -916,6 +966,7 @@ export function RadarMap({
   const lastBitmap = useRef<HTMLCanvasElement | null>(null);
   const fadeRaf = useRef(0);
   const readyRef = useRef(false);
+  const frameBitmaps = useRef(new Map<string, HTMLCanvasElement>());
 
   const catalogQuery = useQuery({
     queryKey: ["radar-catalog"],
@@ -992,8 +1043,7 @@ export function RadarMap({
   const arrival = nowcast?.arrival ?? null;
   const sliderFrame: RadarFrame | undefined =
     frames[Math.min(frame, Math.max(0, frames.length - 1))];
-  const active: RadarFrame | undefined =
-    frames[Math.min(drawIdx, Math.max(0, frames.length - 1))];
+  const active = sliderFrame;
   const hasForecast = frames.some((f) => f.kind === "forecast");
   const isForecast = sliderFrame?.kind === "forecast";
 
@@ -1010,17 +1060,7 @@ export function RadarMap({
   useEffect(() => {
     if (!frames.length) return;
     setFrame(nowIdx);
-    setDrawIdx(nowIdx);
   }, [frames, nowIdx]);
-
-  useEffect(() => {
-    if (playing) {
-      setDrawIdx(frame);
-      return;
-    }
-    const id = window.setTimeout(() => setDrawIdx(frame), 90);
-    return () => window.clearTimeout(id);
-  }, [frame, playing]);
 
   useEffect(() => {
     if (!playing || frames.length < 2) return;
@@ -1086,9 +1126,21 @@ export function RadarMap({
     }
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    let cancelled = false;
-
     const { z, cx, cy } = tilePlan;
+    cancelRadarLoads();
+    let cancelled = false;
+    const bitmapKey = `${active.time}-${cssW}x${cssH}-${z}-${active.overlay ?? active.kind}`;
+    const cachedFrame = frameBitmaps.current.get(bitmapKey);
+    if (cachedFrame) {
+      lastBitmap.current = cachedFrame;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(cachedFrame, 0, 0, pixelW, pixelH);
+      readyRef.current = true;
+      setReady(true);
+      return;
+    }
+
     const tile = 256;
     const scale = cssW / 2.15 / tile;
     const originX = cssW / 2 - (cx - Math.floor(cx - 1)) * tile * scale;
@@ -1118,8 +1170,8 @@ export function RadarMap({
             : "";
           jobs.push(
             Promise.all([
-              loadImg(`${BASE}/${z}/${wx}/${ty}@2x.png`),
-              rainUrl ? loadImg(rainUrl) : Promise.resolve(null),
+              loadImg(`${BASE}/${z}/${wx}/${ty}@2x.png`, true),
+              rainUrl ? loadImg(rainUrl, false) : Promise.resolve(null),
             ]).then(([base, rain]) => ({ dx, dy, base, rain })),
           );
         }
@@ -1146,7 +1198,7 @@ export function RadarMap({
             height: cssH,
           })
         : "";
-      const overlay = overlayUrl ? await loadImg(overlayUrl) : null;
+      const overlay = overlayUrl ? await loadImg(overlayUrl, false) : null;
       if (cancelled) return;
       const skipTrack = Boolean(overlay);
       const withTiles = frames.filter((f) => f.tileUrl);
@@ -1294,12 +1346,18 @@ export function RadarMap({
         evolvedRain: overlay ? null : evolvedRain,
         overlay,
       });
+      if (cancelled) return;
+      frameBitmaps.current.set(bitmapKey, next);
+      if (frameBitmaps.current.size > 48) {
+        const first = frameBitmaps.current.keys().next().value;
+        if (first) frameBitmaps.current.delete(first);
+      }
       const prev = lastBitmap.current;
       lastBitmap.current = next;
       cancelAnimationFrame(fadeRaf.current);
-      if (!prev || !readyRef.current) {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1;
+      if (!prev || !readyRef.current || !playing) {
         ctx.drawImage(next, 0, 0);
         readyRef.current = true;
         setReady(true);
@@ -1322,31 +1380,12 @@ export function RadarMap({
       fadeRaf.current = requestAnimationFrame(tick);
     })();
 
-    const neighbors = [drawIdx - 2, drawIdx - 1, drawIdx + 1, drawIdx + 2, drawIdx + 3];
-    for (const i of neighbors) {
-      const f = frames[i];
-      if (!f?.overlay) continue;
-      const url = mscGetMapUrl({
-        layer: f.overlay === "msc-fc" ? "fc" : "obs",
-        time: f.time,
-        bbox: viewBBox3857({
-          lat: place.latitude,
-          lon: place.longitude,
-          z,
-          cssW,
-          cssH,
-        }),
-        width: cssW,
-        height: cssH,
-      });
-      void loadImg(url);
-    }
-
     return () => {
       cancelled = true;
+      cancelRadarLoads();
       cancelAnimationFrame(fadeRaf.current);
     };
-  }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames, catalogQuery.data?.frames]);
+  }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames, catalogQuery.data?.frames, playing]);
 
   const stamp = sliderFrame
     ? new Intl.DateTimeFormat(localeTag(locale), {
