@@ -1118,8 +1118,8 @@ export function RadarMap({
         setVisualPan({ x: 0, y: 0 });
         return;
       }
+      // Keep visual offset until the next paint with committed pan (avoids snap)
       setPan({ x: d.ox + dx, y: d.oy + dy });
-      setVisualPan({ x: 0, y: 0 });
     };
     el.addEventListener("pointerdown", onDown);
     el.addEventListener("pointermove", onMove, { passive: false });
@@ -1498,6 +1498,8 @@ export function RadarMap({
       cancelAnimationFrame(fadeRaf.current);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
+      // Drop CSS draft pan now that tiles match committed pan
+      setVisualPan({ x: 0, y: 0 });
       if (!prev || !readyRef.current || !playing) {
         ctx.drawImage(next, 0, 0);
         readyRef.current = true;
