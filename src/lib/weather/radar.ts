@@ -352,6 +352,18 @@ type MinuteLoc = {
 
 const catalogCache = { at: 0, value: null as RadarCatalog | null };
 const nowcastCache = new Map<string, { at: number; value: RadarNowcast }>();
+const CACHE_MAX_ENTRIES = 60;
+function pruneMapCache<T extends { at: number }>(map: Map<string, T>, ttlMs: number) {
+  const now = Date.now();
+  for (const [k, v] of map) {
+    if (now - v.at > ttlMs) map.delete(k);
+  }
+  while (map.size > CACHE_MAX_ENTRIES) {
+    const first = map.keys().next().value;
+    if (first === undefined) break;
+    map.delete(first);
+  }
+}
 
 async function getJson<T>(url: string): Promise<T> {
   const res = await fetch(url, {
@@ -443,10 +455,12 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
       );
     } catch {
       gridCache.set(key, { at: Date.now(), value: [] });
+      pruneMapCache(gridCache, 8 * 60 * 1000);
       return [];
     }
     if (raw && typeof raw === "object" && !Array.isArray(raw) && raw.error) {
       gridCache.set(key, { at: Date.now(), value: [] });
+      pruneMapCache(gridCache, 8 * 60 * 1000);
       return [];
     }
     const locs = Array.isArray(raw) ? raw : [raw];
@@ -491,6 +505,7 @@ export const fetchPrecipGrid = createServerFn({ method: "GET" })
         cells: [...grid.values()],
       }));
     gridCache.set(key, { at: Date.now(), value: frames });
+    pruneMapCache(gridCache, 8 * 60 * 1000);
     return frames;
   });
 
@@ -536,11 +551,13 @@ export const fetchRadarNowcast = createServerFn({ method: "GET" })
     } catch {
       const empty: RadarNowcast = { hours: [], samples: [], arrival: null };
       nowcastCache.set(key, { at: Date.now(), value: empty });
+      pruneMapCache(nowcastCache, 8 * 60 * 1000);
       return empty;
     }
     if (raw && typeof raw === "object" && !Array.isArray(raw) && "error" in raw) {
       const empty: RadarNowcast = { hours: [], samples: [], arrival: null };
       nowcastCache.set(key, { at: Date.now(), value: empty });
+      pruneMapCache(nowcastCache, 8 * 60 * 1000);
       return empty;
     }
     const locs = Array.isArray(raw) ? raw : [raw];
@@ -673,6 +690,7 @@ export const fetchRadarNowcast = createServerFn({ method: "GET" })
       arrival,
     };
     nowcastCache.set(key, { at: Date.now(), value });
+    pruneMapCache(nowcastCache, 8 * 60 * 1000);
     return value;
   });
 

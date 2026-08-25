@@ -87,6 +87,18 @@ type MeteoResponse = {
 
 const forecastCache = new Map<string, { at: number; value: Forecast }>();
 const CACHE_MS = 90 * 1000;
+const CACHE_MAX = 80;
+
+function pruneForecastCache(now = Date.now()) {
+  for (const [k, v] of forecastCache) {
+    if (now - v.at > CACHE_MS) forecastCache.delete(k);
+  }
+  while (forecastCache.size > CACHE_MAX) {
+    const first = forecastCache.keys().next().value;
+    if (first === undefined) break;
+    forecastCache.delete(first);
+  }
+}
 
 function cacheKey(place: Place): string {
   return `${place.latitude.toFixed(3)},${place.longitude.toFixed(3)}`;
@@ -447,5 +459,6 @@ export const fetchForecast = createServerFn({ method: "GET" })
       forecast = await fetchMetNo(data);
     }
     forecastCache.set(key, { at: Date.now(), value: forecast });
+    pruneForecastCache();
     return forecast;
   });

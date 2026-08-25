@@ -31,6 +31,15 @@ const BASE = "https://basemaps.cartocdn.com/dark_all";
 const MIN_Z = 5;
 const MAX_Z = 8;
 const okImg = new Map<string, HTMLImageElement>();
+const OK_IMG_MAX = 120;
+function rememberImg(src: string, img: HTMLImageElement) {
+  okImg.set(src, img);
+  while (okImg.size > OK_IMG_MAX) {
+    const first = okImg.keys().next().value;
+    if (first === undefined) break;
+    okImg.delete(first);
+  }
+}
 
 type ImgJob = {
   src: string;
@@ -68,7 +77,7 @@ function pumpImgJobs() {
       if (job.done) return;
       job.done = true;
       imgJobs.inflight.delete(job);
-      if (!job.cancelled && value) okImg.set(job.src, value);
+      if (!job.cancelled && value) rememberImg(job.src, value);
       job.resolve(job.cancelled ? null : value);
       pumpImgJobs();
     };
