@@ -1105,7 +1105,25 @@ export function RadarMap({
       if (!d.moved && Math.hypot(dx, dy) < 4) return;
       d.moved = true;
       e.preventDefault();
-      setVisualPan({ x: dx, y: dy });
+      // Draft CSS offset relative to last committed pan
+      const relX = d.ox + dx - panRef.current.x;
+      const relY = d.oy + dy - panRef.current.y;
+      setVisualPan({ x: relX, y: relY });
+      // Throttle real tile reloads while dragging (~150ms or ~48px)
+      const now = performance.now();
+      const dist = Math.hypot(dx - (d.lastCx || 0), dy - (d.lastCy || 0));
+      if (now - (d.lastCommit || 0) > 150 || dist > 48) {
+        d.lastCommit = now;
+        d.lastCx = dx;
+        d.lastCy = dy;
+        setPan({ x: d.ox + dx, y: d.oy + dy });
+        setVisualPan({ x: 0, y: 0 });
+        // Reset origin so further visual deltas are from this commit
+        d.x = e.clientX;
+        d.y = e.clientY;
+        d.ox = d.ox + dx;
+        d.oy = d.oy + dy;
+      }
     };
     const onUp = (e: PointerEvent) => {
       const d = panDrag.current as any;
@@ -1118,8 +1136,8 @@ export function RadarMap({
         setVisualPan({ x: 0, y: 0 });
         return;
       }
-      // Keep visual offset until the next paint with committed pan (avoids snap)
       setPan({ x: d.ox + dx, y: d.oy + dy });
+      // visualPan cleared when paint finishes (existing logic)
     };
     el.addEventListener("pointerdown", onDown);
     el.addEventListener("pointermove", onMove, { passive: false });
