@@ -819,6 +819,8 @@ function composeRadar(args: {
   advectRain?: RainTile[];
   evolvedRain?: HTMLCanvasElement | null;
   overlay?: HTMLImageElement | null;
+  pinOffsetX?: number;
+  pinOffsetY?: number;
 }): HTMLCanvasElement {
   const {
     cssW,
@@ -840,6 +842,8 @@ function composeRadar(args: {
     advectRain,
     evolvedRain,
     overlay,
+    pinOffsetX = 0,
+    pinOffsetY = 0,
   } = args;
   const off = document.createElement("canvas");
   off.width = Math.round(cssW * dpr);
@@ -925,8 +929,8 @@ function composeRadar(args: {
     );
   }
   ctx.globalAlpha = 1;
-  const px = cssW / 2;
-  const py = cssH / 2;
+  const px = cssW / 2 + pinOffsetX;
+  const py = cssH / 2 + pinOffsetY;
   const rad = ((windDir - 90) * Math.PI) / 180;
   ctx.save();
   ctx.strokeStyle = rain;
@@ -1479,6 +1483,9 @@ export function RadarMap({
         advectRain: overlay ? undefined : advectRain,
         evolvedRain: overlay ? null : evolvedRain,
         overlay,
+        // Keep "you are here" fixed on the map (not stuck to view center)
+        pinOffsetX: pan.x,
+        pinOffsetY: pan.y,
       });
       if (cancelled) return;
       frameBitmaps.current.set(bitmapKey, next);
@@ -1519,7 +1526,7 @@ export function RadarMap({
       cancelRadarLoads();
       cancelAnimationFrame(fadeRaf.current);
     };
-  }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames, catalogQuery.data?.frames, playing]);
+  }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames, catalogQuery.data?.frames, playing, pan.x, pan.y]);
 
   const stamp = sliderFrame
     ? new Intl.DateTimeFormat(localeTag(locale), {

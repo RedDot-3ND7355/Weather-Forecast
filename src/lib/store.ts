@@ -54,6 +54,7 @@ export const useWeatherStore = create<WeatherStore>()(
     }),
     {
       name: "vane-weather",
+      skipHydration: true,
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         if (!state.hasLocale) state.locale = detectLocale();
