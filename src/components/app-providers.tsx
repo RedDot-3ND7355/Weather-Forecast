@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "sonner";
+import { useWeatherStore } from "@/lib/store";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -15,6 +16,31 @@ export function AppProviders({ children }: { children: ReactNode }) {
         },
       }),
   );
+  const [ready, setReady] = useState(false);
+
+  // skipHydration is set on the store — must rehydrate on the client or place/locale stay empty
+  useEffect(() => {
+    void useWeatherStore.persist.rehydrate().finally(() => setReady(true));
+  }, []);
+
+  if (!ready) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-dvh bg-bg" aria-hidden />
+        <Toaster
+          theme="dark"
+          position="bottom-center"
+          toastOptions={{
+            classNames: {
+              toast: "bg-raised text-fg shadow-[var(--shadow-border)] border-0",
+              title: "text-fg",
+              description: "text-muted",
+            },
+          }}
+        />
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
