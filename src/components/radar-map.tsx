@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Expand, Maximize2, Minus, Pause, Play, Plus, Radar, X } from "lucide-react";
+import { Crosshair, Expand, Maximize2, Minus, Pause, Play, Plus, Radar, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { HScroll } from "@/components/h-scroll";
@@ -28,8 +28,8 @@ import type { Forecast, Units } from "@/lib/weather/types";
 import { cn } from "@/lib/utils";
 
 const BASE = "https://basemaps.cartocdn.com/dark_all";
-const MIN_Z = 5;
-const MAX_Z = 7;
+const MIN_Z = 4;
+const MAX_Z = 10;
 const okImg = new Map<string, HTMLImageElement>();
 
 type ImgJob = {
@@ -115,6 +115,13 @@ function lon2tile(lon: number, z: number) {
 function lat2tile(lat: number, z: number) {
   const s = Math.sin((lat * Math.PI) / 180);
   return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 2 ** z;
+}
+function tile2lon(x: number, z: number) {
+  return (x / 2 ** z) * 360 - 180;
+}
+function tile2lat(y: number, z: number) {
+  const n = Math.PI - (2 * Math.PI * y) / 2 ** z;
+  return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 }
 
 function hourStatus(
@@ -961,6 +968,11 @@ export function RadarMap({
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(6);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [visualPan, setVisualPan] = useState({ x: 0, y: 0 });
+  const panRef = useRef(pan);
+  panRef.current = pan;
+  const panDrag = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [mode, setMode] = useState<ViewMode>("inline");
   const lastBitmap = useRef<HTMLCanvasElement | null>(null);
@@ -1065,9 +1077,67 @@ export function RadarMap({
   }, [mode]);
 
   useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.("button, input, a, [data-no-pan]")) return;
+      panDrag.current = {
+        pid: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        ox: panRef.current.x,
+        oy: panRef.current.y,
+        moved: false,
+      };
+      try { el.setPointerCapture(e.pointerId); } catch {}
+    };
+    const onMove = (e: PointerEvent) => {
+      const d = panDrag.current as any;
+      if (!d || d.pid !== e.pointerId) return;
+      const dx = e.clientX - d.x;
+      const dy = e.clientY - d.y;
+      if (!d.moved && Math.hypot(dx, dy) < 4) return;
+      d.moved = true;
+      e.preventDefault();
+      setVisualPan({ x: dx, y: dy });
+    };
+    const onUp = (e: PointerEvent) => {
+      const d = panDrag.current as any;
+      if (!d || d.pid !== e.pointerId) return;
+      const dx = e.clientX - d.x;
+      const dy = e.clientY - d.y;
+      panDrag.current = null;
+      try { el.releasePointerCapture(e.pointerId); } catch {}
+      if (!d.moved) {
+        setVisualPan({ x: 0, y: 0 });
+        return;
+      }
+      setPan({ x: d.ox + dx, y: d.oy + dy });
+      setVisualPan({ x: 0, y: 0 });
+    };
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove, { passive: false });
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+    };
+  }, [mode]);
+
+  useEffect(() => {
     if (!frames.length) return;
     setFrame(nowIdx);
   }, [frames, nowIdx]);
+
+  useEffect(() => {
+    setPan({ x: 0, y: 0 });
+    setVisualPan({ x: 0, y: 0 });
+  }, [place.latitude, place.longitude]);
 
   useEffect(() => {
     if (!playing || frames.length < 2) return;
@@ -1111,8 +1181,12 @@ export function RadarMap({
 
   const tilePlan = useMemo(() => {
     const z = zoom;
-    return { z, cx: lon2tile(place.longitude, z), cy: lat2tile(place.latitude, z) };
-  }, [place.latitude, place.longitude, zoom]);
+    const w = size.w > 8 ? size.w : 320;
+    const scale = w / 2.15 / 256;
+    const cx = lon2tile(place.longitude, z) - pan.x / (256 * scale);
+    const cy = lat2tile(place.latitude, z) - pan.y / (256 * scale);
+    return { z, cx, cy };
+  }, [place.latitude, place.longitude, zoom, pan.x, pan.y, size.w]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1136,7 +1210,7 @@ export function RadarMap({
     const { z, cx, cy } = tilePlan;
     cancelRadarLoads();
     let cancelled = false;
-    const bitmapKey = `${active.time}-${cssW}x${cssH}-${z}-${active.overlay ?? active.kind}`;
+    const bitmapKey = `${active.time}-${cssW}x${cssH}-${z}-${cx.toFixed(3)}-${cy.toFixed(3)}-${active.overlay ?? active.kind}`;
     const cachedFrame = frameBitmaps.current.get(bitmapKey);
     if (cachedFrame) {
       lastBitmap.current = cachedFrame;
@@ -1150,10 +1224,10 @@ export function RadarMap({
 
     const tile = 256;
     const scale = cssW / 2.15 / tile;
-    const originX = cssW / 2 - (cx - Math.floor(cx - 1)) * tile * scale;
-    const originY = cssH / 2 - (cy - Math.floor(cy - 1)) * tile * scale;
-    const x0 = Math.floor(cx - 1);
-    const y0 = Math.floor(cy - 1);
+    const originX = cssW / 2 - (cx - Math.floor(cx - 2)) * tile * scale;
+    const originY = cssH / 2 - (cy - Math.floor(cy - 2)) * tile * scale;
+    const x0 = Math.floor(cx - 2);
+    const y0 = Math.floor(cy - 2);
 
     const loadTiles = (f: RadarFrame) => {
       const jobs: Promise<{
@@ -1162,8 +1236,8 @@ export function RadarMap({
         base: HTMLImageElement | null;
         rain: HTMLImageElement | null;
       }>[] = [];
-      for (let dx = 0; dx < 3; dx += 1) {
-        for (let dy = 0; dy < 3; dy += 1) {
+      for (let dx = 0; dx < 5; dx += 1) {
+        for (let dy = 0; dy < 5; dy += 1) {
           const tx = x0 + dx;
           const ty = y0 + dy;
           const max = 2 ** z;
@@ -1190,8 +1264,8 @@ export function RadarMap({
       const tiles = await loadTiles(active);
       if (cancelled) return;
       const bbox = viewBBox3857({
-        lat: place.latitude,
-        lon: place.longitude,
+        lat: tile2lat(cy, z),
+        lon: tile2lon(cx, z),
         z,
         cssW,
         cssH,
@@ -1574,13 +1648,18 @@ export function RadarMap({
         ref={wrapRef}
         data-no-smooth=""
         className={cn(
-          "relative mt-3 w-full overflow-hidden bg-raised",
+          "relative mt-3 w-full overflow-hidden bg-raised touch-none",
+          "cursor-grab active:cursor-grabbing select-none",
           mode === "inline" ? "h-[240px] sm:h-[300px]" : "min-h-0 flex-1",
         )}
       >
         <canvas
           ref={canvasRef}
           className="block h-full w-full"
+          style={{
+            transform: `translate(${visualPan.x}px, ${visualPan.y}px)`,
+            willChange: visualPan.x || visualPan.y ? "transform" : "auto",
+          }}
           aria-label={t("radarAria", { name: place.name })}
         />
         {!ready && !catalogQuery.isError ? (
@@ -1604,7 +1683,19 @@ export function RadarMap({
             {isForecast ? t("forecastStamp", { stamp }) : stamp}
           </p>
         </div>
-        <div className="absolute right-3 top-3 flex gap-1">
+        <div className="absolute right-3 top-3 flex gap-1" data-no-pan="">
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            className="size-9"
+            disabled={pan.x === 0 && pan.y === 0}
+            onClick={() => { setPan({ x: 0, y: 0 }); setVisualPan({ x: 0, y: 0 }); }}
+            aria-label={t("youAreHere")}
+            title={t("youAreHere")}
+          >
+            <Crosshair className="size-4" />
+          </Button>
           <Button
             type="button"
             size="icon"
