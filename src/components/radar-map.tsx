@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Crosshair, Expand, Maximize2, Minus, Pause, Play, Plus, Radar, X } from "lucide-react";
+import { Expand, Maximize2, Minus, Pause, Play, Plus, Radar, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { HScroll } from "@/components/h-scroll";
@@ -28,8 +28,8 @@ import type { Forecast, Units } from "@/lib/weather/types";
 import { cn } from "@/lib/utils";
 
 const BASE = "https://basemaps.cartocdn.com/dark_all";
-const MIN_Z = 4;
-const MAX_Z = 10;
+const MIN_Z = 5;
+const MAX_Z = 8;
 const okImg = new Map<string, HTMLImageElement>();
 
 type ImgJob = {
@@ -819,8 +819,6 @@ function composeRadar(args: {
   advectRain?: RainTile[];
   evolvedRain?: HTMLCanvasElement | null;
   overlay?: HTMLImageElement | null;
-  pinOffsetX?: number;
-  pinOffsetY?: number;
 }): HTMLCanvasElement {
   const {
     cssW,
@@ -842,8 +840,6 @@ function composeRadar(args: {
     advectRain,
     evolvedRain,
     overlay,
-    pinOffsetX = 0,
-    pinOffsetY = 0,
   } = args;
   const off = document.createElement("canvas");
   off.width = Math.round(cssW * dpr);
@@ -929,8 +925,8 @@ function composeRadar(args: {
     );
   }
   ctx.globalAlpha = 1;
-  const px = cssW / 2 + pinOffsetX;
-  const py = cssH / 2 + pinOffsetY;
+  const px = cssW / 2;
+  const py = cssH / 2;
   const rad = ((windDir - 90) * Math.PI) / 180;
   ctx.save();
   ctx.strokeStyle = rain;
@@ -972,11 +968,6 @@ export function RadarMap({
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(6);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [visualPan, setVisualPan] = useState({ x: 0, y: 0 });
-  const panRef = useRef(pan);
-  panRef.current = pan;
-  const panDrag = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [mode, setMode] = useState<ViewMode>("inline");
   const lastBitmap = useRef<HTMLCanvasElement | null>(null);
@@ -1080,86 +1071,12 @@ export function RadarMap({
     return () => ro.disconnect();
   }, [mode]);
 
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const onDown = (e: PointerEvent) => {
-      if (e.button !== 0) return;
-      const target = e.target as HTMLElement | null;
-      if (target?.closest?.("button, input, a, [data-no-pan]")) return;
-      panDrag.current = {
-        pid: e.pointerId,
-        x: e.clientX,
-        y: e.clientY,
-        ox: panRef.current.x,
-        oy: panRef.current.y,
-        moved: false,
-      };
-      try { el.setPointerCapture(e.pointerId); } catch {}
-    };
-    const onMove = (e: PointerEvent) => {
-      const d = panDrag.current as any;
-      if (!d || d.pid !== e.pointerId) return;
-      const dx = e.clientX - d.x;
-      const dy = e.clientY - d.y;
-      if (!d.moved && Math.hypot(dx, dy) < 4) return;
-      d.moved = true;
-      e.preventDefault();
-      // Draft CSS offset relative to last committed pan
-      const relX = d.ox + dx - panRef.current.x;
-      const relY = d.oy + dy - panRef.current.y;
-      setVisualPan({ x: relX, y: relY });
-      // Throttle real tile reloads while dragging (~150ms or ~48px)
-      const now = performance.now();
-      const dist = Math.hypot(dx - (d.lastCx || 0), dy - (d.lastCy || 0));
-      if (now - (d.lastCommit || 0) > 150 || dist > 48) {
-        d.lastCommit = now;
-        d.lastCx = dx;
-        d.lastCy = dy;
-        setPan({ x: d.ox + dx, y: d.oy + dy });
-        setVisualPan({ x: 0, y: 0 });
-        // Reset origin so further visual deltas are from this commit
-        d.x = e.clientX;
-        d.y = e.clientY;
-        d.ox = d.ox + dx;
-        d.oy = d.oy + dy;
-      }
-    };
-    const onUp = (e: PointerEvent) => {
-      const d = panDrag.current as any;
-      if (!d || d.pid !== e.pointerId) return;
-      const dx = e.clientX - d.x;
-      const dy = e.clientY - d.y;
-      panDrag.current = null;
-      try { el.releasePointerCapture(e.pointerId); } catch {}
-      if (!d.moved) {
-        setVisualPan({ x: 0, y: 0 });
-        return;
-      }
-      setPan({ x: d.ox + dx, y: d.oy + dy });
-      // visualPan cleared when paint finishes (existing logic)
-    };
-    el.addEventListener("pointerdown", onDown);
-    el.addEventListener("pointermove", onMove, { passive: false });
-    el.addEventListener("pointerup", onUp);
-    el.addEventListener("pointercancel", onUp);
-    return () => {
-      el.removeEventListener("pointerdown", onDown);
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerup", onUp);
-      el.removeEventListener("pointercancel", onUp);
-    };
-  }, [mode]);
 
   useEffect(() => {
     if (!frames.length) return;
     setFrame(nowIdx);
   }, [frames, nowIdx]);
 
-  useEffect(() => {
-    setPan({ x: 0, y: 0 });
-    setVisualPan({ x: 0, y: 0 });
-  }, [place.latitude, place.longitude]);
 
   useEffect(() => {
     if (!playing || frames.length < 2) return;
@@ -1203,12 +1120,8 @@ export function RadarMap({
 
   const tilePlan = useMemo(() => {
     const z = zoom;
-    const w = size.w > 8 ? size.w : 320;
-    const scale = w / 2.15 / 256;
-    const cx = lon2tile(place.longitude, z) - pan.x / (256 * scale);
-    const cy = lat2tile(place.latitude, z) - pan.y / (256 * scale);
-    return { z, cx, cy };
-  }, [place.latitude, place.longitude, zoom, pan.x, pan.y, size.w]);
+    return { z, cx: lon2tile(place.longitude, z), cy: lat2tile(place.latitude, z) };
+  }, [place.latitude, place.longitude, zoom]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1246,10 +1159,10 @@ export function RadarMap({
 
     const tile = 256;
     const scale = cssW / 2.15 / tile;
-    const originX = cssW / 2 - (cx - Math.floor(cx - 2)) * tile * scale;
-    const originY = cssH / 2 - (cy - Math.floor(cy - 2)) * tile * scale;
-    const x0 = Math.floor(cx - 2);
-    const y0 = Math.floor(cy - 2);
+    const originX = cssW / 2 - (cx - Math.floor(cx - 1)) * tile * scale;
+    const originY = cssH / 2 - (cy - Math.floor(cy - 1)) * tile * scale;
+    const x0 = Math.floor(cx - 1);
+    const y0 = Math.floor(cy - 1);
 
     const loadTiles = (f: RadarFrame) => {
       const jobs: Promise<{
@@ -1258,8 +1171,8 @@ export function RadarMap({
         base: HTMLImageElement | null;
         rain: HTMLImageElement | null;
       }>[] = [];
-      for (let dx = 0; dx < 5; dx += 1) {
-        for (let dy = 0; dy < 5; dy += 1) {
+      for (let dx = 0; dx < 3; dx += 1) {
+        for (let dy = 0; dy < 3; dy += 1) {
           const tx = x0 + dx;
           const ty = y0 + dy;
           const max = 2 ** z;
@@ -1286,8 +1199,8 @@ export function RadarMap({
       const tiles = await loadTiles(active);
       if (cancelled) return;
       const bbox = viewBBox3857({
-        lat: tile2lat(cy, z),
-        lon: tile2lon(cx, z),
+        lat: place.latitude,
+        lon: place.longitude,
         z,
         cssW,
         cssH,
@@ -1501,9 +1414,6 @@ export function RadarMap({
         advectRain: overlay ? undefined : advectRain,
         evolvedRain: overlay ? null : evolvedRain,
         overlay,
-        // Keep "you are here" fixed on the map (not stuck to view center)
-        pinOffsetX: pan.x,
-        pinOffsetY: pan.y,
       });
       if (cancelled) return;
       frameBitmaps.current.set(bitmapKey, next);
@@ -1517,7 +1427,6 @@ export function RadarMap({
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
       // Drop CSS draft pan now that tiles match committed pan
-      setVisualPan({ x: 0, y: 0 });
       if (!prev || !readyRef.current || !playing) {
         ctx.drawImage(next, 0, 0);
         readyRef.current = true;
@@ -1546,7 +1455,7 @@ export function RadarMap({
       cancelRadarLoads();
       cancelAnimationFrame(fadeRaf.current);
     };
-  }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames, catalogQuery.data?.frames, playing, pan.x, pan.y]);
+  }, [active, tilePlan, current.windDir, current.windSpeedKmh, place.latitude, size.w, size.h, frames, catalogQuery.data?.frames, playing]);
 
   const stamp = sliderFrame
     ? new Intl.DateTimeFormat(localeTag(locale), {
@@ -1675,18 +1584,13 @@ export function RadarMap({
         ref={wrapRef}
         data-no-smooth=""
         className={cn(
-          "relative mt-3 w-full overflow-hidden bg-raised touch-none",
-          "cursor-grab active:cursor-grabbing select-none",
+          "relative mt-3 w-full overflow-hidden bg-raised",
           mode === "inline" ? "h-[240px] sm:h-[300px]" : "min-h-0 flex-1",
         )}
       >
         <canvas
           ref={canvasRef}
           className="block h-full w-full"
-          style={{
-            transform: `translate(${visualPan.x}px, ${visualPan.y}px)`,
-            willChange: visualPan.x || visualPan.y ? "transform" : "auto",
-          }}
           aria-label={t("radarAria", { name: place.name })}
         />
         {!ready && !catalogQuery.isError ? (
@@ -1710,19 +1614,7 @@ export function RadarMap({
             {isForecast ? t("forecastStamp", { stamp }) : stamp}
           </p>
         </div>
-        <div className="absolute right-3 top-3 flex gap-1" data-no-pan="">
-          <Button
-            type="button"
-            size="icon"
-            variant="secondary"
-            className="size-9"
-            disabled={pan.x === 0 && pan.y === 0}
-            onClick={() => { setPan({ x: 0, y: 0 }); setVisualPan({ x: 0, y: 0 }); }}
-            aria-label={t("youAreHere")}
-            title={t("youAreHere")}
-          >
-            <Crosshair className="size-4" />
-          </Button>
+        <div className="absolute right-3 top-3 flex gap-1">
           <Button
             type="button"
             size="icon"
