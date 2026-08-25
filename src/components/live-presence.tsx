@@ -21,7 +21,8 @@ function sessionId(): string {
 
 export function LivePresenceFooter() {
   const { t } = useT();
-  const [count, setCount] = useState(1);
+  // null until mounted so SSR HTML matches the first client paint (fixes React #418)
+  const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -32,9 +33,12 @@ export function LivePresenceFooter() {
         .then((res) => {
           if (alive && typeof res.count === "number") setCount(Math.max(1, res.count));
         })
-        .catch(() => {});
+        .catch(() => {
+          if (alive) setCount((c) => c ?? 1);
+        });
     };
 
+    setCount(1);
     beat();
     const timer = window.setInterval(beat, 15_000);
     const onVis = () => {
@@ -48,6 +52,9 @@ export function LivePresenceFooter() {
       document.removeEventListener("visibilitychange", onVis);
     };
   }, []);
+
+  // Render nothing on server + first client frame (identical markup)
+  if (count === null) return null;
 
   return (
     <div

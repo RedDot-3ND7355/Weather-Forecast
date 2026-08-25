@@ -145,6 +145,12 @@ export function HScroll({
         style={{ WebkitOverflowScrolling: "touch" }}
         onClickCapture={(e) => {
           if (!skipClick.current) return;
+          // Never suppress real UI controls (bookmarks, remove, links)
+          const t = e.target as HTMLElement | null;
+          if (t?.closest?.("button, a, input, [data-allow-click]")) {
+            skipClick.current = false;
+            return;
+          }
           e.preventDefault();
           e.stopPropagation();
           skipClick.current = false;
