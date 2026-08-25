@@ -18,9 +18,25 @@ export function AppProviders({ children }: { children: ReactNode }) {
   );
   const [ready, setReady] = useState(false);
 
-  // skipHydration is set on the store — must rehydrate on the client or place/locale stay empty
+  // skipHydration is set on the store — rehydrate on the client (sync or async)
   useEffect(() => {
-    void useWeatherStore.persist.rehydrate().finally(() => setReady(true));
+    let cancelled = false;
+    const done = () => {
+      if (!cancelled) setReady(true);
+    };
+    try {
+      const result = useWeatherStore.persist.rehydrate() as void | Promise<unknown>;
+      if (result != null && typeof (result as Promise<unknown>).then === "function") {
+        void (result as Promise<unknown>).then(done, done);
+      } else {
+        done();
+      }
+    } catch {
+      done();
+    }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!ready) {
