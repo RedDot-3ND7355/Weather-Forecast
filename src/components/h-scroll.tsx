@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/button";
 import { flickVelocity, pushFlick, type FlickSample } from "@/lib/flick";
 import { cn } from "@/lib/utils";
 
+function isInteractive(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  return Boolean(el?.closest?.("button, a, input, textarea, select, [data-allow-click]"));
+}
+
 export function HScroll({
   children,
   className,
@@ -76,6 +81,8 @@ export function HScroll({
     const onDown = (e: PointerEvent) => {
       if (e.pointerType === "touch") return;
       if (e.button !== 0) return;
+      // Let bookmark / remove / link clicks through without drag or skipClick
+      if (isInteractive(e.target)) return;
       stopCoast();
       pointer = e.pointerId;
       startX = e.clientX;
@@ -136,7 +143,7 @@ export function HScroll({
           "[&>*]:shrink-0",
           "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]",
           "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent",
-          "cursor-grab active:cursor-grabbing select-none",
+          "cursor-grab active:cursor-grabbing",
           overflow ? "sm:px-9" : "px-0.5",
           contentClassName,
         )}
@@ -145,9 +152,7 @@ export function HScroll({
         style={{ WebkitOverflowScrolling: "touch" }}
         onClickCapture={(e) => {
           if (!skipClick.current) return;
-          // Never suppress real UI controls (bookmarks, remove, links)
-          const t = e.target as HTMLElement | null;
-          if (t?.closest?.("button, a, input, [data-allow-click]")) {
+          if (isInteractive(e.target)) {
             skipClick.current = false;
             return;
           }
