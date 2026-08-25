@@ -131,12 +131,13 @@ export function HScroll({
       <div
         ref={scroller}
         className={cn(
-          "relative flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 pb-1.5 sm:gap-2",
+          "relative flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-3 pb-1.5 sm:gap-2",
           "[touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch]",
           "[&>*]:shrink-0",
           "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--color-fg)_28%,transparent)_transparent]",
           "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent",
           "cursor-grab active:cursor-grabbing select-none",
+          overflow ? "sm:px-9" : "px-0.5",
           contentClassName,
         )}
         aria-label={label}
@@ -157,35 +158,33 @@ export function HScroll({
       {edge.right ? (
         <div className={cn("pointer-events-none absolute inset-y-0 right-0 z-[1] w-10 bg-linear-to-l to-transparent", fadeFrom)} />
       ) : null}
-      {overflow ? (
-        <>
-          <Button
-            type="button"
-            size="icon"
-            variant="secondary"
-            className="absolute top-1/2 left-0 z-10 hidden size-8 -translate-y-1/2 sm:grid"
-            disabled={!edge.left}
-            aria-label="Scroll left"
-            onClick={() =>
-              scroller.current?.scrollBy({ left: -220, behavior: "smooth" })
-            }
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            size="icon"
-            variant="secondary"
-            className="absolute top-1/2 right-0 z-10 hidden size-8 -translate-y-1/2 sm:grid"
-            disabled={!edge.right}
-            aria-label="Scroll right"
-            onClick={() =>
-              scroller.current?.scrollBy({ left: 220, behavior: "smooth" })
-            }
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </>
+      {edge.left ? (
+        <Button
+          type="button"
+          size="icon"
+          variant="secondary"
+          className="absolute top-1/2 left-0 z-10 hidden size-8 -translate-y-1/2 sm:grid"
+          aria-label="Scroll left"
+          onClick={() =>
+            scroller.current?.scrollBy({ left: -220, behavior: "smooth" })
+          }
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+      ) : null}
+      {edge.right ? (
+        <Button
+          type="button"
+          size="icon"
+          variant="secondary"
+          className="absolute top-1/2 right-0 z-10 hidden size-8 -translate-y-1/2 sm:grid"
+          aria-label="Scroll right"
+          onClick={() =>
+            scroller.current?.scrollBy({ left: 220, behavior: "smooth" })
+          }
+        >
+          <ChevronRight className="size-4" />
+        </Button>
       ) : null}
     </div>
   );

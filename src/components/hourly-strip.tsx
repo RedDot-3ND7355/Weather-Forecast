@@ -30,7 +30,7 @@ export function HourlyStrip({
               key={h.time}
               className={cn(
                 "relative flex w-14 shrink-0 flex-col items-center gap-1.5 overflow-hidden rounded-xl px-1 py-2 sm:w-[4.4rem] sm:px-1.5 sm:py-2.5",
-                i === 0 ? "ring-1 ring-accent/35" : "",
+                i === 0 ? "bg-raised/55 ring-1 ring-inset ring-accent/30" : "",
               )}
             >
               <WeatherBackdrop
