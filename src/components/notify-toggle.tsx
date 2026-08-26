@@ -23,6 +23,14 @@ const iconBtn = "size-9 shrink-0 sm:size-11";
 
 type Mode = "off" | "local" | "push";
 
+function pushKeys(json: PushSubscriptionJSON | null): { endpoint: string; p256dh: string; auth: string } | null {
+  const endpoint = json?.endpoint;
+  const p256dh = json?.keys?.p256dh;
+  const auth = json?.keys?.auth;
+  if (!endpoint || !p256dh || !auth) return null;
+  return { endpoint, p256dh, auth };
+}
+
 export function NotifyToggle() {
   const { t } = useT();
   const place = useWeatherStore((s) => s.place);
@@ -43,7 +51,6 @@ export function NotifyToggle() {
       if (endpoint && perm === "granted") setMode("push");
       else if (perm === "granted" && prefs.localEnabled) setMode("local");
       else setMode("off");
-      // Register SW early so local notifications can use it
       if (pushSupported()) void ensureServiceWorker();
     })();
     return () => {
@@ -74,7 +81,6 @@ export function NotifyToggle() {
     try {
       const { publicKey } = await getVapidPublicKey();
       if (!publicKey) {
-        // Fall back to local-only
         await enableLocal();
         toast(t("notifyPushUnavailable"));
         return;
@@ -92,29 +98,45 @@ export function NotifyToggle() {
         placeName: place?.name,
         locale,
       });
-      if (!json?.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-        toast(t("notifyPushFail"));
-        await enableLocal();
+      const keys = pushKeys(json);
+      saveNotifyPrefs({ localEnabled: true, rain: true, uv: true });
+
+      if (!keys) {
+        // Permission granted; SW may still be finishing. Treat as local.
+        setMode("local");
+        toast(t("notifyLocalOn"));
         return;
       }
-      await savePushSubscription({
-        data: {
-          endpoint: json.endpoint,
-          keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
-          latitude: place?.latitude,
-          longitude: place?.longitude,
-          placeName: place?.name,
-          locale,
-          rainAlerts: true,
-          uvAlerts: true,
-        },
-      });
-      saveNotifyPrefs({ localEnabled: true, rain: true, uv: true });
+
       setMode("push");
-      toast(t("notifyPushOn"));
+      try {
+        await savePushSubscription({
+          data: {
+            endpoint: keys.endpoint,
+            keys: { p256dh: keys.p256dh, auth: keys.auth },
+            latitude: place?.latitude,
+            longitude: place?.longitude,
+            placeName: place?.name,
+            locale,
+            rainAlerts: true,
+            uvAlerts: true,
+          },
+        });
+        toast(t("notifyPushOn"));
+      } catch {
+        // Browser subscription is live; server table may be missing. Still "on".
+        toast(t("notifyPushOn"));
+      }
     } catch {
+      const endpoint = await currentPushEndpoint();
+      if (endpoint) {
+        setMode("push");
+        toast(t("notifyPushOn"));
+        return;
+      }
       toast(t("notifyPushFail"));
-      await enableLocal();
+      saveNotifyPrefs({ localEnabled: true });
+      setMode("local");
     } finally {
       setBusy(false);
     }
@@ -146,7 +168,6 @@ export function NotifyToggle() {
       toast(t("notifyUnsupported"));
       return;
     }
-    // Cycle: off → local → push (if available) → off
     if (mode === "off") {
       if (pushAvailable) await enablePush();
       else await enableLocal();
@@ -159,7 +180,6 @@ export function NotifyToggle() {
     await disableAll();
   }
 
-  // Refresh push place when location changes
   useEffect(() => {
     if (mode !== "push" || !place) return;
     void (async () => {
@@ -173,11 +193,12 @@ export function NotifyToggle() {
           placeName: place.name,
           locale,
         });
-        if (!json?.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
+        const keys = pushKeys(json);
+        if (!keys) return;
         await savePushSubscription({
           data: {
-            endpoint: json.endpoint,
-            keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+            endpoint: keys.endpoint,
+            keys: { p256dh: keys.p256dh, auth: keys.auth },
             latitude: place.latitude,
             longitude: place.longitude,
             placeName: place.name,
