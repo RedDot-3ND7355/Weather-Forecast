@@ -66,7 +66,7 @@ function RootDocument() {
         <HeadContent />
       </head>
       <body
-        className="min-h-dvh overflow-x-clip bg-bg text-fg"
+        className="min-h-dvh overflow-x-hidden bg-bg text-fg"
         style={{ background: "#0b1014", color: "#e7eef4" }}
       >
         <BootSplash />
