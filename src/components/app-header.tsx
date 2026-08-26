@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Bookmark, BookmarkCheck, Link2, Locate, LogIn, LogOut } from "lucide-react";
+import { NotifyToggle } from "@/components/notify-toggle";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageFullscreenButton } from "@/components/page-fullscreen";
@@ -128,6 +129,7 @@ export function AppHeader({
       >
         <Locate className={cn("size-4", locating && "animate-pulse")} />
       </Button>
+      <NotifyToggle />
       <PageFullscreenButton />
       {onShare ? (
         <Button
