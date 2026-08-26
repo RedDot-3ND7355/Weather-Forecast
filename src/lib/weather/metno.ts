@@ -165,6 +165,7 @@ export function mapMetNoForecast(
       windDir,
       isDay,
       cape: 0,
+      uvIndex: num(instant.ultraviolet_index_clear_sky),
       rain: estimateRain({
         modelProb: modelChance,
         rh: humidity,
@@ -207,6 +208,7 @@ export function mapMetNoForecast(
     windSpeedKmh,
     windGustKmh: num(instant.wind_speed_of_gust, num(instant.wind_speed) * 1.35) * 3.6,
     windDir,
+    uvIndex: num(instant.ultraviolet_index_clear_sky, currentHour?.uvIndex ?? 0),
     rain: estimateRain({
       modelProb: modelChance,
       rh: humidity,
