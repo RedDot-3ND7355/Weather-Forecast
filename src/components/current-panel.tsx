@@ -34,7 +34,6 @@ export function CurrentPanel({
   const snow = precipKind(current.weatherCode) === "snow";
   const today = daily[0];
   const uv = uvAdvice(current.uvIndex);
-  const uvMax = today ? uvAdvice(today.uvMax) : null;
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
@@ -75,7 +74,7 @@ export function CurrentPanel({
     {
       icon: Sun,
       label: t("uvIndex"),
-      value: `${uv.index} · ${t(uv.labelKey)}`,
+      value: String(uv.index),
       valueClass: uvToneClass(uv.level),
     },
   ];
@@ -115,24 +114,6 @@ export function CurrentPanel({
             <span className="text-sm">{weatherLabel(current.weatherCode, locale)}</span>
           </div>
         </div>
-        {uv.level !== "low" || (uvMax && uvMax.level !== "low") ? (
-          <p
-            className={cn(
-              "mt-3 rounded-xl bg-bg/40 px-3 py-2 text-sm backdrop-blur-[2px] [text-shadow:0_1px_8px_#0b1014]",
-              uvToneClass(uv.level !== "low" ? uv.level : uvMax!.level),
-            )}
-          >
-            <span className="font-medium">
-              {t("uvIndex")} {uv.index}
-              {uvMax && uvMax.index > uv.index
-                ? ` · ${t("uvTodayMax")} ${uvMax.index}`
-                : ""}
-            </span>
-            <span className="mt-0.5 block text-xs text-muted [text-shadow:none]">
-              {t(uv.level !== "low" ? uv.adviceKey : uvMax!.adviceKey)}
-            </span>
-          </p>
-        ) : null}
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {today ? (
             <>
