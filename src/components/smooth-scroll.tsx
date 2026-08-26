@@ -7,44 +7,84 @@ function ignoreTarget(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest(IGNORE));
 }
 
-function scrollingEl(): Element {
-  return (document.scrollingElement as Element) || document.documentElement;
-}
-
-function maxY(): number {
-  const el = scrollingEl();
-  return Math.max(0, el.scrollHeight - window.innerHeight);
-}
-
-function clamp(y: number): number {
-  return Math.max(0, Math.min(maxY(), y));
-}
-
 function isDesktopPointer(): boolean {
   return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 }
 
-/** Wheel delta to CSS pixels (mouse wheels often use LINE mode). */
+/**
+ * With overflow-x: clip/hidden on body, some engines make body the vertical
+ * scroller instead of documentElement. Always drive the element that actually moves.
+ */
+function scrollRoot(): HTMLElement {
+  const doc = document.documentElement;
+  const body = document.body;
+  const se = document.scrollingElement as HTMLElement | null;
+
+  const candidates = [se, doc, body].filter(Boolean) as HTMLElement[];
+  let best = doc;
+  let bestRoom = 0;
+  for (const el of candidates) {
+    const room = el.scrollHeight - el.clientHeight;
+    if (room > bestRoom) {
+      bestRoom = room;
+      best = el;
+    }
+  }
+  // Prefer scrollingElement when tied
+  if (se && se.scrollHeight - se.clientHeight >= bestRoom - 1) return se;
+  return best;
+}
+
+function maxY(root: HTMLElement): number {
+  return Math.max(0, root.scrollHeight - root.clientHeight);
+}
+
+function clamp(root: HTMLElement, y: number): number {
+  return Math.max(0, Math.min(maxY(root), y));
+}
+
+function readY(root: HTMLElement): number {
+  if (root === document.body || root === document.documentElement) {
+    return window.scrollY || root.scrollTop || 0;
+  }
+  return root.scrollTop;
+}
+
+function writeY(root: HTMLElement, y: number) {
+  if (root === document.documentElement || root === document.body) {
+    window.scrollTo(0, y);
+    document.documentElement.scrollTop = y;
+    document.body.scrollTop = y;
+    return;
+  }
+  root.scrollTop = y;
+}
+
 function deltaYPixels(e: WheelEvent): number {
   let dy = e.deltaY;
-  if (e.deltaMode === 1) dy *= 16; // lines
-  if (e.deltaMode === 2) dy *= window.innerHeight; // pages
+  if (e.deltaMode === 1) dy *= 16;
+  if (e.deltaMode === 2) dy *= window.innerHeight;
   return dy;
 }
 
-/** Let nested overflow:auto regions keep native scroll when they can move. */
 function nestedCanScroll(target: EventTarget | null, dy: number): boolean {
   if (!(target instanceof Element)) return false;
   let n: Element | null = target;
-  while (n && n !== document.body && n !== document.documentElement) {
+  const root = scrollRoot();
+  while (n && n !== document.body && n !== document.documentElement && n !== root) {
     const st = window.getComputedStyle(n);
     const oy = st.overflowY;
     if (
       (oy === "auto" || oy === "scroll" || oy === "overlay") &&
       n.scrollHeight > n.clientHeight + 1
     ) {
-      if (dy < 0 && n.scrollTop > 0) return true;
-      if (dy > 0 && n.scrollTop + n.clientHeight < n.scrollHeight - 1) return true;
+      if (dy < 0 && (n as HTMLElement).scrollTop > 0) return true;
+      if (
+        dy > 0 &&
+        (n as HTMLElement).scrollTop + n.clientHeight < n.scrollHeight - 1
+      ) {
+        return true;
+      }
     }
     n = n.parentElement;
   }
@@ -57,7 +97,6 @@ export function SmoothScroll() {
 
     const html = document.documentElement;
 
-    // Phones / tablets: native compositor scrolling.
     if (!isDesktopPointer()) {
       html.classList.add("vane-native-scroll");
       return () => html.classList.remove("vane-native-scroll");
@@ -65,8 +104,9 @@ export function SmoothScroll() {
 
     html.classList.add("vane-smooth");
 
-    let current = window.scrollY;
-    let target = window.scrollY;
+    let root = scrollRoot();
+    let current = readY(root);
+    let target = current;
     let vel = 0;
     let raf = 0;
     let last = performance.now();
@@ -79,24 +119,25 @@ export function SmoothScroll() {
     };
 
     const tick = (now: number) => {
+      root = scrollRoot();
       const dt = Math.min(32, now - last) / 16.67;
       last = now;
-      vel *= Math.pow(0.92, dt);
-      target = clamp(target + vel);
-      const k = 1 - Math.pow(1 - 0.28, dt);
+      vel *= Math.pow(0.9, dt);
+      target = clamp(root, target + vel);
+      const k = 1 - Math.pow(1 - 0.32, dt);
       current += (target - current) * k;
-      if (Math.abs(target - current) < 0.35 && Math.abs(vel) < 0.2) {
+      if (Math.abs(target - current) < 0.3 && Math.abs(vel) < 0.15) {
         current = target;
         vel = 0;
         coasting = false;
         driving = true;
-        window.scrollTo(0, current);
+        writeY(root, current);
         driving = false;
         raf = 0;
         return;
       }
       driving = true;
-      window.scrollTo(0, current);
+      writeY(root, current);
       driving = false;
       raf = requestAnimationFrame(tick);
     };
@@ -109,41 +150,45 @@ export function SmoothScroll() {
     };
 
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) return; // browser zoom
+      if (e.ctrlKey) return;
       if (ignoreTarget(e.target)) return;
       const dy = deltaYPixels(e);
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      if (Math.abs(e.deltaX) > Math.abs(dy) && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        return;
+      }
       if (Math.abs(dy) < 0.01) return;
       if (nestedCanScroll(e.target, dy)) return;
-      if (maxY() <= 0) return;
+
+      root = scrollRoot();
+      if (maxY(root) <= 0) return;
 
       e.preventDefault();
-      // Resync if something else moved the page
       if (!coasting && !driving) {
-        current = window.scrollY;
+        current = readY(root);
         target = current;
       }
       coasting = true;
-      target = clamp(target + dy);
-      vel += dy * 0.06;
+      target = clamp(root, target + dy);
+      vel += dy * 0.08;
       kick();
     };
 
     const onScroll = () => {
       if (driving || coasting) return;
-      current = window.scrollY;
+      root = scrollRoot();
+      current = readY(root);
       target = current;
       vel = 0;
     };
 
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
 
     return () => {
       stop();
       html.classList.remove("vane-smooth");
       window.removeEventListener("wheel", onWheel, true);
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, []);
 
