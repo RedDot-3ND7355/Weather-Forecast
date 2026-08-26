@@ -61,6 +61,7 @@ type MeteoHourly = {
   wind_gusts_10m: number[];
   cape: number[];
   is_day: number[];
+  uv_index?: number[];
 };
 
 type MeteoDaily = {
@@ -162,6 +163,7 @@ function mapHour(
     windDir,
     isDay: num(hourly.is_day[i]) === 1,
     cape,
+    uvIndex: num(hourly.uv_index?.[i]),
     rain: estimateRain({
       modelProb: modelChance,
       rh: humidity,
@@ -259,6 +261,7 @@ function mapOpenMeteo(json: MeteoResponse, data: Place): Forecast {
     windSpeedKmh,
     windGustKmh: num(json.current.wind_gusts_10m),
     windDir,
+    uvIndex: currentHour?.uvIndex ?? 0,
     rain: estimateRain({
       modelProb: modelChance,
       rh: humidity,
@@ -316,6 +319,7 @@ async function fetchOpenMeteo(data: Place): Promise<Forecast> {
       "wind_gusts_10m",
       "cape",
       "is_day",
+      "uv_index",
     ].join(","),
     daily: [
       "weather_code",
