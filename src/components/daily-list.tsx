@@ -17,6 +17,7 @@ export function DailyList({ days, units }: { days: DayPoint[]; units: Units }) {
         {days.map((d, i) => {
           const Icon = weatherIcon(d.weatherCode, true);
           const wet = d.rain.chance >= 40;
+          const uv = Math.round(d.uvMax * 10) / 10;
           return (
             <li
               key={d.date}
@@ -34,6 +35,7 @@ export function DailyList({ days, units }: { days: DayPoint[]; units: Units }) {
                     chance: d.rain.chance,
                     dir: compassPoint(d.windDir),
                   })}
+                  {uv > 0 ? ` · ${t("uvTodayMax")} ${uv}` : ""}
                 </p>
               </div>
               <div className="hidden items-center gap-1.5 text-xs tabular-nums text-muted sm:flex">
@@ -55,6 +57,7 @@ export function DailyList({ days, units }: { days: DayPoint[]; units: Units }) {
                   )}
                 >
                   {d.rain.chance}% · {formatPrecip(d.precipMm, units)}
+                  {uv > 0 ? ` · UV ${uv}` : ""}
                 </p>
               </div>
             </li>
