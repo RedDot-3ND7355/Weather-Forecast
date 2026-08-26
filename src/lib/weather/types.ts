@@ -40,6 +40,8 @@ export type CurrentWeather = {
   windSpeedKmh: number;
   windGustKmh: number;
   windDir: number;
+  /** UV index now (0–11+). */
+  uvIndex: number;
   rain: RainEstimate;
 };
 
@@ -57,6 +59,7 @@ export type HourPoint = {
   windDir: number;
   isDay: boolean;
   cape: number;
+  uvIndex: number;
   rain: RainEstimate;
 };
 
