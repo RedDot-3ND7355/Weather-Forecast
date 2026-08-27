@@ -34,6 +34,7 @@ export function CurrentPanel({
   const snow = precipKind(current.weatherCode) === "snow";
   const today = daily[0];
   const uv = uvAdvice(current.uvIndex);
+  const precipWet = current.rain.chance >= 40 || current.precipitationMm >= 0.2;
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
@@ -67,9 +68,10 @@ export function CurrentPanel({
       value: formatSpeed(current.windGustKmh, units),
     },
     {
-      icon: Droplets,
+      icon: CloudRain,
       label: t("precipNow"),
-      value: formatPrecip(current.precipitationMm, units),
+      value: `${formatPrecip(current.precipitationMm, units)} · ${Math.round(current.rain.chance)}%`,
+      valueClass: precipWet ? "text-rain" : undefined,
     },
     {
       icon: Sun,
