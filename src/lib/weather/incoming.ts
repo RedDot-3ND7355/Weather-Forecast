@@ -43,10 +43,8 @@ function chanceForHour(h: HourPoint | null | undefined, fallback: number): numbe
  * Priority:
  * 1. Measurable precip at the station right now
  * 2. Radar nowcast arrival (timing from radar; % from forecast, not a fake formula)
- * 3. Next hourly window that already looks wet in the forecast
- *
- * Chance is always tied to Open-Meteo / Vane blend so the banner cannot
- * disagree with the hourly strip by inventing e.g. 50 + precipMm * 40.
+ * 3. First nowcast hour marked arriving / wet at the point
+ * 4. Next hourly window that already looks wet in the forecast
  */
 export function incomingPrecip(
   forecast: Forecast,
@@ -55,11 +53,9 @@ export function incomingPrecip(
   const next = forecast.nextRain;
   const code = next?.weatherCode ?? forecast.current.weatherCode;
   const kind = precipKind(code);
-  const rainingNow = forecast.current.precipitationMm >= 0.15;
+  const rainingNow = forecast.current.precipitationMm >= 0.08;
 
   if (rainingNow) {
-    // Observed precip: keep % honest to the blend, with a soft floor only when
-    // amounts are clearly more than a trace so “raining now” doesn’t show 12%.
     const observedFloor = forecast.current.precipitationMm >= 0.5 ? 65 : 45;
     const chance = Math.max(
       forecast.current.rain.chance,
@@ -76,22 +72,26 @@ export function incomingPrecip(
   }
 
   const radar = nowcast?.arrival;
-  if (radar && radar.minutes > 0 && radar.minutes <= HOUR_MIN && radar.precipMm >= 0.12) {
+  if (radar && radar.minutes >= 0 && radar.minutes <= HOUR_MIN && radar.precipMm >= 0.08) {
     const etaMs = Date.now() + radar.minutes * 60_000;
-    // Timing from radar; probability from the same forecast the rest of the UI uses.
     let chance = chanceNearTime(forecast, etaMs);
-    // If the model is still dry but radar clearly sees a cell, nudge up slightly
-    // without jumping to a made-up 80–95%.
-    if (chance < 40 && radar.precipMm >= 0.25) {
-      chance = Math.max(chance, 40);
-    }
-    if (chance < 55 && radar.precipMm >= 0.6) {
-      chance = Math.max(chance, 55);
-    }
+    if (chance < 40 && radar.precipMm >= 0.25) chance = Math.max(chance, 40);
+    if (chance < 55 && radar.precipMm >= 0.6) chance = Math.max(chance, 55);
     return {
       kind,
       minutes: radar.minutes,
       chance: clamp(chance, 0, 100),
+      fromDir: forecast.current.windDir,
+      source: "radar",
+    };
+  }
+
+  const hour0 = nowcast?.hours?.[0];
+  if (hour0 && (hour0.arriving || hour0.hereMm >= 0.08 || hour0.fetchMm >= 0.12 || hour0.chance >= 40)) {
+    return {
+      kind,
+      minutes: hour0.hereMm >= 0.08 ? 0 : 25,
+      chance: clamp(Math.max(hour0.chance, chanceNearTime(forecast, Date.now())), 0, 100),
       fromDir: forecast.current.windDir,
       source: "radar",
     };
